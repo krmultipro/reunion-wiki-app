@@ -40,7 +40,8 @@
                 href="{{site['lien']}}"
                 target="_blank"
                 rel="noopener norefferrer"
-                ><strong>{{ site['nom'] }}</strong> - {{ site['ville'] or ''}} ↗
+                ><strong>{{ site['nom'] }}</strong> {% if site['ville'] %} - {{
+                site['ville']}} {% endif%} ↗
               </a>
               : {{ site['description']}}
             </li>
