@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Réunion Wiki</title>
+    <link rel="stylesheet" href="{{url_for('static', filename='style.css')}}" />
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Montserrat:wght@900&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+
+  <body>
+    <header>
+      <h1 class="titre_site"><a href="/">Réunion Wiki</a></h1>
+      <p>
+        Bienvenue sur <strong>Réunion Wiki 🌴</strong> <br />
+        Un répertoire <em>simple, rapide et local</em> pour accéder aux sites
+        essentiels de La Réunion.
+      </p>
+    </header>
+    <main>
+      <div class="categories">
+        {% for categorie, sites in data.items() %}
+        <div class="category">
+          <h2>{{ categorie }}</h2>
+
+          <ul>
+            {% for site in sites %}
+            <li>
+              <a
+                href="{{site['lien']}}"
+                target="_blank"
+                rel="noopener norefferrer"
+                ><strong>{{ site['nom'] }}</strong> - {{ site['ville'] or ''}} ↗
+              </a>
+              : {{ site['description']}}
+            </li>
+            {% endfor%}
+            <a href="/categorie/{{categorie}}"> Voir plus </a>
+          </ul>
+        </div>
+        {%endfor%}
+      </div>
+    </main>
+    <footer></footer>
+  </body>
+</html>

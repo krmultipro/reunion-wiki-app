@@ -1,0 +1,16 @@
+# Environnement virtuel
+.venv/
+.vscode/
+
+# Fichiers Python compilés
+__pycache__/
+*.pyc
+
+# Base de données
+base.db-journal
+
+# Git lui-même
+.git/
+
+# Autres fichiers temporaires
+*.log
