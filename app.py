@@ -49,6 +49,10 @@ def voir_categorie(nom_categorie):
     conn.close()
     
     return render_template("categorie.html", nom_categorie=nom_categorie, sites=sites)
+
+@app.route("/mentions-legales")
+def mentions_legales():
+    return render_template("mentions_legales.html")
     
 
 if __name__ == "__main__":
