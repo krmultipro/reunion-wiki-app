@@ -14,3 +14,4 @@ base.db-journal
 
 # Autres fichiers temporaires
 *.log
+.vercel
