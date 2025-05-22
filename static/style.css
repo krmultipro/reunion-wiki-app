@@ -24,6 +24,26 @@ p strong {
 p strong:hover {
   color: var(--lava);
 }
+h2 {
+  text-align: center;
+  margin-top: 0;
+  font-family: "Montserrat", sans-serif;
+  font-weight: 900;
+  font-size: 1.4rem;
+  color: var(--vert-fougere);
+}
+h2 a {
+  text-decoration: none;
+  color: var(--vert-fougere);
+}
+h3 {
+  margin-top: 0;
+  font-family: "Montserrat", sans-serif;
+  font-weight: 900;
+  font-size: 1.4rem;
+  text-align: left;
+  color: var(--vert-fougere);
+}
 
 .site_title {
   text-align: center;
@@ -42,25 +62,45 @@ p strong:hover {
   color: var(--vert-fougere);
   text-shadow: 0.2rem 0.2rem 2rem var(--lava);
 }
-.categories {
-  margin-bottom: 1.5rem;
-}
 
-.category h2 {
-  text-align: center;
-  margin-top: 0;
-  font-family: "Montserrat", sans-serif;
-  font-weight: 900;
-  font-size: 1.4rem;
-  text-align: center;
-}
-.category h2 a {
-  text-decoration: none;
+#bouton_plus a {
+  text-decoration: underline;
+  font-weight: bold;
   color: var(--vert-fougere);
 }
-.category p {
-  font-family: "Inter", sans-serif;
-  font-weight: 400;
+#bouton_plus a:hover {
+  color: var(--lava);
+}
+.propos_site {
+  background-color: var(--blanc);
+  display: inline-block;
+  padding: 1.1rem;
+  margin: 1.2rem 0rem 1.2rem 0rem;
+  border-radius: 0.5rem;
+  box-shadow: 0.6rem 0.4rem 1.2rem var(--vert-fougere);
+}
+.propos_site {
+  white-space: nowrap;
+  font-weight: bold;
+}
+.propos_site:hover {
+  color: var(--lava);
+}
+.propos_site:hover {
+  box-shadow: 0.6rem 0.4rem 1.2rem var(--lava);
+}
+
+footer {
+  border-top: 0.2rem solid var(--vert-fougere);
+}
+
+footer a {
+  color: var(--vert-fougere);
+  text-decoration: none;
+}
+
+.categories {
+  margin-bottom: 1.5rem;
 }
 
 .category {
@@ -95,21 +135,4 @@ p strong:hover {
 .category a:focus {
   outline: 0.125rem solid var(--vert-fougere);
   outline-offset: 0.005rem;
-}
-.category #bouton_plus a {
-  text-decoration: underline;
-  font-weight: bold;
-  color: var(--vert-fougere);
-}
-.category #bouton_plus a:hover {
-  color: var(--lava);
-}
-
-footer {
-  border-top: 0.2rem solid var(--vert-fougere);
-}
-
-footer a {
-  color: var(--vert-fougere);
-  text-decoration: none;
 }
