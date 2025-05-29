@@ -98,6 +98,9 @@ footer a {
   color: var(--vert-fougere);
   text-decoration: none;
 }
+footer a:hover {
+  color: var(--lava);
+}
 
 .categories {
   margin-bottom: 1.5rem;
