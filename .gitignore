@@ -1,6 +1,7 @@
 # Environnement virtuel
 .venv/
 .vscode/
+venv
 
 # Fichiers Python compilés
 __pycache__/

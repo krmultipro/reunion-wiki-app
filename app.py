@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from flask import Flask, render_template
+from flask import Flask, render_template, make_response, send_from_directory
 import sqlite3
 
 app = Flask(__name__)
@@ -53,7 +53,12 @@ def voir_categorie(nom_categorie):
 @app.route("/mentions-legales")
 def mentions_legales():
     return render_template("mentions_legales.html")
-    
+
+@app.route('/service-worker.js')
+def service_worker():
+    response = make_response(send_from_directory('static', 'service-worker.js'))
+    response.headers['Content-Type'] = 'application/javascript'
+    return response    
 
 if __name__ == "__main__":
     app.run(debug=True)

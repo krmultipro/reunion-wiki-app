@@ -1,77 +1,31 @@
-<!DOCTYPE html>
-<html lang="fr">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Réunion Wiki</title>
-    <link rel="stylesheet" href="{{url_for('static', filename='style.css')}}" />
-    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Montserrat:wght@900&display=swap"
-      rel="stylesheet"
-    />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap"
-      rel="stylesheet"
-    />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap"
-      rel="stylesheet"
-    />
-  </head>
-
-  <body>
-    <header>
-      <h1 class="site_title"><a href="/">Réunion Wiki</a></h1>
-      <p>
-        Bienvenue sur <strong>Réunion Wiki 🌴</strong> <br />
-        Un répertoire <em>simple, rapide et local</em> pour accéder aux sites
-        essentiels de La Réunion.
-      </p>
-    </header>
-
-    <main>
-      <div class="categories">
-        {% for categorie, sites in data.items() %}
-        <div class="category">
-          <h2><a href="/categorie/{{categorie}}">{{categorie}}</a></h2>
-
-          <ul>
-            {% for site in sites %}
-            <li>
-              <a
-                href="{{site['lien']}}"
-                target="_blank"
-                rel="noopener norefferrer"
-                ><strong>{{ site['nom'] }}</strong> {% if site['ville'] %} - {{
-                site['ville']}} {% endif%} ↗
-              </a>
-              : {{ site['description']}}
-            </li>
-            {% endfor%}
-            <div id="bouton_plus">
-              <a href="/categorie/{{categorie}}"> Voir plus </a>
-            </div>
-          </ul>
-        </div>
-        {%endfor%}
+<!-- templates/index.html -->
+{% extends "base.html" %} {% block title %}Accueil - Réunion Wiki{% endblock %}
+{% block header_content %}
+<p>
+  Bienvenue sur <strong>Réunion Wiki 🌴</strong><br />
+  Un répertoire <em>simple, rapide et local</em> pour accéder aux sites
+  essentiels de La Réunion.
+</p>
+{% endblock %} {% block content %}
+<div class="categories">
+  {% for categorie, sites in data.items() %}
+  <div class="category">
+    <h2><a href="/categorie/{{categorie}}">{{categorie}}</a></h2>
+    <ul>
+      {% for site in sites %}
+      <li>
+        <a href="{{site['lien']}}" target="_blank" rel="noopener noreferrer">
+          <strong>{{ site['nom'] }}</strong>{% if site['ville'] %} - {{
+          site['ville'] }}{% endif %} ↗
+        </a>
+        : {{ site['description'] }}
+      </li>
+      {% endfor %}
+      <div id="bouton_plus">
+        <a href="/categorie/{{categorie}}">Voir plus</a>
       </div>
-    </main>
-    <footer>
-      <a
-        href="https://forms.gle/kimeZjk8TPQAhMCE6"
-        class="propos_site"
-        target="__blank"
-      >
-        Proposez un site !</a
-      >
-      <p><strong>Réunion Wiki</strong> - Simplifions l'information locale.</p>
-      <nav>
-        <a href="/mentions-legales" target="_blank">Mentions légales</a> |
-        <a href="" target="_blank">Contact</a>
-      </nav>
-    </footer>
-  </body>
-</html>
+    </ul>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

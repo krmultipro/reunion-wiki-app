@@ -1,83 +1,48 @@
-<!DOCTYPE html>
-<html lang="fr">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Mentions légales - Réunion Wiki</title>
-    <link rel="stylesheet" href="{{url_for('static', filename='style.css')}}" />
-    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" />
+<!-- templates/mentions_legales.html -->
+{% extends "base.html" %} {% block title %}Mentions légales - Réunion Wiki{%
+endblock %} {% block content %}
+<h2>Mentions légales</h2>
+<h3>Éditeur du site</h3>
+<p>
+  <strong>Réunion Wiki</strong> - Projet local indépendant<br />
+  Responsable de la publication : Kery RICHARD DASSOT<br />
+  Contact : <a href="mailto:contact@reunionwiki.re">contact@reunionwiki.re</a
+  ><br />
+  Statut : Site non commercial, sans but lucratif
+</p>
 
-    <link
-      href="https://fonts.googleapis.com/css2?family=Montserrat:wght@900&display=swap"
-      rel="stylesheet"
-    />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap"
-      rel="stylesheet"
-    />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap"
-      rel="stylesheet"
-    />
-  </head>
-  <body>
-    <header>
-      <h1 class="site_title"><a href="/">Réunion Wiki</a></h1>
-    </header>
-    <h2>Mentions légales</h2>
-    <h3>Éditeur du site</h3>
-    <p>
-      <strong>Réunion Wiki</strong> - Projet local indépendant <br />
-      Responsable de la publication : Kery RICHARD DASSOT <br />
-      Contact :
-      <a href="mailto:contact@reunionwiki.re">contact@reunionwiki.re</a> <br />
-      Statut : Site non commercial, sans but lucratrif
-    </p>
-    <h3>Hébergement</h3>
-    <p>OVH SAS<br /></p>
-    <p>2 rue Kellermann, 59100 Roubaix, France<br /></p>
-    <p>
-      Site :
-      <a href="https://www.ovhcloud.com/fr/" target="__blank"
-        >https://www.ovhcloud.com/fr/</a
-      ><br />
-    </p>
-    <h3>Propriété intellectuelle</h3>
-    <p>
-      Sauf mention contraire, les contenus présents sur ce site (textes, images,
-      structure) sont la propriété exclusive de Réunion Wiki. <br />
-      Toute reproduction ou utilisation sans autorisation est interdite.
-    </p>
-    <h3>Responsabilité</h3>
-    <p>
-      Réunion Wiki s'efforce de fournir des informations fiables et à jour, mais
-      ne garantit pas l'exactitude ou l'exhaustivité du contenu. <br />
-      Les liens vers des sites externes ne sauraient engager ma responsabilité.
-      <br />
-      Les liens proposés sur Réunion Wiki redirigent vers des sites tiers. Leur
-      contenu relève de la seule responsabilité de leurs éditeurs respectifs.
-      <br />
-      Réunion Wiki ne peut être tenu responsable de leur disponibilité,
-      exactitude ou légalité.
-    </p>
-    <h3>Données personnelles</h3>
-    <p>
-      Ce site ne collecte actuellement aucune donnée personnelle. Si un
-      formulaire est mis en place, les données transmises seront utilisées
-      uniquement pour traiter la demande, conformément au Règlement Général sur
-      la Protection des Données (RGPD). <br />
-      Aucune donnée n'est vendue, cédée ou transmise à des tiers.
-    </p>
-    <h3>Cookies</h3>
-    <p>
-      Ce site n'utilise pas de cookies à des fins de suivi ou de publicité.
-      <br />
-      Seules des techniques de mise en cache peuvent être utilisées pour
-      améliorer les temps de chargement. Ces éléments ne collectent aucune
-      information personnelle.
-    </p>
-    <div id="bouton_plus">
-      <a href="/"> Retour vers l'accueil</a>
-    </div>
-  </body>
-</html>
+<h3>Hébergement</h3>
+<p>
+  OVH SAS<br />2 rue Kellermann, 59100 Roubaix, France<br />
+  Site :
+  <a href="https://www.ovhcloud.com/fr/" target="__blank"
+    >https://www.ovhcloud.com/fr/</a
+  >
+</p>
+
+<h3>Propriété intellectuelle</h3>
+<p>
+  Sauf mention contraire, les contenus présents sur ce site (textes, images,
+  structure) sont la propriété exclusive de Réunion Wiki.
+</p>
+
+<h3>Responsabilité</h3>
+<p>
+  Réunion Wiki fournit des informations fiables, sans garantir
+  l’exhaustivité.<br />
+  Les liens externes relèvent de la responsabilité de leurs éditeurs.
+</p>
+
+<h3>Données personnelles</h3>
+<p>
+  Aucune donnée collectée. Si un formulaire est ajouté, les données seront
+  traitées selon le RGPD.
+</p>
+
+<h3>Cookies</h3>
+<p>
+  Aucun cookie de suivi ou pub. Mise en cache possible pour accélérer le site.
+</p>
+
+<div id="bouton_plus"><a href="/">Retour vers l'accueil</a></div>
+{% endblock %}

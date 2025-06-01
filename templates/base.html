@@ -1,0 +1,74 @@
+<!-- templates/base.html -->
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}Réunion Wiki{% endblock %}</title>
+
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='style.css') }}"
+    />
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" />
+
+    <!-- Fonts -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Montserrat:wght@900&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- PWA -->
+    <link
+      rel="manifest"
+      href="{{ url_for('static', filename='manifest.webmanifest') }}"
+    />
+    <meta name="theme-color" content="#009688" />
+    <link
+      rel="apple-touch-icon"
+      href="{{ url_for('static', filename='icons/favicon.ico') }}"
+    />
+
+    {% block head %}{% endblock %}
+  </head>
+
+  <body>
+    <header>
+      <h1 class="site_title"><a href="/">Réunion Wiki</a></h1>
+      {% block header_content %}{% endblock %}
+    </header>
+
+    <main>{% block content %}{% endblock %}</main>
+
+    <footer>
+      <a
+        href="https://forms.gle/kimeZjk8TPQAhMCE6"
+        class="propos_site"
+        target="__blank"
+        >Proposez un site !</a
+      >
+      <p><strong>Réunion Wiki</strong> - Simplifions l'information locale.</p>
+      <nav>
+        <a href="/mentions-legales" target="_blank">Mentions légales</a> |
+        <a href="mailto:contact@reunionwiki.re" target="_blank">Contact</a>
+      </nav>
+    </footer>
+
+    <script>
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker
+          .register("/static/service-worker.js")
+          .then(() => console.log("Service Worker enregistré"))
+          .catch((err) => console.error("Erreur SW", err));
+      }
+    </script>
+  </body>
+</html>
