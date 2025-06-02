@@ -2,20 +2,38 @@
   "name": "Réunion Wiki",
   "short_name": "RéunionWiki",
   "start_url": "/",
+  "id": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#009688",
   "orientation": "portrait",
+  "description": "Le portail des sites utiles de La Réunion, simple, local et collaboratif.",
   "icons": [
     {
-      "src": "/static/icons/icon-192.png",
+      "src": "/static/icons/icon-192x192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
-      "src": "/static/icons/icon-512.png",
+      "src": "/static/icons/icon-512x512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/static/screenshots/homepage.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide"
+    },
+    {
+      "src": "/static/screenshots/categorie.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide"
     }
   ]
 }
