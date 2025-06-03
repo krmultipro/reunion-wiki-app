@@ -16,6 +16,9 @@
   max-width: 600px;
   width: 100%;
 }
+.maintenance-container:hover {
+  box-shadow: 0.6rem 0.4rem 1.2rem var(--lava); /* 2px 5px */
+}
 
 .maintenance-container img {
   max-width: 100px;
