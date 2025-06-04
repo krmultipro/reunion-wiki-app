@@ -65,15 +65,15 @@
     </footer>
 
     <script>
-      // 💡 Enregistrement du Service Worker
+      // Enregistrement du Service Worker
       if ("serviceWorker" in navigator) {
         navigator.serviceWorker
           .register("/static/service-worker.js")
-          .then(() => console.log("✅ Service Worker enregistré"))
-          .catch((err) => console.error("❌ Erreur Service Worker :", err));
+          .then(() => console.log("Service Worker enregistré"))
+          .catch((err) => console.error("Erreur Service Worker :", err));
       }
 
-      // ✅ Si l'app est déjà installée (mode standalone), on ne fait rien
+      // Si l'app est déjà installée (mode standalone), on ne fait rien
       const isStandalone =
         window.matchMedia("(display-mode: standalone)").matches ||
         window.navigator.standalone === true;
@@ -81,14 +81,14 @@
       if (!isStandalone) {
         let deferredPrompt;
 
-        // 📦 Écoute de l’événement d'installation proposé par Chrome
+        // Écoute de l’événement d'installation proposé par Chrome
         window.addEventListener("beforeinstallprompt", (e) => {
           e.preventDefault(); // Empêche Chrome d'afficher sa bannière native
           deferredPrompt = e;
 
-          // 📲 Création du bouton "Installer l'application"
+          // Création du bouton "Installer l'application"
           const installBtn = document.createElement("button");
-          installBtn.textContent = "📲 Installer l'application";
+          installBtn.textContent = "Installer l'application 📲";
           installBtn.style = `
         position: fixed;
         bottom: 20px;
@@ -105,16 +105,16 @@
       `;
           document.body.appendChild(installBtn);
 
-          // 🖱️ Quand l'utilisateur clique sur le bouton
+          //Quand l'utilisateur clique sur le bouton
           installBtn.addEventListener("click", () => {
             installBtn.remove(); // Supprime le bouton
             deferredPrompt.prompt(); // Ouvre le prompt d’installation
 
             deferredPrompt.userChoice.then((choiceResult) => {
               if (choiceResult.outcome === "accepted") {
-                console.log("👍 L'utilisateur a installé l'application");
+                console.log("L'utilisateur a installé l'application");
               } else {
-                console.log("👎 L'utilisateur a refusé l'installation");
+                console.log("L'utilisateur a refusé l'installation");
               }
               deferredPrompt = null;
             });
