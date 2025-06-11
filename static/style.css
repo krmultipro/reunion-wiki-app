@@ -32,10 +32,16 @@ h2 {
   font-size: 1.4rem;
   color: var(--vert-fougere);
 }
+
 h2 a {
   text-decoration: none;
   color: var(--vert-fougere);
 }
+h2 a:hover {
+  color: var(--lava);
+  text-shadow: 0.2rem 0.2rem 2rem var(--lava);
+}
+
 h3 {
   margin-top: 0;
   font-family: "Montserrat", sans-serif;
@@ -100,6 +106,38 @@ footer a {
 }
 footer a:hover {
   color: var(--lava);
+}
+.nouveaux-sites {
+  background-color: var(--blanc);
+  border-radius: 0.5rem;
+  padding: 1.1rem;
+  margin: 1.2rem 0rem 1.5rem 0rem;
+  box-shadow: 0.6rem 0.4rem 1.2rem var(--vert-fougere);
+}
+
+.nouveaux-sites:hover {
+  box-shadow: 0.6rem 0.4rem 1.2rem var(--lava);
+}
+
+.nouveaux-sites ul {
+  list-style: none;
+  padding-left: 0.7rem;
+}
+
+.nouveaux-sites li {
+  margin-bottom: 0.7rem;
+  line-height: 1.5;
+}
+
+.nouveaux-sites a {
+  color: var(--vert-fougere);
+  font-weight: bold;
+  text-decoration: none;
+}
+
+.nouveaux-sites a:hover {
+  color: var(--lava);
+  text-decoration: none;
 }
 
 .categories {

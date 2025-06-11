@@ -27,11 +27,48 @@ def get_sites_en_vedette():
     conn.close()
     return data
 
+def get_derniers_sites_global(limit=3):
+    conn = sqlite3.connect('base.db')
+    conn.row_factory = sqlite3.Row
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT nom, lien, categorie, description
+        FROM sites
+        WHERE status = 'valide'
+        ORDER BY date_ajout DESC
+        LIMIT ?
+    """, (limit,))
+
+    derniers_sites = cur.fetchall()
+    conn.close()
+    return derniers_sites
+
+@app.route("/nouveaux-sites")
+def nouveaux_sites():
+    conn = sqlite3.connect('base.db')
+    conn.row_factory = sqlite3.Row
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT nom, lien, categorie, description, date_ajout
+        FROM sites
+        WHERE status = 'valide'
+        ORDER BY date_ajout DESC
+    """)
+    
+    sites = cur.fetchall()
+    conn.close()
+
+    return render_template("nouveaux_sites.html", sites=sites)
 
 @app.route("/")
 def accueil():
     data = get_sites_en_vedette()
-    return render_template("index.html", data=data)
+    derniers_sites = get_derniers_sites_global(3)
+    return render_template("index.html", data=data, derniers_sites=derniers_sites)
+
+
 
 @app.route("/categorie/<nom_categorie>")
 def voir_categorie(nom_categorie):
@@ -47,8 +84,15 @@ def voir_categorie(nom_categorie):
     
     sites = cur.fetchall()
     conn.close()
+
+    derniers_sites = get_derniers_sites_global()
     
-    return render_template("categorie.html", nom_categorie=nom_categorie, sites=sites)
+    return render_template(
+        "categorie.html",
+        nom_categorie=nom_categorie,
+        sites=sites,
+        derniers_sites=derniers_sites
+    )
 
 @app.route("/mentions-legales")
 def mentions_legales():
