@@ -4,13 +4,40 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>{% block title %}Réunion Wiki{% endblock %}</title>
 
+    <title>{% block title %}Réunion Wiki{% endblock %}</title>
+    <meta
+      name="description"
+      content="{% block description %}Simplifions l'accès aux sites internet utiles de La Réunion : santé, éducation, loisirs, services...{% endblock %}"
+    />
+    <meta
+      name="keywords"
+      content="réunion, sites utiles, wiki, annuaire, internet, local, La Réunion"
+    />
+    <meta name="author" content="Réunion Wiki" />
+
+    <!-- Open Graph (partage réseaux sociaux) -->
+    <meta
+      property="og:title"
+      content="{% block og_title %}Réunion Wiki - Sites utiles de La Réunion{% endblock %}"
+    />
+    <meta
+      property="og:description"
+      content="{% block og_description %}Accédez facilement à tous les sites réunionnais essentiels classés par catégorie.{% endblock %}"
+    />
+    <meta property="og:url" content="{{ request.url }}" />
+    <meta property="og:type" content="website" />
+    <meta
+      property="og:image"
+      content="{{ url_for('static', filename='logo.png') }}"
+    />
+
+    <!-- Favicon et styles -->
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" />
     <link
       rel="stylesheet"
       href="{{ url_for('static', filename='style.css') }}"
     />
-    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" />
 
     <!-- Fonts -->
     <link
