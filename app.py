@@ -60,5 +60,9 @@ def service_worker():
     response.headers['Content-Type'] = 'application/javascript'
     return response    
 
+@app.route('/google87e16279463c4021.html')
+def google_verification():
+    return app.send_static_file('google87e16279463c4021.html')
+
 if __name__ == "__main__":
     app.run(debug=True)
