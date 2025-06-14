@@ -72,7 +72,21 @@
       <h1 class="site_title"><a href="/">Réunion Wiki</a></h1>
       {% block header_content %}{% endblock %}
     </header>
-
+    <nav class="main-nav">
+      <ul>
+        <li><a href="/">Accueil</a></li>
+        <li><a href="/nouveaux-sites">Nouveaux sites</a></li>
+        {% for cat in categories %}
+        <li>
+          <a
+            href="/categorie/{{ cat | lower | replace(' ', '-') | replace('&', 'et') }}"
+          >
+            {{ cat }}
+          </a>
+        </li>
+        {% endfor %}
+      </ul>
+    </nav>
     <main>{% block content %}{% endblock %}</main>
 
     <footer>

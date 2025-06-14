@@ -44,6 +44,52 @@ def get_derniers_sites_global(limit=3):
     conn.close()
     return derniers_sites
 
+def get_categories():
+    conn = sqlite3.connect('base.db')
+    cur = conn.cursor()
+    cur.execute("SELECT DISTINCT categorie FROM sites WHERE status = 'valide'")
+    results = cur.fetchall()
+    conn.close()
+    return [row[0] for row in results if row[0]]
+
+def slugify(nom):
+    return nom.lower().replace(" ", "-").replace("&", "et")
+
+def get_nom_categorie_depuis_slug(slug):
+    conn = sqlite3.connect('base.db')
+    cur = conn.cursor()
+    cur.execute("SELECT DISTINCT categorie FROM sites WHERE status='valide'")
+    toutes = [row[0] for row in cur.fetchall()]
+    conn.close()
+    for cat in toutes:
+        if slugify(cat) == slug:
+            return cat
+    return None
+
+@app.route("/categorie/<slug>")
+def voir_categorie(slug):
+    nom_categorie = get_nom_categorie_depuis_slug(slug)
+    if not nom_categorie:
+        return render_template("404.html"), 404
+
+    conn = sqlite3.connect('base.db')
+    conn.row_factory = sqlite3.Row
+    cur = conn.cursor()
+    cur.execute("""
+       SELECT * FROM sites
+       WHERE categorie = ? AND status = 'valide'
+       ORDER BY en_vedette DESC, date_ajout DESC 
+    """, (nom_categorie,))
+    sites = cur.fetchall()
+    conn.close()
+
+    return render_template(
+        "categorie.html",
+        nom_categorie=nom_categorie,
+        sites=sites
+    )
+
+
 @app.route("/nouveaux-sites")
 def nouveaux_sites():
     conn = sqlite3.connect('base.db')
@@ -70,29 +116,6 @@ def accueil():
 
 
 
-@app.route("/categorie/<nom_categorie>")
-def voir_categorie(nom_categorie):
-    conn = sqlite3.connect('base.db')
-    conn.row_factory = sqlite3.Row
-    cur = conn.cursor()
-    
-    cur.execute("""
-       SELECT * FROM sites
-       WHERE categorie = ? AND status = 'valide'
-       ORDER BY en_vedette DESC, date_ajout DESC 
-    """, (nom_categorie,))
-    
-    sites = cur.fetchall()
-    conn.close()
-
-    derniers_sites = get_derniers_sites_global()
-    
-    return render_template(
-        "categorie.html",
-        nom_categorie=nom_categorie,
-        sites=sites,
-        derniers_sites=derniers_sites
-    )
 
 @app.route("/mentions-legales")
 def mentions_legales():
@@ -108,6 +131,10 @@ def service_worker():
 @app.route('/googlee4ac9f96a74612c3.html')
 def google_verification():
     return app.send_static_file('googlee4ac9f96a74612c3.html')
+
+@app.context_processor
+def inject_categories():
+    return {"categories": get_categories()}
 
 if __name__ == "__main__":
     app.run(debug=True)

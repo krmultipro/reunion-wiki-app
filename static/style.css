@@ -177,3 +177,44 @@ footer a:hover {
   outline: 0.125rem solid var(--vert-fougere);
   outline-offset: 0.005rem;
 }
+.main-nav ul {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 0;
+  margin: 1.2rem 0;
+  justify-content: center;
+}
+
+.main-nav ul {
+  list-style: none;
+  padding: 0;
+  margin: 1.2rem 0;
+  display: flex;
+  flex-wrap: wrap; /*permet d'aller à la ligne */
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.main-nav li {
+  margin: 0;
+}
+
+.main-nav a {
+  display: inline-block;
+  background-color: var(--vert-fougere);
+  color: var(--blanc);
+  text-decoration: none;
+  padding: 0.6rem 1rem;
+  border-radius: 0.5rem;
+  font-weight: bold;
+  white-space: nowrap; /*empêche les retours à la ligne dans les boutons */
+  box-shadow: 0.2rem 0.2rem 0.5rem rgba(0, 0, 0, 0.1);
+  font-size: 0.95rem;
+}
+
+.main-nav a:hover {
+  background-color: var(--lava);
+  color: var(--blanc);
+}
