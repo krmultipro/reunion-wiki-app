@@ -17,10 +17,10 @@ Wiki{% endblock %} {% block header_content %}
       </a>
       <small>
         <a href="/categorie/{{ site['categorie'] }}" style="font-style: italic">
-          📂 {{ site['categorie'] }}
+          - {{ site['categorie'] }}
         </a> </small
       ><br />
-      <small>{{ site['description'][:80] }}...</small>
+      <small>{{ site['description'][:80] }}</small>
     </li>
     {% endfor %}
   </ul>
