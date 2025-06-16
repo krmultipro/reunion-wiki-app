@@ -134,7 +134,15 @@ def google_verification():
 
 @app.context_processor
 def inject_categories():
-    return {"categories": get_categories()}
+    return {
+        "categories": get_categories(),
+        "categories_slug": get_categories_slug()
+    }
+
+
+def get_categories_slug():
+    categories = get_categories()
+    return {cat: slugify(cat) for cat in categories}
 
 if __name__ == "__main__":
     app.run(debug=True)

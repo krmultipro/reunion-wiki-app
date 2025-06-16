@@ -218,3 +218,46 @@ footer a:hover {
   background-color: var(--lava);
   color: var(--blanc);
 }
+.seo-top-sites {
+  background-color: var(--blanc);
+  border-radius: 0.5rem;
+  padding: 1.1rem;
+  margin: 1.5rem 0rem;
+  box-shadow: 0.6rem 0.4rem 1.2rem var(--vert-fougere);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--gris-texte);
+}
+
+.seo-top-sites:hover {
+  box-shadow: 0.6rem 0.4rem 1.2rem var(--lava);
+}
+
+.seo-top-sites h2 {
+  text-align: center;
+  font-family: "Montserrat", sans-serif;
+  font-weight: 900;
+  font-size: 1.4rem;
+  color: var(--vert-fougere);
+  margin-bottom: 1rem;
+}
+
+.seo-top-sites ul {
+  padding-left: 1.2rem;
+  list-style-type: none;
+}
+
+.seo-top-sites li {
+  margin-bottom: 0.6rem;
+}
+
+.seo-top-sites a {
+  color: var(--vert-fougere);
+  font-weight: bold;
+  text-decoration: none;
+}
+
+.seo-top-sites a:hover {
+  color: var(--lava);
+  text-decoration: underline;
+}

@@ -1,6 +1,6 @@
 <!-- templates/index.html -->
-{% extends "base.html" %} {% block title %}Sites utiles de La Réunion - Réunion
-Wiki{% endblock %} {% block header_content %}
+{% extends "base.html" %} {% block title %}Réunion Wiki - Tous les sites utiles
+à La Réunion.{% endblock %} {% block header_content %}
 <p>
   Bienvenue sur <strong>Réunion Wiki 🌴</strong><br />
   Un répertoire <em>simple, rapide et local</em> pour accéder facilement aux
@@ -48,5 +48,32 @@ Wiki{% endblock %} {% block header_content %}
     </ul>
   </div>
   {% endfor %}
+  <section class="seo-top-sites">
+    <h2>Les meilleurs sites internet de La Réunion</h2>
+    <p>
+      Réunion Wiki sélectionne les sites les plus utiles pour la vie quotidienne
+      à La Réunion, classés par thème :
+    </p>
+    <ul>
+      {% for cat in categories %}
+      <li>
+        <a href="/categorie/{{ categories_slug[cat] }}">{{ cat }}</a> : {% if
+        "emploi" in cat|lower %} offres d'emploi, formations locales, insertion
+        {% elif "culture" in cat|lower %} musique, événements, musées, sorties
+        {% elif "nourriture" in cat|lower %} recettes péi, producteurs, restos,
+        marchés {% elif "transport" in cat|lower %} bus, covoiturage, horaires,
+        routes {% elif "météo" in cat|lower or "meteo" in cat|lower %} cyclone,
+        vigilance, météo en temps réel {% elif "actualités" in cat|lower or
+        "actualites" in cat|lower %} infos locales, presse, médias réunionnais
+        {% elif "achat" in cat|lower %} petites annonces, e-commerce, bons plans
+        locaux {% else %} sites utiles à découvrir {% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+    <p>
+      Ce portail est mis à jour régulièrement avec des sites fiables, faciles à
+      utiliser et 100% réunionnais 🌴
+    </p>
+  </section>
 </div>
 {% endblock %}
