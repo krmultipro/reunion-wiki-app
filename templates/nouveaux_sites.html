@@ -9,7 +9,10 @@ Wiki{% endblock %} {% block content %}
         <strong>{{ site['nom'] }}</strong> </a
       ><br />
       <small>
-        <a href="/categorie/{{ site['categorie'] }}" style="font-style: italic">
+        <a
+          href="/categorie/{{ categories_slug[site['categorie']] }}"
+          style="font-style: italic"
+        >
           {{ site['categorie'] }}
         </a> </small
       ><br />
