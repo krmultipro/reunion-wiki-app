@@ -7,30 +7,7 @@
   sites essentiels de La Réunion.
 </p>
 {% endblock %} {% block content %}
-<div class="nouveaux-sites">
-  <h2><a href="/nouveaux-sites">📌 Derniers sites ajoutés</a></h2>
-  <ul>
-    {% for site in derniers_sites %}
-    <li>
-      <a href="{{ site['lien'] }}" target="_blank" rel="noopener noreferrer">
-        <strong>{{ site['nom'] }}</strong>
-      </a>
-      <small>
-        <a
-          href="/categorie/{{ categories_slug[site['categorie']] }}"
-          style="font-style: italic"
-        >
-          - {{ site['categorie'] }}
-        </a> </small
-      ><br />
-      <small>{{ site['description'][:80] }}</small>
-    </li>
-    {% endfor %}
-  </ul>
-  <div id="bouton_plus">
-    <a href="/nouveaux-sites">Découvrir plus de sites</a>
-  </div>
-</div>
+
 <div class="categories">
   {% for categorie, sites in data.items() %}
   <div class="category">
@@ -55,6 +32,30 @@
     </ul>
   </div>
   {% endfor %}
+  <div class="nouveaux-sites">
+    <h2><a href="/nouveaux-sites">📌 Derniers sites ajoutés</a></h2>
+    <ul>
+      {% for site in derniers_sites %}
+      <li>
+        <a href="{{ site['lien'] }}" target="_blank" rel="noopener noreferrer">
+          <strong>{{ site['nom'] }}</strong>
+        </a>
+        <small>
+          <a
+            href="/categorie/{{ categories_slug[site['categorie']] }}"
+            style="font-style: italic"
+          >
+            - {{ site['categorie'] }}
+          </a> </small
+        ><br />
+        <small>{{ site['description'][:80] }}</small>
+      </li>
+      {% endfor %}
+    </ul>
+    <div id="bouton_plus">
+      <a href="/nouveaux-sites">Découvrir plus de sites</a>
+    </div>
+  </div>
   <section class="seo-top-sites">
     <h2>Les meilleurs sites internet de La Réunion</h2>
     <p>

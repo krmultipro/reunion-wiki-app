@@ -1,7 +1,7 @@
 {% extends "base.html" %} {% block title %}{{ nom_categorie }} - Réunion Wiki{%
 endblock %} {% block content %}
 <div class="category">
-  <h2>📂 {{ nom_categorie }}</h2>
+  <h2>{{ nom_categorie }}</h2>
 
   <ul>
     {% for site in sites %}
