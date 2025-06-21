@@ -80,7 +80,6 @@ Réunion Wiki référence les meilleurs sites internet de La Réunion : culture,
     <nav class="main-nav">
       <ul>
         <li><a href="/">Accueil</a></li>
-        <li><a href="/nouveaux-sites">Nouveaux sites</a></li>
         {% for cat in categories %}
         <li>
           <a
@@ -90,6 +89,7 @@ Réunion Wiki référence les meilleurs sites internet de La Réunion : culture,
           </a>
         </li>
         {% endfor %}
+        <li><a href="/nouveaux-sites">📌 Derniers sites ajoutés</a></li>
       </ul>
     </nav>
     <main>{% block content %}{% endblock %}</main>
