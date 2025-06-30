@@ -49,7 +49,7 @@ self.addEventListener("fetch", (event) => {
         response ||
         fetch(event.request).catch(() => {
           // Optionnel : fallback si la requête échoue (ex : offline)
-          // Tu peux ici retourner une page offline ou un message HTML basique
+          // possiblité de retourner une page offline ou un message HTML basique
         })
       );
     })
