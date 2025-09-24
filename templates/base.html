@@ -77,8 +77,13 @@ Réunion Wiki référence les meilleurs sites internet de La Réunion : culture,
       <h1 class="site_title"><a href="/">Réunion Wiki</a></h1>
       {% block header_content %}{% endblock %}
     </header>
+    <!-- Navigation principale -->
     <nav class="main-nav">
-      <ul>
+      <!-- Bouton burger affiché seulement en mobile -->
+      <button class="menu-toggle" aria-label="Ouvrir le menu">☰</button>
+
+      <!-- Liste des liens -->
+      <ul class="nav-links">
         <li><a href="/">Accueil</a></li>
         {% for cat in categories %}
         <li>
@@ -89,7 +94,7 @@ Réunion Wiki référence les meilleurs sites internet de La Réunion : culture,
           </a>
         </li>
         {% endfor %}
-        <li><a href="/nouveaux-sites">📌 Derniers sites ajoutés</a></li>
+        <li><a href="/nouveaux-sites">Derniers sites ajoutés</a></li>
       </ul>
     </nav>
     <main>{% block content %}{% endblock %}</main>
@@ -167,6 +172,16 @@ Réunion Wiki référence les meilleurs sites internet de La Réunion : culture,
           });
         });
       }
+    </script>
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        const toggle = document.querySelector(".menu-toggle");
+        const navLinks = document.querySelector(".nav-links");
+
+        toggle.addEventListener("click", function () {
+          navLinks.classList.toggle("active");
+        });
+      });
     </script>
   </body>
 </html>

@@ -46,15 +46,16 @@ internet utiles de La Réunion.{% endblock %} {% block header_content %}
             style="font-style: italic"
           >
             - {{ site['categorie'] }}
-          </a> </small
-        ><br />
-        <small>{{ site['description'][:80] }}</small>
+          </a>
+        </small>
+        <br />
+        <small>{{ site['description']| truncate(80, True, '...') }}</small>
       </li>
       {% endfor %}
+      <div id="bouton_plus">
+        <a href="/nouveaux-sites">Découvrir plus de sites</a>
+      </div>
     </ul>
-    <div id="bouton_plus">
-      <a href="/nouveaux-sites">Découvrir plus de sites</a>
-    </div>
   </div>
   <section class="seo-top-sites">
     <h2>Les meilleurs sites internet de La Réunion</h2>

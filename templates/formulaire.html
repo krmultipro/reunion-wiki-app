@@ -1,0 +1,59 @@
+{% extends "base.html" %} {% block title %} {% endblock %} {% block content %}
+
+<div class="form-container">
+  <div class="title">Formulaire</div>
+  <form method="post" action="/formulaire">
+    <div class="site-details">
+      <div class="input-box">
+        <span class="details">Nom du site : </span>
+        <input
+          type="text"
+          id="nom"
+          name="nom"
+          placeholder="Entrez le nom du site"
+          required
+        />
+      </div>
+      <div class="input-box">
+        <span class="details">Lien du site</span>
+        <input
+          type="text"
+          id="lien"
+          name="lien"
+          placeholder="Entrez le lien du site"
+          required
+        />
+      </div>
+      <div class="input-box">
+        <span class="details">Catégorie</span>
+        <select name="categorie" id="categorie">
+          {% for cat in categories %}
+          <option value="{{ cat }}">{{ cat }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="input-box">
+        <span class="details">Ville</span>
+        <input
+          type="text"
+          id="vile"
+          name="ville"
+          placeholder="Entrez la ville du site"
+        />
+      </div>
+      <div class="input-box">
+        <span class="details">Prénom (ou pseudo)</span>
+        <input
+          type="text"
+          id="prenom"
+          name="prenom"
+          placeholder="Entrez votre prénom ou pseudo"
+        />
+      </div>
+    </div>
+    <div class="button">
+      <input type="submit" value="Envoyer" />
+    </div>
+  </form>
+</div>
+{% endblock %}
