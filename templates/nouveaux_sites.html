@@ -17,6 +17,7 @@ Wiki{% endblock %} {% block content %}
         </a> </small
       ><br />
       <small>{{ site['description'][:100] }}</small>
+      <small> | Ajouté le {{ site['date_ajout']|format_date }}</small>
     </li>
 
     {% endfor %}

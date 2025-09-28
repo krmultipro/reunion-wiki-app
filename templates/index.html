@@ -50,6 +50,7 @@ internet utiles de La Réunion.{% endblock %} {% block header_content %}
         </small>
         <br />
         <small>{{ site['description']| truncate(80, True, '...') }}</small>
+        <small> | Ajouté le {{ site['date_ajout']|format_date }}</small>
       </li>
       {% endfor %}
       <div id="bouton_plus">

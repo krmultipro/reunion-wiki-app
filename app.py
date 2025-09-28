@@ -1,10 +1,31 @@
 # -*- coding: utf-8 -*-
 from flask import Flask, render_template, make_response, send_from_directory, request, flash, url_for, redirect
+from datetime import datetime
 import sqlite3
 
 app = Flask(__name__)
 
 app.secret_key = "b85364b2a18a969a63390e2f3377d2b5"
+
+def format_date(value, fmt="%d/%m/%Y"):
+    if not value:
+        return ""
+    if isinstance(value, str):
+        for pat in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%d"):
+            try:
+                value = datetime.strptime(value, pat)
+                break
+            except ValueError:
+                continue
+    return value.strftime(fmt)
+
+# ENREGISTREMENT (faites l’un OU l’autre)
+app.jinja_env.filters["format_date"] = format_date
+# ou:
+# @app.template_filter("format_date")
+# def format_date_filter(value, fmt="%d/%m/%Y"): ...
+
+# ... les routes en dessous
 
 
 #Recupere les sites pre selectionnes pour etre affiches
@@ -45,7 +66,7 @@ def get_derniers_sites_global(limit=3):
 
 #recupere les derniers sites ajoutes par date d'ajout pour la page index
     cur.execute("""
-        SELECT nom, lien, categorie, description
+        SELECT nom, lien, categorie, description, date_ajout
         FROM sites
         WHERE status = 'valide'
         ORDER BY date_ajout DESC
@@ -202,3 +223,6 @@ def get_categories_slug():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
+
+
