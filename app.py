@@ -3,6 +3,10 @@ from flask import Flask, render_template, make_response, send_from_directory, re
 from datetime import datetime
 import sqlite3
 
+# >>> AJOUT : imports utilitaires pour un slug ASCII propre (sans emojis/accents)
+import re
+import unicodedata
+
 app = Flask(__name__)
 
 app.secret_key = "b85364b2a18a969a63390e2f3377d2b5"
@@ -90,7 +94,19 @@ def get_categories():
 
 #slug pour rendre compatible le nom de categorie dans la barre d'adresse
 def slugify(nom):
-    return nom.lower().replace(" ", "-").replace("&", "et")
+    # >>> AJOUT : slug ASCII propre et stable (supprime emojis/accents/symboles)
+    # - garde uniquement lettres/chiffres/espaces/-/_
+    # - remplace '&' par 'et' (cohérent avec ton code existant)
+    nom = nom.replace("&", "et")
+    # retire tout caractère non utile (dont emojis) sauf lettres/chiffres/espace/-/_
+    nom = ''.join(ch for ch in nom if ch.isalnum() or ch.isspace() or ch in "-_")
+    # décompose les accents, puis convertit en ASCII
+    nom = unicodedata.normalize('NFKD', nom).encode('ascii', 'ignore').decode('ascii')
+    nom = nom.lower().strip()
+    nom = re.sub(r'[\s_]+', '-', nom)      # espaces/underscores -> tirets
+    nom = re.sub(r'[^a-z0-9-]', '', nom)   # supprime le reste
+    nom = re.sub(r'-{2,}', '-', nom).strip('-')  # normalise tirets
+    return nom
 
 #obtenir le nom de la categorie depuis le slug 
 def get_nom_categorie_depuis_slug(slug):
@@ -119,6 +135,13 @@ def voir_categorie(slug):
     if not nom_categorie:
         return render_template("404.html"), 404
 
+    # >>> AJOUT SEO : calcule le slug canonique à partir du nom en BDD
+    canonical_slug = slugify(nom_categorie)
+
+    # >>> AJOUT SEO : redirection 301 si l'URL ne correspond pas au slug canonique (emoji, majuscules, etc.)
+    if slug != canonical_slug:
+        return redirect(url_for('voir_categorie', slug=canonical_slug), code=301)
+
     conn = sqlite3.connect('base.db')
     conn.row_factory = sqlite3.Row
     cur = conn.cursor()
@@ -130,11 +153,24 @@ def voir_categorie(slug):
     """, (nom_categorie,))
     sites = cur.fetchall()
     conn.close()
+
+    # >>> AJOUT SEO : metas dynamiques (utilisées dans categorie.html via les blocks Jinja)
+    seo_title = f"{nom_categorie} à La Réunion – Réunion Wiki"
+    seo_description = (
+        f"Découvrez les meilleurs sites {nom_categorie.lower()} : infos utiles et adresses à La Réunion."
+    )
+    canonical = url_for('voir_categorie', slug=canonical_slug, _external=True)
+
     #return sur le html
     return render_template(
         "categorie.html",
         nom_categorie=nom_categorie,
-        sites=sites
+        sites=sites,
+        # >>> AJOUT SEO : passe les variables au template
+        slug=canonical_slug,
+        seo_title=seo_title,
+        seo_description=seo_description,
+        canonical=canonical
     )
 
 
@@ -219,10 +255,8 @@ def inject_categories():
 
 def get_categories_slug():
     categories = get_categories()
+    # >>> AJOUT : garantit que les slugs affichés dans les menus/lien sont bien en ASCII canonique
     return {cat: slugify(cat) for cat in categories}
 
 if __name__ == "__main__":
     app.run(debug=True)
-
-
-

@@ -5,46 +5,68 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
+    <!-- SEO de base: 2 blocs UNIQUES, réutilisés partout -->
     <title>
-      {% block title %}Réunion Wiki - Les meilleurs sites internet utiles de La
-      Réunion.{% endblock %}
+      {% block seo_title %}Réunion Wiki - Sites internet utiles de La Réunion{%
+      endblock %}
     </title>
     <meta
       name="description"
-      content="{% block description %}
-Réunion Wiki référence les meilleurs sites internet de La Réunion : culture, emploi, services... Un portail pratique, rapide et 100% local.
-{% endblock %}"
+      content="{% block seo_description %}Accédez facilement aux sites réunionnais essentiels : culture, emploi, services, transports, météo et plus.{% endblock %}"
     />
-    <meta
-      name="keywords"
-      content="réunion, sites utiles, wiki, annuaire, internet, local, La Réunion"
-    />
-    <meta name="author" content="Réunion Wiki" />
 
-    <!-- Open Graph (partage réseaux sociaux) -->
-    <meta
-      property="og:title"
-      content="{% block og_title %}Réunion Wiki - Sites internet utiles de La Réunion{% endblock %}"
+    <!-- Canonical -->
+    <link
+      rel="canonical"
+      href="{% block canonical %}{{ request.base_url }}{% endblock %}"
     />
+
+    <!-- Open Graph -->
+    <meta property="og:site_name" content="Réunion Wiki" />
+    <meta property="og:locale" content="fr_FR" />
+    <meta property="og:title" content="{{ self.seo_title() }}" />
+    <meta property="og:description" content="{{ self.seo_description() }}" />
     <meta
-      property="og:description"
-      content="{% block og_description %}Accédez facilement à tous les sites internet réunionnais essentiels classés par catégorie.{% endblock %}"
+      property="og:url"
+      content="{% block og_url %}{{ request.base_url }}{% endblock %}"
     />
-    <meta property="og:url" content="{{ request.url }}" />
     <meta property="og:type" content="website" />
     <meta
       property="og:image"
-      content="{{ url_for('static', filename='logo.png') }}"
+      content="{{ url_for('static', filename='logo.png', _external=True) }}"
+    />
+    <meta property="og:image:alt" content="Logo Réunion Wiki" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="{{ self.seo_title() }}" />
+    <meta name="twitter:description" content="{{ self.seo_description() }}" />
+    <meta
+      name="twitter:image"
+      content="{{ url_for('static', filename='logo.png', _external=True) }}"
     />
 
-    <!-- Favicon et styles -->
+    <!-- Favicon / PWA -->
     <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" />
+    <link
+      rel="apple-touch-icon"
+      href="{{ url_for('static', filename='icons/favicon.ico') }}"
+    />
+    <link
+      rel="manifest"
+      href="{{ url_for('static', filename='manifest.webmanifest') }}"
+    />
+    <meta name="theme-color" content="#009688" />
+
+    <!-- CSS -->
     <link
       rel="stylesheet"
       href="{{ url_for('static', filename='style.css') }}?v=2"
     />
 
-    <!-- Fonts -->
+    <!-- Fonts (perf) -->
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link
       href="https://fonts.googleapis.com/css2?family=Montserrat:wght@900&display=swap"
       rel="stylesheet"
@@ -58,17 +80,6 @@ Réunion Wiki référence les meilleurs sites internet de La Réunion : culture,
       rel="stylesheet"
     />
 
-    <!-- PWA -->
-    <link
-      rel="manifest"
-      href="{{ url_for('static', filename='manifest.webmanifest') }}"
-    />
-    <meta name="theme-color" content="#009688" />
-    <link
-      rel="apple-touch-icon"
-      href="{{ url_for('static', filename='icons/favicon.ico') }}"
-    />
-
     {% block head %}{% endblock %}
   </head>
 
@@ -77,6 +88,7 @@ Réunion Wiki référence les meilleurs sites internet de La Réunion : culture,
       <h1 class="site_title"><a href="/">Réunion Wiki</a></h1>
       {% block header_content %}{% endblock %}
     </header>
+
     <!-- Navigation principale -->
     <nav class="main-nav">
       <!-- Bouton burger affiché seulement en mobile -->
@@ -84,19 +96,41 @@ Réunion Wiki référence les meilleurs sites internet de La Réunion : culture,
 
       <!-- Liste des liens -->
       <ul class="nav-links">
-        <li><a href="/">Accueil</a></li>
-        {% for cat in categories %}
         <li>
           <a
-            href="/categorie/{{ cat | lower | replace(' ', '-') | replace('&', 'et') }}"
+            href="{{ url_for('accueil') }}"
+            class="{{ 'active' if request.path == url_for('accueil') else '' }}"
+            aria-current="{{ 'page' if request.path == url_for('accueil') else '' }}"
+          >
+            Accueil
+          </a>
+        </li>
+
+        {% for cat in categories %} {% set slug = categories_slug[cat] %} {% set
+        cat_url = url_for('voir_categorie', slug=slug) %}
+        <li>
+          <a
+            href="{{ cat_url }}"
+            class="{{ 'active' if request.path.startswith(cat_url) else '' }}"
+            aria-current="{{ 'page' if request.path.startswith(cat_url) else '' }}"
           >
             {{ cat }}
           </a>
         </li>
         {% endfor %}
-        <li><a href="/nouveaux-sites">Derniers sites ajoutés</a></li>
+
+        <li>
+          <a
+            href="{{ url_for('nouveaux_sites') }}"
+            class="{{ 'active' if request.path == url_for('nouveaux_sites') else '' }}"
+            aria-current="{{ 'page' if request.path == url_for('nouveaux_sites') else '' }}"
+          >
+            Derniers sites ajoutés
+          </a>
+        </li>
       </ul>
     </nav>
+
     <main>{% block content %}{% endblock %}</main>
 
     <footer>
