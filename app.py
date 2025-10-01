@@ -205,9 +205,9 @@ def service_worker():
     return response    
 
 
-@app.route('/googlee4ac9f96a74612c3.html')
+@app.route('/google87e16279463c4021.html')
 def google_verification():
-    return app.send_static_file('googlee4ac9f96a74612c3.html')
+    return app.send_static_file('google87e16279463c4021.html')
 
 
 @app.route("/formulaire", methods=["GET", "POST"])
