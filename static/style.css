@@ -380,3 +380,13 @@ form .button input:hover {
     width: 0;
   }
 }
+@media (min-width: 850px) {
+  .categories {
+    display: flex;
+    justify-content: space-around;
+    flex-wrap: wrap;
+  }
+  .category {
+    width: 25%;
+  }
+}
