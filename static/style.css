@@ -390,3 +390,38 @@ form .button input:hover {
     width: 25%;
   }
 }
+category_page {
+}
+.category_page {
+  background-color: var(--blanc);
+  padding: 1.1rem;
+  margin: 1.2rem 0rem 1.2rem 0rem;
+  border-radius: 0.5rem;
+  box-shadow: 0.6rem 0.4rem 1.2rem var(--vert-fougere); /* 2px 5px */
+}
+.category_page:hover {
+  box-shadow: 0.6rem 0.4rem 1.2rem var(--lava); /* 2px 5px */
+}
+.category_page ul {
+  list-style: none;
+  padding-left: 0.7rem;
+}
+.category_page li {
+  margin-bottom: 0.5rem;
+  line-height: 1.5;
+}
+.category_page li a {
+  color: var(--vert-fougere);
+  font-weight: bold;
+  text-decoration: none;
+}
+
+.category_page a:hover {
+  text-decoration: none;
+  color: var(--lava);
+}
+
+.category_page a:focus {
+  outline: 0.125rem solid var(--vert-fougere);
+  outline-offset: 0.005rem;
+}
