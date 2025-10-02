@@ -390,8 +390,6 @@ form .button input:hover {
     width: 25%;
   }
 }
-category_page {
-}
 .category_page {
   background-color: var(--blanc);
   padding: 1.1rem;
@@ -424,4 +422,160 @@ category_page {
 .category_page a:focus {
   outline: 0.125rem solid var(--vert-fougere);
   outline-offset: 0.005rem;
+}
+
+.faq a:focus {
+  outline: 0.125rem solid var(--vert-fougere);
+  outline-offset: 0.005rem;
+}
+/* ===== FAQ (details/summary) ===== */
+:root {
+  --faq-maxw: 900px;
+  --faq-radius: 14px;
+  --faq-pad: 14px;
+  --faq-gap: 10px;
+  --faq-bg: #ffffff;
+  --faq-bg-alt: #f6f7f9;
+  --faq-text: #212529;
+  --faq-muted: #6c757d;
+  --faq-border: #e4e7eb;
+  --faq-accent: #1f6feb; /* lien / focus */
+}
+
+.faq {
+  max-width: var(--faq-maxw);
+  margin: 24px auto 56px;
+  color: var(--faq-text);
+}
+
+.faq > details {
+  background: var(--faq-bg);
+  border: 1px solid var(--faq-border);
+  border-radius: var(--faq-radius);
+  margin: 0 0 12px 0;
+  overflow: hidden; /* arrondis propres */
+  transition: border-color 0.2s ease;
+}
+
+.faq > details:hover {
+  border-color: #d5d9df;
+}
+
+.faq > details[open] {
+  background: var(--faq-bg-alt);
+}
+
+/* Résumé (question) */
+.faq > details > summary {
+  list-style: none; /* masque puce */
+  cursor: pointer;
+  padding: calc(var(--faq-pad) + 2px) calc(var(--faq-pad) + 6px);
+  font-weight: 600;
+  line-height: 1.3;
+  position: relative;
+  outline: none;
+}
+
+/* Masque le triangle par défaut Chromium/WebKit */
+.faq > details > summary::-webkit-details-marker {
+  display: none;
+}
+
+/* Icône chevron CSS (pas d'image, pas d’emoji) */
+.faq > details > summary::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid var(--faq-muted);
+  border-bottom: 2px solid var(--faq-muted);
+  transform: rotate(-45deg);
+  display: inline-block;
+  margin-right: 10px;
+  vertical-align: middle;
+  transition: transform 0.2s ease;
+}
+
+/* Rotation du chevron quand ouvert */
+.faq > details[open] > summary::before {
+  transform: rotate(45deg);
+  border-color: var(--faq-accent);
+}
+
+/* Focus clavier visible et accessible */
+.faq > details > summary:focus {
+  box-shadow: 0 0 0 3px rgba(31, 111, 235, 0.2) inset;
+  outline: 2px solid transparent;
+  border-radius: var(--faq-radius);
+}
+
+/* Contenu (réponse) */
+.faq > details > div {
+  padding: var(--faq-pad) calc(var(--faq-pad) + 6px) calc(var(--faq-pad) + 8px);
+  border-top: 1px solid var(--faq-border);
+  line-height: 1.6;
+  font-size: 0.98rem;
+}
+
+/* Paragraphes et petites infos */
+.faq p {
+  margin: 0 0 10px;
+}
+.faq small,
+.faq .muted {
+  color: var(--faq-muted);
+}
+
+/* Liens internes */
+.faq a {
+  color: var(--vert-fougere);
+  font-weight: bold;
+  text-decoration: none;
+}
+.faq a:hover {
+  text-decoration: none;
+  color: var(--lava);
+}
+
+/* Titre de page FAQ */
+h1 {
+  margin: 12px auto 8px;
+  font-size: clamp(1.6rem, 1.2rem + 1.2vw, 2.1rem);
+  line-height: 1.2;
+}
+.faq-intro {
+  max-width: var(--faq-maxw);
+  margin: 0 auto 18px;
+  color: var(--faq-muted);
+}
+
+/* Mode sombre basique si tu en as un via data-theme="dark" */
+:root[data-theme="dark"] {
+  --faq-bg: #111418;
+  --faq-bg-alt: #0d1117;
+  --faq-text: #e6edf3;
+  --faq-muted: #9aa6b2;
+  --faq-border: #1f2630;
+  --faq-accent: #58a6ff;
+}
+
+/* Réduction des animations si l'utilisateur préfère */
+@media (prefers-reduced-motion: reduce) {
+  .faq * {
+    transition: none !important;
+  }
+}
+
+/* Impression (ouvre tout pour l’utilisateur) */
+@media print {
+  .faq > details {
+    border: none;
+    background: transparent;
+  }
+  .faq > details > summary::before {
+    content: none;
+  }
+  .faq > details[open] > summary,
+  .faq > details > summary {
+    font-weight: 700;
+  }
 }

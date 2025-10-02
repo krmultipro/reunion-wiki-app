@@ -11,6 +11,12 @@ app = Flask(__name__)
 
 app.secret_key = "b85364b2a18a969a63390e2f3377d2b5"
 
+@app.route("/faq")
+def faq():
+    return render_template("faq.html")
+
+
+
 def format_date(value, fmt="%d/%m/%Y"):
     if not value:
         return ""
