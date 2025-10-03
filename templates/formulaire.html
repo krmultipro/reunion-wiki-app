@@ -1,59 +1,146 @@
-{% extends "base.html" %} {% block title %} {% endblock %} {% block content %}
+{% extends "base.html" %}
 
+{% block seo_title %}Proposer un site - Réunion Wiki{% endblock %}
+{% block seo_description %}Proposez un site utile pour La Réunion. Votre suggestion sera vérifiée avant publication.{% endblock %}
+
+{% block content %}
 <div class="form-container">
-  <div class="title">Formulaire</div>
+  <div class="title">Proposer un site</div>
+  
+  <!-- SÉCURITÉ : Affichage des messages flash avec types -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <div class="flash-message flash-{{ category }}">
+          {{ message }}
+        </div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+  
+  <!-- SÉCURITÉ : Formulaire avec protection CSRF -->
   <form method="post" action="/formulaire">
+    {{ form.hidden_tag() }}
+    
     <div class="site-details">
       <div class="input-box">
-        <span class="details">Nom du site : </span>
-        <input
-          type="text"
-          id="nom"
-          name="nom"
-          placeholder="Entrez le nom du site"
-          required
-        />
+        <span class="details">{{ form.nom.label }}</span>
+        {{ form.nom(class="form-control", placeholder="Ex: Météo France Réunion") }}
+        {% if form.nom.errors %}
+          <div class="field-errors">
+            {% for error in form.nom.errors %}
+              <span class="error">{{ error }}</span>
+            {% endfor %}
+          </div>
+        {% endif %}
       </div>
+      
       <div class="input-box">
-        <span class="details">Lien du site</span>
-        <input
-          type="text"
-          id="lien"
-          name="lien"
-          placeholder="Entrez le lien du site"
-          required
-        />
+        <span class="details">{{ form.lien.label }}</span>
+        {{ form.lien(class="form-control", placeholder="https://example.com") }}
+        {% if form.lien.errors %}
+          <div class="field-errors">
+            {% for error in form.lien.errors %}
+              <span class="error">{{ error }}</span>
+            {% endfor %}
+          </div>
+        {% endif %}
       </div>
+      
       <div class="input-box">
-        <span class="details">Catégorie</span>
-        <select name="categorie" id="categorie">
-          {% for cat in categories %}
-          <option value="{{ cat }}">{{ cat }}</option>
-          {% endfor %}
-        </select>
+        <span class="details">{{ form.categorie.label }}</span>
+        {{ form.categorie(class="form-control") }}
+        {% if form.categorie.errors %}
+          <div class="field-errors">
+            {% for error in form.categorie.errors %}
+              <span class="error">{{ error }}</span>
+            {% endfor %}
+          </div>
+        {% endif %}
       </div>
+      
       <div class="input-box">
-        <span class="details">Ville</span>
-        <input
-          type="text"
-          id="vile"
-          name="ville"
-          placeholder="Entrez la ville du site"
-        />
+        <span class="details">{{ form.ville.label }}</span>
+        {{ form.ville(class="form-control", placeholder="Ex: Saint-Denis (optionnel)") }}
+        {% if form.ville.errors %}
+          <div class="field-errors">
+            {% for error in form.ville.errors %}
+              <span class="error">{{ error }}</span>
+            {% endfor %}
+          </div>
+        {% endif %}
       </div>
-      <div class="input-box">
-        <span class="details">Prénom (ou pseudo)</span>
-        <input
-          type="text"
-          id="prenom"
-          name="prenom"
-          placeholder="Entrez votre prénom ou pseudo"
-        />
+      
+      <div class="input-box full-width">
+        <span class="details">{{ form.description.label }}</span>
+        {{ form.description(class="form-control", rows="4", placeholder="Décrivez brièvement ce site et pourquoi il est utile...") }}
+        {% if form.description.errors %}
+          <div class="field-errors">
+            {% for error in form.description.errors %}
+              <span class="error">{{ error }}</span>
+            {% endfor %}
+          </div>
+        {% endif %}
       </div>
     </div>
+    
     <div class="button">
-      <input type="submit" value="Envoyer" />
+      <input type="submit" value="Proposer ce site" />
     </div>
   </form>
+  
+  <div id="bouton_plus">
+    <a href="/">← Retour à l'accueil</a>
+  </div>
 </div>
+
+<style>
+.flash-message {
+  padding: 1rem;
+  margin-bottom: 1rem;
+  border-radius: 8px;
+  font-weight: 500;
+}
+
+.flash-success {
+  background-color: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.flash-error {
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+.field-errors {
+  margin-top: 0.5rem;
+}
+
+.error {
+  color: var(--lava);
+  font-size: 0.9rem;
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+.full-width {
+  grid-column: 1 / -1;
+}
+
+.form-control {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-family: inherit;
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: var(--vert-fougere);
+  box-shadow: 0 0 0 2px rgba(11, 132, 87, 0.2);
+}
+</style>
 {% endblock %}

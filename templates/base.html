@@ -33,7 +33,7 @@
     <meta property="og:type" content="website" />
     <meta
       property="og:image"
-      content="{{ url_for('static', filename='logo.png', _external=True) }}"
+      content="{{ url_for('static', filename='icons/icon-512x512.png', _external=True) }}"
     />
     <meta property="og:image:alt" content="Logo Réunion Wiki" />
 
@@ -43,14 +43,14 @@
     <meta name="twitter:description" content="{{ self.seo_description() }}" />
     <meta
       name="twitter:image"
-      content="{{ url_for('static', filename='logo.png', _external=True) }}"
+      content="{{ url_for('static', filename='icons/icon-512x512.png', _external=True) }}"
     />
 
     <!-- Favicon / PWA -->
     <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" />
     <link
       rel="apple-touch-icon"
-      href="{{ url_for('static', filename='icons/favicon.ico') }}"
+      href="{{ url_for('static', filename='icons/icon-192x192.png') }}"
     />
     <link
       rel="manifest"
@@ -61,7 +61,7 @@
     <!-- CSS -->
     <link
       rel="stylesheet"
-      href="{{ url_for('static', filename='style.css') }}?v=2"
+      href="{{ url_for('static', filename='style.css') }}?v=6"
     />
 
     <!-- Fonts (perf) -->
@@ -92,10 +92,17 @@
     <!-- Navigation principale -->
     <nav class="main-nav">
       <!-- Bouton burger affiché seulement en mobile -->
-      <button class="menu-toggle" aria-label="Ouvrir le menu">☰</button>
+      <button
+        class="menu-toggle"
+        aria-label="Ouvrir le menu"
+        aria-expanded="false"
+        aria-controls="main-nav-links"
+      >
+        ☰
+      </button>
 
       <!-- Liste des liens -->
-      <ul class="nav-links">
+      <ul class="nav-links" id="main-nav-links">
         <li>
           <a
             href="{{ url_for('accueil') }}"
@@ -220,7 +227,8 @@
         const navLinks = document.querySelector(".nav-links");
 
         toggle.addEventListener("click", function () {
-          navLinks.classList.toggle("active");
+          const isOpen = navLinks.classList.toggle("active");
+          toggle.setAttribute("aria-expanded", isOpen ? "true" : "false");
         });
       });
     </script>

@@ -18,45 +18,71 @@ internet utiles de La Réunion.{% endblock %} {% block header_content %}
       {% for site in sites %}
       <li>
         <a href="{{site['lien']}}" target="_blank" rel="noopener noreferrer">
-          <strong>{{ site['nom'] }}</strong>{% if site['ville'] %} - {{
+          <strong>{{ site['nom'] }}</strong>{% if site['ville'] %} - 📍 {{
           site['ville'] }}{% endif %} ↗
         </a>
-        : {{ site['description'] }}
+        : {{ site['description']|truncate(80, True, '...') }}
       </li>
       {% endfor %}
-      <div id="bouton_plus">
-        <a href="/categorie/{{ categories_slug[categorie] }}"
-          >Découvrir plus de sites</a
-        >
-      </div>
+      <li>
+        <div id="bouton_plus">
+          <a href="/categorie/{{ categories_slug[categorie] }}"
+            >Découvrir plus de sites</a
+          >
+        </div>
+      </li>
     </ul>
   </div>
   {% endfor %}
-  <div class="nouveaux-sites">
-    <h2><a href="/nouveaux-sites">📌 Derniers sites ajoutés</a></h2>
-    <ul>
+  <div class="recent-sites-section">
+    <div class="section-header">
+      <h2>
+        <span class="section-icon">🆕</span>
+        <a href="/nouveaux-sites">Derniers sites ajoutés</a>
+      </h2>
+      <p class="section-subtitle">Les dernières découvertes de la communauté</p>
+    </div>
+
+    <div class="recent-sites-grid">
       {% for site in derniers_sites %}
-      <li>
-        <a href="{{ site['lien'] }}" target="_blank" rel="noopener noreferrer">
-          <strong>{{ site['nom'] }}</strong>
-        </a>
-        <small>
+      <div class="recent-site-card">
+        <div class="recent-site-header">
+          <a
+            href="{{ site['lien'] }}"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="recent-site-title"
+          >
+            {{ site['nom'] }}
+          </a>
+          <span class="recent-site-badge">Nouveau</span>
+        </div>
+
+        <div class="recent-site-meta">
           <a
             href="/categorie/{{ categories_slug[site['categorie']] }}"
-            style="font-style: italic"
+            class="recent-site-category"
           >
-            - {{ site['categorie'] }}
+            {{ site['categorie'] }}
           </a>
-        </small>
-        <br />
-        <small>{{ site['description']| truncate(80, True, '...') }}</small>
-        <small> | Ajouté le {{ site['date_ajout']|format_date }}</small>
-      </li>
-      {% endfor %}
-      <div id="bouton_plus">
-        <a href="/nouveaux-sites">Découvrir plus de sites</a>
+          <span class="recent-site-date"
+            >{{ site['date_ajout']|format_date }}</span
+          >
+        </div>
+
+        <p class="recent-site-description">
+          {{ site['description']| truncate(100, True, '...') }}
+        </p>
       </div>
-    </ul>
+      {% endfor %}
+    </div>
+
+    <div class="section-footer">
+      <a href="/nouveaux-sites" class="view-all-btn">
+        <span>Voir tous les nouveaux sites</span>
+        <span class="btn-arrow">→</span>
+      </a>
+    </div>
   </div>
   <section class="seo-top-sites">
     <h2>Les meilleurs sites internet de La Réunion</h2>

@@ -2,6 +2,11 @@
 from flask import Flask, render_template, make_response, send_from_directory, request, flash, url_for, redirect
 from datetime import datetime
 import sqlite3
+import os
+from forms import SiteForm
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from config import config
 
 # >>> AJOUT : imports utilitaires pour un slug ASCII propre (sans emojis/accents)
 import re
@@ -9,7 +14,79 @@ import unicodedata
 
 app = Flask(__name__)
 
-app.secret_key = "b85364b2a18a969a63390e2f3377d2b5"
+# CONFIGURATION : Chargement selon l'environnement
+env = os.getenv('FLASK_ENV', 'development')
+app.config.from_object(config.get(env, config['default']))
+
+# Configuration de la base de données
+DATABASE_PATH = app.config['DATABASE_PATH']
+
+# SÉCURITÉ : Rate limiting pour éviter le spam
+limiter = Limiter(
+    key_func=get_remote_address,
+    default_limits=[app.config['RATELIMIT_DEFAULT']]
+)
+limiter.init_app(app)
+
+# SÉCURITÉ : Fonction utilitaire pour gérer les connexions SQLite
+def get_db_connection():
+    """Retourne une connexion sécurisée à la base de données"""
+    try:
+        conn = sqlite3.connect(DATABASE_PATH)
+        conn.row_factory = sqlite3.Row
+        return conn
+    except sqlite3.Error as e:
+        app.logger.error(f"Erreur de connexion à la base de données: {e}")
+        return None
+
+# GESTION D'ERREURS : Pages d'erreur personnalisées
+@app.errorhandler(404)
+def page_not_found(e):
+    return render_template('404.html'), 404
+
+@app.errorhandler(500)
+def internal_server_error(e):
+    app.logger.error(f"Erreur serveur: {e}")
+    return render_template('500.html'), 500
+
+# PERFORMANCE : Headers de cache pour les réponses
+@app.after_request
+def add_cache_headers(response):
+    """Ajoute des headers de cache optimisés selon le type de contenu"""
+    if request.endpoint in ['static', 'service_worker']:
+        # Fichiers statiques : cache long
+        response.headers['Cache-Control'] = 'public, max-age=31536000'  # 1 an
+    elif request.endpoint in ['accueil', 'voir_categorie']:
+        # Pages dynamiques : cache court
+        response.headers['Cache-Control'] = 'public, max-age=300'  # 5 minutes
+    elif request.endpoint == 'formulaire':
+        # Formulaires : pas de cache
+        response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    
+    # SÉCURITÉ : Headers de sécurité
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'DENY'
+    response.headers['X-XSS-Protection'] = '1; mode=block'
+    
+    # SÉCURITÉ : CSP et HSTS uniquement en production
+    if env == 'production':
+        # CSP minimale; ajustable selon besoins (PWA, analytics, etc.)
+        csp = (
+            "default-src 'self'; "
+            "script-src 'self'; "
+            "style-src 'self' 'unsafe-inline'; "
+            "img-src 'self' data:; "
+            "connect-src 'self'; "
+            "font-src 'self' data:; "
+            "object-src 'none'; "
+            "base-uri 'self'; "
+            "frame-ancestors 'none'"
+        )
+        response.headers['Content-Security-Policy'] = csp
+        # HSTS (uniquement si HTTPS configuré côté serveur)
+        response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains; preload'
+    
+    return response
 
 @app.route("/faq")
 def faq():
@@ -38,65 +115,87 @@ app.jinja_env.filters["format_date"] = format_date
 # ... les routes en dessous
 
 
-#Recupere les sites pre selectionnes pour etre affiches
+# SÉCURITÉ : Récupère les sites pré-sélectionnés avec gestion d'erreurs
 def get_sites_en_vedette():
-    conn = sqlite3.connect('base.db')
-    conn.row_factory = sqlite3.Row
-    cur = conn.cursor()
-
-    #recupere les differentes categories dont au moins un site a le statut valide
-    cur.execute("""SELECT DISTINCT categorie 
-                FROM sites 
-                WHERE status = 'valide'
-                """)
-    categories = cur.fetchall()
+    """Récupère les sites en vedette par catégorie"""
+    conn = get_db_connection()
+    if not conn:
+        return {}
     
-    #recupere sites de chaque categorie avec le statut valide et dans la limite de 3 et return la dictionnaire data pour la page index
-    data = {}
-    for cat in categories:
-        nom_cat = cat["categorie"]
-        cur.execute("""
-            SELECT * 
-            FROM sites
-            WHERE categorie = ? AND status = 'valide' AND en_vedette = 1
-            ORDER BY date_ajout DESC
-            LIMIT 3         
-            
-        """, (nom_cat,))
-        data[nom_cat] = cur.fetchall()
-    
-    conn.close()
-    return data
+    try:
+        cur = conn.cursor()
 
-#recupere les derniers site dans la limite de 3
+        # Récupère les différentes catégories dont au moins un site a le statut valide
+        cur.execute("""SELECT DISTINCT categorie 
+                    FROM sites 
+                    WHERE status = 'valide'
+                    """)
+        categories = cur.fetchall()
+        
+        # Récupère sites de chaque catégorie avec le statut valide et dans la limite de 3
+        data = {}
+        for cat in categories:
+            nom_cat = cat["categorie"]
+            cur.execute("""
+                SELECT * 
+                FROM sites
+                WHERE categorie = ? AND status = 'valide' AND en_vedette = 1
+                ORDER BY date_ajout DESC
+                LIMIT 3         
+            """, (nom_cat,))
+            data[nom_cat] = cur.fetchall()
+        
+        return data
+    except sqlite3.Error as e:
+        app.logger.error(f"Erreur lors de la récupération des sites en vedette: {e}")
+        return {}
+    finally:
+        conn.close()
+
+# SÉCURITÉ : Récupère les derniers sites avec gestion d'erreurs
 def get_derniers_sites_global(limit=3):
-    conn = sqlite3.connect('base.db')
-    conn.row_factory = sqlite3.Row
-    cur = conn.cursor()
+    """Récupère les derniers sites ajoutés"""
+    conn = get_db_connection()
+    if not conn:
+        return []
+    
+    try:
+        cur = conn.cursor()
+        # Récupère les derniers sites ajoutés par date d'ajout pour la page index
+        cur.execute("""
+            SELECT nom, lien, categorie, description, date_ajout
+            FROM sites
+            WHERE status = 'valide'
+            ORDER BY date_ajout DESC
+            LIMIT ?
+        """, (limit,))
 
-#recupere les derniers sites ajoutes par date d'ajout pour la page index
-    cur.execute("""
-        SELECT nom, lien, categorie, description, date_ajout
-        FROM sites
-        WHERE status = 'valide'
-        ORDER BY date_ajout DESC
-        LIMIT ?
-    """, (limit,))
-
-    derniers_sites = cur.fetchall()
-    conn.close()
-    return derniers_sites
+        return cur.fetchall()
+    except sqlite3.Error as e:
+        app.logger.error(f"Erreur lors de la récupération des derniers sites: {e}")
+        return []
+    finally:
+        conn.close()
 
 
-#recupere les differentes categories ayant au moins un site valide
+# SÉCURITÉ : Récupère les catégories avec gestion d'erreurs
 def get_categories():
-    conn = sqlite3.connect('base.db')
-    cur = conn.cursor()
-    cur.execute("SELECT DISTINCT categorie FROM sites WHERE status = 'valide'")
-    results = cur.fetchall()
-    conn.close()
-    #pour chaque row dans results prends la premiere colonne (row[0]) si row[0] n'est pas vide
-    return [row[0] for row in results if row[0]]
+    """Récupère les différentes catégories ayant au moins un site valide"""
+    conn = get_db_connection()
+    if not conn:
+        return []
+    
+    try:
+        cur = conn.cursor()
+        cur.execute("SELECT DISTINCT categorie FROM sites WHERE status = 'valide'")
+        results = cur.fetchall()
+        # Pour chaque row dans results prends la première colonne (row[0]) si row[0] n'est pas vide
+        return [row[0] for row in results if row[0]]
+    except sqlite3.Error as e:
+        app.logger.error(f"Erreur lors de la récupération des catégories: {e}")
+        return []
+    finally:
+        conn.close()
 
 #slug pour rendre compatible le nom de categorie dans la barre d'adresse
 def slugify(nom):
@@ -116,7 +215,9 @@ def slugify(nom):
 
 #obtenir le nom de la categorie depuis le slug 
 def get_nom_categorie_depuis_slug(slug):
-    conn = sqlite3.connect('base.db')
+    conn = get_db_connection()
+    if not conn:
+        return None
     cur = conn.cursor()
     cur.execute("SELECT DISTINCT categorie FROM sites WHERE status='valide'")
     toutes = [row[0] for row in cur.fetchall()]
@@ -148,8 +249,9 @@ def voir_categorie(slug):
     if slug != canonical_slug:
         return redirect(url_for('voir_categorie', slug=canonical_slug), code=301)
 
-    conn = sqlite3.connect('base.db')
-    conn.row_factory = sqlite3.Row
+    conn = get_db_connection()
+    if not conn:
+        return render_template("500.html"), 500
     cur = conn.cursor()
     #recupere tous les sites de la categorie par ordre decroissant
     cur.execute("""
@@ -182,8 +284,9 @@ def voir_categorie(slug):
 
 @app.route("/nouveaux-sites")
 def nouveaux_sites():
-    conn = sqlite3.connect('base.db')
-    conn.row_factory = sqlite3.Row
+    conn = get_db_connection()
+    if not conn:
+        return render_template("500.html"), 500
     cur = conn.cursor()
 #recupere tous les sites par ordre descroissant d'ajout
     cur.execute("""
@@ -217,32 +320,47 @@ def google_verification():
 
 
 @app.route("/formulaire", methods=["GET", "POST"])
+@limiter.limit("5 per minute")  # SÉCURITÉ : Limite les soumissions de formulaire
 def formulaire():
-    if request.method == "POST":
-        nom = request.form["nom"]
-        ville = request.form["ville"]
-        lien = request.form["lien"]
-        description = request.form["description"]
-        categorie = request.form["categorie"]
-
-        # Connexion à SQLite
-        conn = sqlite3.connect('base.db')
-        cur = conn.cursor()
-
-        # Insertion avec status "en attente"
-        cur.execute("""
-            INSERT INTO sites (nom, ville, lien, description, categorie, status, date_ajout)
-            VALUES (?, ?, ?, ?, ?, 'en_attente', DATETIME('now'))
-        """, (nom, ville, lien, description, categorie))
-
-        conn.commit()
-        conn.close()
-
-        flash("Merci, ta proposition a bien été envoyée ! Elle sera validée prochainement.")
-        return redirect(url_for("accueil"))
-
-    # Si GET → on affiche juste le formulaire
-    return render_template("formulaire.html")
+    """SÉCURITÉ : Formulaire avec validation complète"""
+    form = SiteForm()
+    
+    # Charge les catégories dynamiquement pour le SelectField
+    form.categorie.choices = [(cat, cat) for cat in get_categories()]
+    form.categorie.choices.insert(0, ('', 'Sélectionnez une catégorie'))
+    
+    if form.validate_on_submit():
+        conn = get_db_connection()
+        if not conn:
+            flash("Erreur technique. Veuillez réessayer plus tard.", "error")
+            return render_template("formulaire.html", form=form)
+        
+        try:
+            cur = conn.cursor()
+            # SÉCURITÉ : Insertion avec paramètres liés (protection contre SQL injection)
+            cur.execute("""
+                INSERT INTO sites (nom, ville, lien, description, categorie, status, date_ajout)
+                VALUES (?, ?, ?, ?, ?, 'en_attente', DATETIME('now'))
+            """, (
+                form.nom.data.strip(),
+                form.ville.data.strip() if form.ville.data else None,
+                form.lien.data.strip(),
+                form.description.data.strip(),
+                form.categorie.data
+            ))
+            
+            conn.commit()
+            flash("Merci, ta proposition a bien été envoyée ! Elle sera validée prochainement.", "success")
+            return redirect(url_for("accueil"))
+            
+        except sqlite3.Error as e:
+            app.logger.error(f"Erreur lors de l'insertion du site: {e}")
+            flash("Erreur lors de l'enregistrement. Veuillez réessayer.", "error")
+        finally:
+            conn.close()
+    
+    # Si GET ou formulaire invalide → affiche le formulaire avec erreurs
+    return render_template("formulaire.html", form=form)
 #decorateur, injecte automatiquement variable dans tous les templates Jinja2
 
 
