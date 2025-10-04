@@ -21,9 +21,11 @@ app.config.from_object(config.get(env, config['default']))
 # Configuration de la base de données
 DATABASE_PATH = app.config['DATABASE_PATH']
 
-# SÉCURITÉ : Rate limiting pour éviter le spam
+# SÉCURITÉ : Rate limiting pour éviter le spam avec Redis
 limiter = Limiter(
     key_func=get_remote_address,
+    storage_uri="redis://127.0.0.1:6379/0",
+    strategy="fixed-window",
     default_limits=[app.config['RATELIMIT_DEFAULT']]
 )
 limiter.init_app(app)
@@ -68,23 +70,10 @@ def add_cache_headers(response):
     response.headers['X-Frame-Options'] = 'DENY'
     response.headers['X-XSS-Protection'] = '1; mode=block'
     
-    # SÉCURITÉ : CSP et HSTS uniquement en production
-    if env == 'production':
-        # CSP minimale; ajustable selon besoins (PWA, analytics, etc.)
-        csp = (
-            "default-src 'self'; "
-            "script-src 'self'; "
-            "style-src 'self' 'unsafe-inline'; "
-            "img-src 'self' data:; "
-            "connect-src 'self'; "
-            "font-src 'self' data:; "
-            "object-src 'none'; "
-            "base-uri 'self'; "
-            "frame-ancestors 'none'"
-        )
-        response.headers['Content-Security-Policy'] = csp
-        # HSTS (uniquement si HTTPS configuré côté serveur)
-        response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains; preload'
+    # SÉCURITÉ : CSP gérée par nginx, pas par Flask
+    # if env == 'production':
+    #     # CSP désactivée - gérée par nginx
+    #     pass
     
     return response
 
