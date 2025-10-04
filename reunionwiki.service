@@ -1,0 +1,22 @@
+[Unit]
+Description=Gunicorn server for ReunionWiki Flask app
+After=network.target
+
+[Service]
+User=reunionwik
+Group=www-data
+WorkingDirectory=/var/www/reunion-wiki-app
+Environment=FLASK_ENV=production
+Environment=DATABASE_PATH=/var/www/reunion-wiki-app/base.db
+ExecStart=/var/www/reunion-wiki-app/venv/bin/gunicorn \
+  --config /var/www/reunion-wiki-app/gunicorn.conf.py \
+  app:app
+StandardOutput=journal
+StandardError=journal
+Restart=always
+RestartSec=3
+TimeoutStopSec=30
+KillSignal=SIGQUIT
+
+[Install]
+WantedBy=multi-user.target
