@@ -1,37 +1,17 @@
-{% extends "base.html" %}
-
-{% block seo_title %}Proposer un site - Réunion Wiki{% endblock %}
-{% block seo_description %}Proposez un site utile pour La Réunion. Votre suggestion sera vérifiée avant publication.{% endblock %}
-
-{% block content %}
-<section class="form-page" aria-labelledby="form-page-title">
-  <header class="form-page__intro">
-    <h1 id="form-page-title">Proposer un site</h1>
+{% set form = form or form_inline %}
+<section class="proposer-card" aria-labelledby="proposer-card-title">
+  <header class="proposer-card__header">
+    <h2 id="proposer-card-title">Proposer un site utile</h2>
     <p>
-      Merci de contribuer à Réunion Wiki&nbsp;! Remplis le formulaire ci-dessous pour nous suggérer un site fiable et utile pour les habitants de La Réunion.
+      Tu connais une ressource fiable qui mérite sa place sur Réunion Wiki ? Partage-la et nous la vérifierons avant publication.
     </p>
-    <ul class="form-checklist">
-      <li>Privilégie les sites locaux, officiels ou régulièrement mis à jour.</li>
-      <li>Décris brièvement le contenu pour nous aider à vérifier plus vite.</li>
-    </ul>
   </header>
-
-  {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-      <div class="form-page__messages">
-        {% for category, message in messages %}
-        <div class="flash-message flash-{{ category }}">{{ message }}</div>
-        {% endfor %}
-      </div>
-    {% endif %}
-  {% endwith %}
 
   <form
     method="post"
     action="{{ url_for('formulaire') }}"
-    class="proposer-card proposer-card--full"
+    class="proposer-card__form"
     autocomplete="off"
-    novalidate
   >
     {{ form.hidden_tag() }}
     <div class="form-honeypot">
@@ -51,7 +31,6 @@
         </div>
         {% endif %}
       </div>
-
       <div class="form-field">
         {{ form.lien.label(class="form-label") }}
         {{ form.lien(class="form-input", placeholder="https://example.com") }}
@@ -63,7 +42,6 @@
         </div>
         {% endif %}
       </div>
-
       <div class="form-field">
         {{ form.categorie.label(class="form-label") }}
         {{ form.categorie(class="form-select") }}
@@ -75,7 +53,6 @@
         </div>
         {% endif %}
       </div>
-
       <div class="form-field">
         {{ form.ville.label(class="form-label") }}
         {{ form.ville(class="form-input", placeholder="Ex : Saint-Denis (optionnel)") }}
@@ -87,10 +64,9 @@
         </div>
         {% endif %}
       </div>
-
       <div class="form-field form-field--wide">
         {{ form.description.label(class="form-label") }}
-        {{ form.description(class="form-textarea", rows="5", placeholder="Décris le site, ses fonctionnalités clés et pourquoi il est utile pour La Réunion.") }}
+        {{ form.description(class="form-textarea", rows="4", placeholder="Décrivez brièvement ce site et pourquoi il est utile...") }}
         {% if form.description.errors %}
         <div class="form-errors" id="{{ form.description.id }}-errors">
           {% for error in form.description.errors %}
@@ -101,16 +77,11 @@
       </div>
     </div>
 
-    <div class="form-actions form-actions--stacked">
+    <div class="form-actions">
       <button type="submit" class="btn btn-primary">Envoyer ma proposition</button>
       <p class="form-note">
-        Les propositions sont vérifiées manuellement régulièrement afin de garantir des liens fiables et sécurisés.
+        Nous validons chaque contribution pour garantir la qualité des liens partagés. Besoin du mode détaillé ? <a href="{{ url_for('formulaire') }}">Ouvre le formulaire complet</a>.
       </p>
     </div>
   </form>
-
-  <div class="form-page__back">
-    <a href="{{ url_for('accueil') }}" class="link-back">← Retour à l'accueil</a>
-  </div>
 </section>
-{% endblock %}

@@ -112,4 +112,10 @@ internet utiles de La Réunion.{% endblock %} {% block header_content %}
     </p>
   </section>
 </div>
+
+{% if form_inline %}
+<section id="proposer-un-site">
+  {% include "_proposer_form.html" with context %}
+</section>
+{% endif %}
 {% endblock %}

@@ -1,8 +1,7 @@
-const CACHE_NAME = "reunionwiki-cache-v3";
+const CACHE_NAME = "reunionwiki-cache-v5";
 
 // Liste des fichiers à mettre en cache
 const urlsToCache = [
-  "/", // page d'accueil
   "/static/style.css", // ton fichier CSS principal
   "/static/icons/icon-192x192.png", // corriger le nom
   "/static/icons/icon-512x512.png", // corriger le nom
@@ -42,14 +41,27 @@ self.addEventListener("activate", (event) => {
 
 // Interception des requêtes réseau
 self.addEventListener("fetch", (event) => {
+  if (event.request.mode === "navigate") {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          const responseClone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseClone);
+          });
+          return response;
+        })
+        .catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request).then((response) => {
-      // Retourne la version cache si trouvée, sinon va la chercher sur le réseau
       return (
         response ||
         fetch(event.request).catch(() => {
           // Optionnel : fallback si la requête échoue (ex : offline)
-          // possiblité de retourner une page offline ou un message HTML basique
         })
       );
     })

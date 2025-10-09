@@ -61,7 +61,7 @@
     <!-- CSS -->
     <link
       rel="stylesheet"
-      href="{{ url_for('static', filename='style.css') }}?v=6"
+      href="{{ url_for('static', filename='style.css') }}?v=7"
     />
 
     <!-- Fonts (perf) -->
@@ -137,6 +137,15 @@
         </li>
         <li><a href="{{ url_for('faq') }}">FAQ</a></li>
         <li>
+          <a
+            href="{{ url_for('formulaire') }}"
+            class="{{ 'active' if request.path == url_for('formulaire') else '' }}"
+            aria-current="{{ 'page' if request.path == url_for('formulaire') else '' }}"
+          >
+            Proposer un site
+          </a>
+        </li>
+        <li>
           <a href="https://forms.gle/GScJkMiEZXVSted78" target="_blank"
             >Contact</a
           >
@@ -145,6 +154,15 @@
     </nav>
 
     <main>{% block content %}{% endblock %}</main>
+
+    {% with messages = get_flashed_messages(with_categories=true) %} {% if
+    messages %}
+    <div class="flash-stack">
+      {% for category, message in messages %}
+      <div class="flash-message flash-{{ category }}">{{ message }}</div>
+      {% endfor %}
+    </div>
+    {% endif %} {% endwith %}
 
     <footer>
       <a
@@ -167,7 +185,7 @@
       // Enregistrement du Service Worker
       if ("serviceWorker" in navigator) {
         navigator.serviceWorker
-          .register("/static/service-worker.js")
+          .register("/service-worker.js")
           .then(() => console.log("Service Worker enregistré"))
           .catch((err) => console.error("Erreur Service Worker :", err));
       }

@@ -1,5 +1,16 @@
 # -*- coding: utf-8 -*-
-from flask import Flask, render_template, make_response, send_from_directory, request, flash, url_for, redirect
+from flask import (
+    Flask,
+    render_template,
+    make_response,
+    send_from_directory,
+    request,
+    flash,
+    url_for,
+    redirect,
+    g,
+    has_request_context,
+)
 from datetime import datetime
 import sqlite3
 import os
@@ -11,6 +22,9 @@ from config import config
 # >>> AJOUT : imports utilitaires pour un slug ASCII propre (sans emojis/accents)
 import re
 import unicodedata
+import smtplib
+import ssl
+from email.message import EmailMessage
 
 app = Flask(__name__)
 
@@ -24,7 +38,7 @@ DATABASE_PATH = app.config['DATABASE_PATH']
 # SÉCURITÉ : Rate limiting pour éviter le spam avec Redis
 limiter = Limiter(
     key_func=get_remote_address,
-    storage_uri="redis://127.0.0.1:6379/0",
+    storage_uri=app.config.get('RATELIMIT_STORAGE_URL', 'memory://'),
     strategy="fixed-window",
     default_limits=[app.config['RATELIMIT_DEFAULT']]
 )
@@ -40,6 +54,47 @@ def get_db_connection():
     except sqlite3.Error as e:
         app.logger.error(f"Erreur de connexion à la base de données: {e}")
         return None
+
+
+def send_submission_notification(payload):
+    """Envoie un email de notification lorsqu'un site est proposé."""
+    if not app.config.get('MAIL_ENABLED'):
+        return
+
+    server = app.config.get('MAIL_SERVER')
+    recipients = app.config.get('MAIL_RECIPIENTS', [])
+    if not server or not recipients:
+        app.logger.warning("Notification email non envoyée : serveur ou destinataires non configurés.")
+        return
+
+    sender = app.config.get('MAIL_DEFAULT_SENDER') or app.config.get('MAIL_USERNAME') or recipients[0]
+    message = EmailMessage()
+    message['Subject'] = f"Nouvelle proposition Réunion Wiki : {payload.get('nom')}"
+    message['From'] = sender
+    message['To'] = ", ".join(recipients)
+    message.set_content(render_template("emails/new_submission.txt", **payload))
+
+    context = ssl.create_default_context()
+    try:
+        if app.config.get('MAIL_USE_SSL'):
+            with smtplib.SMTP_SSL(server, app.config.get('MAIL_PORT'), context=context) as smtp:
+                username = app.config.get('MAIL_USERNAME')
+                password = app.config.get('MAIL_PASSWORD')
+                if username and password:
+                    smtp.login(username, password)
+                smtp.send_message(message)
+        else:
+            with smtplib.SMTP(server, app.config.get('MAIL_PORT')) as smtp:
+                smtp.ehlo()
+                if app.config.get('MAIL_USE_TLS'):
+                    smtp.starttls(context=context)
+                username = app.config.get('MAIL_USERNAME')
+                password = app.config.get('MAIL_PASSWORD')
+                if username and password:
+                    smtp.login(username, password)
+                smtp.send_message(message)
+    except Exception as e:
+        app.logger.error(f"Erreur lors de l'envoi de l'email de notification: {e}")
 
 # GESTION D'ERREURS : Pages d'erreur personnalisées
 @app.errorhandler(404)
@@ -115,25 +170,33 @@ def get_sites_en_vedette():
         cur = conn.cursor()
 
         # Récupère les différentes catégories dont au moins un site a le statut valide
-        cur.execute("""SELECT DISTINCT categorie 
-                    FROM sites 
-                    WHERE status = 'valide'
-                    """)
-        categories = cur.fetchall()
-        
-        # Récupère sites de chaque catégorie avec le statut valide et dans la limite de 3
-        data = {}
-        for cat in categories:
-            nom_cat = cat["categorie"]
-            cur.execute("""
-                SELECT * 
+        cur.execute(
+            """
+                SELECT DISTINCT categorie
                 FROM sites
-                WHERE categorie = ? AND status = 'valide' AND en_vedette = 1
-                ORDER BY date_ajout DESC
-                LIMIT 3         
-            """, (nom_cat,))
-            data[nom_cat] = cur.fetchall()
-        
+                WHERE status = 'valide'
+            """
+        )
+        categories = [row["categorie"] for row in cur.fetchall() if row["categorie"]]
+        if has_request_context():
+            g._categories_cache = categories
+        data = {cat: [] for cat in categories}
+
+        # Récupère les sites en vedette en une seule requête
+        cur.execute(
+            """
+                SELECT *
+                FROM sites
+                WHERE status = 'valide' AND en_vedette = 1
+                ORDER BY categorie ASC, date_ajout DESC
+            """
+        )
+
+        for site in cur.fetchall():
+            cat = site["categorie"]
+            if cat in data and len(data[cat]) < 3:
+                data[cat].append(site)
+
         return data
     except sqlite3.Error as e:
         app.logger.error(f"Erreur lors de la récupération des sites en vedette: {e}")
@@ -170,6 +233,9 @@ def get_derniers_sites_global(limit=3):
 # SÉCURITÉ : Récupère les catégories avec gestion d'erreurs
 def get_categories():
     """Récupère les différentes catégories ayant au moins un site valide"""
+    if has_request_context() and hasattr(g, "_categories_cache"):
+        return g._categories_cache
+
     conn = get_db_connection()
     if not conn:
         return []
@@ -179,7 +245,10 @@ def get_categories():
         cur.execute("SELECT DISTINCT categorie FROM sites WHERE status = 'valide'")
         results = cur.fetchall()
         # Pour chaque row dans results prends la première colonne (row[0]) si row[0] n'est pas vide
-        return [row[0] for row in results if row[0]]
+        categories = [row[0] for row in results if row[0]]
+        if has_request_context():
+            g._categories_cache = categories
+        return categories
     except sqlite3.Error as e:
         app.logger.error(f"Erreur lors de la récupération des catégories: {e}")
         return []
@@ -204,16 +273,10 @@ def slugify(nom):
 
 #obtenir le nom de la categorie depuis le slug 
 def get_nom_categorie_depuis_slug(slug):
-    conn = get_db_connection()
-    if not conn:
-        return None
-    cur = conn.cursor()
-    cur.execute("SELECT DISTINCT categorie FROM sites WHERE status='valide'")
-    toutes = [row[0] for row in cur.fetchall()]
-    conn.close()
+    categories_slug = get_categories_slug()
     #si le slug du cat correspond au slug alors on retourne le cat, donc non sluggé
-    for cat in toutes:
-        if slugify(cat) == slug:
+    for cat, cat_slug in categories_slug.items():
+        if cat_slug == slug:
             return cat
     return None
 
@@ -221,7 +284,11 @@ def get_nom_categorie_depuis_slug(slug):
 def accueil():
     data = get_sites_en_vedette()
     derniers_sites = get_derniers_sites_global(3)
-    return render_template("index.html", data=data, derniers_sites=derniers_sites)
+    # Prépare un formulaire inline (mêmes règles que le formulaire complet)
+    form_inline = SiteForm()
+    form_inline.categorie.choices = [(cat, cat) for cat in get_categories()]
+    form_inline.categorie.choices.insert(0, ('', 'Sélectionnez une catégorie'))
+    return render_template("index.html", data=data, derniers_sites=derniers_sites, form_inline=form_inline)
 
 
 @app.route("/categorie/<slug>")
@@ -258,6 +325,14 @@ def voir_categorie(slug):
     )
     canonical = url_for('voir_categorie', slug=canonical_slug, _external=True)
 
+    # Prépare un formulaire inline pré-rempli avec la catégorie
+    form_inline = SiteForm()
+    cats = get_categories()
+    form_inline.categorie.choices = [(cat, cat) for cat in cats]
+    form_inline.categorie.choices.insert(0, ('', 'Sélectionnez une catégorie'))
+    if nom_categorie in cats:
+        form_inline.categorie.data = nom_categorie
+
     #return sur le html
     return render_template(
         "categorie.html",
@@ -267,7 +342,8 @@ def voir_categorie(slug):
         slug=canonical_slug,
         seo_title=seo_title,
         seo_description=seo_description,
-        canonical=canonical
+        canonical=canonical,
+        form_inline=form_inline
     )
 
 
@@ -319,6 +395,16 @@ def formulaire():
     form.categorie.choices.insert(0, ('', 'Sélectionnez une catégorie'))
     
     if form.validate_on_submit():
+        nom = form.nom.data
+        ville = form.ville.data or None
+        lien = form.lien.data
+        description = form.description.data
+        categorie = form.categorie.data
+
+        if categorie not in get_categories():
+            flash("Catégorie non valide.", "error")
+            return render_template("formulaire.html", form=form)
+
         conn = get_db_connection()
         if not conn:
             flash("Erreur technique. Veuillez réessayer plus tard.", "error")
@@ -326,19 +412,29 @@ def formulaire():
         
         try:
             cur = conn.cursor()
+
             # SÉCURITÉ : Insertion avec paramètres liés (protection contre SQL injection)
             cur.execute("""
                 INSERT INTO sites (nom, ville, lien, description, categorie, status, date_ajout)
                 VALUES (?, ?, ?, ?, ?, 'en_attente', DATETIME('now'))
             """, (
-                form.nom.data.strip(),
-                form.ville.data.strip() if form.ville.data else None,
-                form.lien.data.strip(),
-                form.description.data.strip(),
-                form.categorie.data
+                nom,
+                ville,
+                lien,
+                description,
+                categorie
             ))
             
             conn.commit()
+            send_submission_notification({
+                "nom": nom,
+                "ville": ville,
+                "lien": lien,
+                "description": description,
+                "categorie": categorie,
+                "date_submission": datetime.utcnow().strftime("%d/%m/%Y %H:%M"),
+                "remote_addr": request.remote_addr or "IP inconnue",
+            })
             flash("Merci, ta proposition a bien été envoyée ! Elle sera validée prochainement.", "success")
             return redirect(url_for("accueil"))
             
@@ -367,9 +463,16 @@ def inject_categories():
 
 
 def get_categories_slug():
+    if has_request_context() and hasattr(g, "_categories_slug_cache"):
+        return g._categories_slug_cache
+
     categories = get_categories()
     # >>> AJOUT : garantit que les slugs affichés dans les menus/lien sont bien en ASCII canonique
-    return {cat: slugify(cat) for cat in categories}
+    categories_slug = {cat: slugify(cat) for cat in categories}
+
+    if has_request_context():
+        g._categories_slug_cache = categories_slug
+    return categories_slug
 
 if __name__ == "__main__":
     app.run(debug=True)

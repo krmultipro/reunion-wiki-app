@@ -17,11 +17,12 @@ DATABASE_PATH = os.getenv('DATABASE_PATH', 'base.db')
 def optimize_database():
     """Ajoute des index pour optimiser les performances"""
     print("🔧 Optimisation de la base de données...")
-    
+
+    conn = None
     try:
         conn = sqlite3.connect(DATABASE_PATH)
         cur = conn.cursor()
-        
+
         # PERFORMANCE : Index sur les colonnes fréquemment utilisées
         indexes = [
             ("idx_sites_status", "CREATE INDEX IF NOT EXISTS idx_sites_status ON sites(status)"),
@@ -65,7 +66,8 @@ def optimize_database():
     except sqlite3.Error as e:
         print(f"❌ Erreur lors de l'optimisation : {e}")
     finally:
-        conn.close()
+        if conn is not None:
+            conn.close()
 
 if __name__ == "__main__":
     optimize_database()

@@ -21,6 +21,11 @@ seo_description }}{% endblock %} {% block canonical %}{{ canonical }}{% endblock
     </li>
     {% endfor %}
   </ul>
+  {% if form_inline %}
+  <div class="category-inline-form">
+    {% include "_proposer_form.html" with context %}
+  </div>
+  {% endif %}
 
   <div id="bouton_plus">
     <a href="/">← Retour à l'accueil</a>
