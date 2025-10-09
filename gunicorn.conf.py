@@ -25,19 +25,22 @@ keepalive = 2
 preload_app = False
 
 # Logs
-accesslog = "logs/access.log"
-errorlog = "logs/error.log"
+accesslog = "-"
+errorlog = "-"
 loglevel = "info"
 
+# RUNTIME : évite d'écrire dans /var/www
+runtime_dir = os.getenv("REUNIONWIKI_RUNTIME_DIR", "/run/reunionwiki")
+os.makedirs(runtime_dir, exist_ok=True)
+worker_tmp_dir = os.path.join(runtime_dir, "tmp")
+os.makedirs(worker_tmp_dir, exist_ok=True)
+
 # PID
-pidfile = "gunicorn.pid"
+pidfile = os.path.join(runtime_dir, "gunicorn.pid")
 
 # MODIFICATION : Suppression user/group - laissé à systemd
 # user = os.getenv('GUNICORN_USER', 'www-data')
 # group = os.getenv('GUNICORN_GROUP', 'www-data')
-
-# MODIFICATION : Dossier tmp dédié (évite /tmp)
-worker_tmp_dir = "/var/www/reunion-wiki-app/tmp"
 
 # Environnement
 raw_env = [
