@@ -445,7 +445,11 @@ footer a:hover {
 }
 
 .category-inline-form .proposer-card {
-  background: linear-gradient(135deg, rgba(11, 132, 87, 0.12), rgba(255, 255, 255, 0.95));
+  background: linear-gradient(
+    135deg,
+    rgba(11, 132, 87, 0.12),
+    rgba(255, 255, 255, 0.95)
+  );
   border: 1px solid rgba(11, 132, 87, 0.25);
 }
 
@@ -507,7 +511,7 @@ footer a:hover {
   width: 100%;
   border: 1px solid #d7dce1;
   border-radius: 8px;
-  padding: 0.75rem 0.9rem;
+  padding: 0.5rem 0.5rem;
   font-size: 1rem;
   font-family: inherit;
   background: var(--blanc);
@@ -677,6 +681,13 @@ footer a:hover {
     grid-template-columns: 1fr;
   }
 
+  .form-field,
+  .form-input,
+  .form-select,
+  .form-textarea {
+    width: 100%;
+  }
+
   .form-actions {
     flex-direction: column;
     align-items: stretch;
@@ -689,6 +700,19 @@ footer a:hover {
 
   .proposer-card {
     padding: 1.4rem;
+    margin: 0 0.75rem;
+  }
+
+  .proposer-card__form {
+    margin: 0;
+  }
+
+  .form-grid {
+    width: 100%;
+  }
+
+  .form-field {
+    width: 100%;
   }
 
   .form-page__intro {
