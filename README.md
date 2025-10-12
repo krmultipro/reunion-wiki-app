@@ -125,6 +125,11 @@ journalctl -u reunionwiki -f
 
 # Sur le VPS : redémarrer le service
 sudo systemctl restart reunionwiki
+
+# Exporter la table `sites` (CSV horodaté)
+python3 script/export_sites.py \
+  --database /var/www/reunion-wiki-app/base.db \
+  --output-dir /home/reunionwiki/exports
 ```
 
 ---
