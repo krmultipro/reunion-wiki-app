@@ -238,9 +238,15 @@ footer a:hover {
   transform: translateY(-1px);
 }
 
-@media (min-width: 900px) {
+@media (min-width: 1024px) {
+  .nav-scroll {
+    overflow: visible;
+  }
+
   .main-nav ul {
     justify-content: center;
+    flex-wrap: wrap;
+    min-width: auto;
   }
 }
 
