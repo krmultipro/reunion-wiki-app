@@ -145,3 +145,5 @@ dmypy.json
 # Fichiers spécifiques au projet
 *.db
 backups/
+base.db
+base.db
