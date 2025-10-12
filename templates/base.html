@@ -61,7 +61,7 @@
     <!-- CSS -->
     <link
       rel="stylesheet"
-      href="{{ url_for('static', filename='style.css') }}?v=7"
+      href="{{ url_for('static', filename='style.css') }}?v=8"
     />
 
     <!-- Fonts (perf) -->
@@ -91,18 +91,9 @@
 
     <!-- Navigation principale -->
     <nav class="main-nav">
-      <!-- Bouton burger affiché seulement en mobile -->
-      <button
-        class="menu-toggle"
-        aria-label="Ouvrir le menu"
-        aria-expanded="false"
-        aria-controls="main-nav-links"
-      >
-        ☰
-      </button>
-
-      <!-- Liste des liens -->
-      <ul class="nav-links" id="main-nav-links">
+      <div class="nav-scroll" data-scrollable>
+        <!-- Liste des liens -->
+        <ul class="nav-links" id="main-nav-links">
         <li>
           <a
             href="{{ url_for('accueil') }}"
@@ -151,6 +142,7 @@
           >
         </li>
       </ul>
+      </div>
     </nav>
 
     <main>{% block content %}{% endblock %}</main>
@@ -165,12 +157,12 @@
     {% endif %} {% endwith %}
 
     <footer>
-      <a
+      <!--<a
         href="https://forms.gle/kimeZjk8TPQAhMCE6"
         class="propos_site"
         target="__blank"
         >Proposez un site !</a
-      >
+      > -->
       <p><strong>Réunion Wiki</strong> - Simplifions l'information locale.</p>
       <nav>
         <a href="{{ url_for('faq') }}">FAQ</a> |
@@ -241,13 +233,21 @@
     </script>
     <script>
       document.addEventListener("DOMContentLoaded", function () {
-        const toggle = document.querySelector(".menu-toggle");
-        const navLinks = document.querySelector(".nav-links");
+        const scroller = document.querySelector("[data-scrollable]");
+        if (!scroller) return;
 
-        toggle.addEventListener("click", function () {
-          const isOpen = navLinks.classList.toggle("active");
-          toggle.setAttribute("aria-expanded", isOpen ? "true" : "false");
-        });
+        const updateShadows = () => {
+          const maxScroll = scroller.scrollWidth - scroller.clientWidth;
+          const atStart = scroller.scrollLeft <= 0;
+          const atEnd = scroller.scrollLeft >= maxScroll - 1;
+
+          scroller.classList.toggle("nav-scroll--shadow-left", !atStart);
+          scroller.classList.toggle("nav-scroll--shadow-right", !atEnd);
+        };
+
+        updateShadows();
+        scroller.addEventListener("scroll", updateShadows, { passive: true });
+        window.addEventListener("resize", updateShadows);
       });
     </script>
   </body>
