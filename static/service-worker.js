@@ -1,4 +1,4 @@
-const CACHE_NAME = "reunionwiki-cache-v5";
+const CACHE_NAME = "reunionwiki-cache-v6";
 
 // Liste des fichiers à mettre en cache
 const urlsToCache = [
