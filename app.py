@@ -393,6 +393,7 @@ def admin_dashboard():
     for site in pending_sites:
         form = ModerationActionForm()
         form.site_id.data = str(site["id"])
+        form.action.data = ""
         action_forms[site["id"]] = form
 
     return render_template(
@@ -463,6 +464,100 @@ def admin_update_site(site_id):
         conn.close()
 
     return redirect(url_for("admin_dashboard"))
+
+
+@app.route("/admin/propositions/<int:site_id>/edit", methods=["GET", "POST"])
+@admin_required
+def admin_edit_site(site_id):
+    conn = get_db_connection()
+    if not conn:
+        flash("Impossible de se connecter à la base de données.", "error")
+        return redirect(url_for("admin_dashboard"))
+
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            """
+            SELECT id, nom, categorie, ville, lien, description, status
+            FROM sites
+            WHERE id = ?
+            """,
+            (site_id,),
+        )
+        site = cur.fetchone()
+    except sqlite3.Error as e:
+        conn.close()
+        app.logger.error(f"Erreur lors de la récupération du site {site_id}: {e}")
+        flash("Impossible de charger la proposition.", "error")
+        return redirect(url_for("admin_dashboard"))
+
+    if not site:
+        conn.close()
+        flash("Proposition introuvable.", "error")
+        return redirect(url_for("admin_dashboard"))
+
+    form = SiteForm()
+    categories_list = get_categories()
+    form.categorie.choices = [(cat, cat) for cat in categories_list]
+    form.categorie.choices.insert(0, ("", "Sélectionnez une catégorie"))
+
+    if request.method == "GET":
+        form.nom.data = site["nom"]
+        form.ville.data = site["ville"]
+        form.lien.data = site["lien"]
+        form.description.data = site["description"]
+        if site["categorie"] not in categories_list:
+            form.categorie.choices.append((site["categorie"], site["categorie"]))
+        form.categorie.data = site["categorie"]
+    elif form.validate_on_submit():
+        conn_to_update = get_db_connection()
+        if not conn_to_update:
+            flash("Impossible de se connecter à la base de données.", "error")
+            conn.close()
+            return redirect(url_for("admin_dashboard"))
+        try:
+            cur_update = conn_to_update.cursor()
+            cur_update.execute(
+                """
+                UPDATE sites
+                SET nom = ?, ville = ?, lien = ?, description = ?, categorie = ?
+                WHERE id = ?
+                """,
+                (
+                    form.nom.data,
+                    form.ville.data or None,
+                    form.lien.data,
+                    form.description.data,
+                    form.categorie.data,
+                    site_id,
+                ),
+            )
+            if cur_update.rowcount == 0:
+                flash("La mise à jour a échoué : proposition introuvable.", "error")
+                conn_to_update.rollback()
+            else:
+                conn_to_update.commit()
+                flash("Proposition mise à jour avec succès.", "success")
+            conn_to_update.close()
+            conn.close()
+            return redirect(url_for("admin_dashboard"))
+        except sqlite3.Error as e:
+            conn_to_update.rollback()
+            conn_to_update.close()
+            conn.close()
+            app.logger.error(f"Erreur lors de la mise à jour du site {site_id}: {e}")
+            flash("Erreur lors de la mise à jour.", "error")
+            return redirect(url_for("admin_dashboard"))
+    else:
+        flash("Formulaire invalide.", "error")
+
+    conn.close()
+    return render_template(
+        "admin/edit_site.html",
+        form=form,
+        site=site,
+        admin_username=session.get("admin_username"),
+    )
 
 @app.route("/")
 def accueil():

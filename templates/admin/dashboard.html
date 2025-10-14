@@ -50,13 +50,19 @@
             <td class="admin-table__cell--description">{{ site['description'] }}</td>
             <td>{{ site['date_ajout']|format_date("%d/%m/%Y %H:%M") }}</td>
             <td class="admin-table__cell--actions">
+              <a
+                class="btn btn-edit"
+                href="{{ url_for('admin_edit_site', site_id=site['id']) }}"
+              >
+                Modifier
+              </a>
               <form
                 method="post"
                 action="{{ url_for('admin_update_site', site_id=site['id']) }}"
                 class="admin-table__form"
               >
                 {{ action_forms[site['id']].hidden_tag() }}
-                {{ action_forms[site['id']].site_id() }}
+                {{ action_forms[site['id']].site_id(value=site['id']) }}
                 <input type="hidden" name="action" value="approve" />
                 <button type="submit" class="btn btn-approve">Valider</button>
               </form>
@@ -66,7 +72,7 @@
                 class="admin-table__form"
               >
                 {{ action_forms[site['id']].hidden_tag() }}
-                {{ action_forms[site['id']].site_id() }}
+                {{ action_forms[site['id']].site_id(value=site['id']) }}
                 <input type="hidden" name="action" value="reject" />
                 <button type="submit" class="btn btn-reject">Refuser</button>
               </form>
@@ -77,7 +83,7 @@
                 onsubmit="return confirm('Supprimer définitivement cette proposition ?');"
               >
                 {{ action_forms[site['id']].hidden_tag() }}
-                {{ action_forms[site['id']].site_id() }}
+                {{ action_forms[site['id']].site_id(value=site['id']) }}
                 <input type="hidden" name="action" value="delete" />
                 <button type="submit" class="btn btn-delete">Supprimer</button>
               </form>

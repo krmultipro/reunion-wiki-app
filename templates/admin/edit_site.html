@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block seo_title %}Modifier une proposition - Réunion Wiki{% endblock %}
+{% block seo_description %}Edition d'une proposition en attente sur Réunion Wiki.{% endblock %}
+
+{% block content %}
+<section class="admin-card">
+  <header class="admin-card__header">
+    <div>
+      <h1>Modifier la proposition #{{ site['id'] }}</h1>
+      <p>
+        Édite les informations avant validation. Statut actuel :
+        <strong>{{ site['status'] }}</strong>.
+      </p>
+    </div>
+    <a class="btn btn-secondary" href="{{ url_for('admin_dashboard') }}">
+      ← Retour au tableau de bord
+    </a>
+  </header>
+
+  <form method="post" class="admin-form" novalidate>
+    {{ form.hidden_tag() }}
+
+    <div class="admin-form__field">
+      {{ form.nom.label(class_="admin-form__label") }}
+      {{ form.nom(class_="admin-form__input") }}
+      {% for error in form.nom.errors %}
+      <span class="admin-form__error">{{ error }}</span>
+      {% endfor %}
+    </div>
+
+    <div class="admin-form__field">
+      {{ form.lien.label(class_="admin-form__label") }}
+      {{ form.lien(class_="admin-form__input") }}
+      {% for error in form.lien.errors %}
+      <span class="admin-form__error">{{ error }}</span>
+      {% endfor %}
+    </div>
+
+    <div class="admin-form__group">
+      <div class="admin-form__field">
+        {{ form.categorie.label(class_="admin-form__label") }}
+        {{ form.categorie(class_="admin-form__input") }}
+        {% for error in form.categorie.errors %}
+        <span class="admin-form__error">{{ error }}</span>
+        {% endfor %}
+      </div>
+      <div class="admin-form__field">
+        {{ form.ville.label(class_="admin-form__label") }}
+        {{ form.ville(class_="admin-form__input") }}
+        {% for error in form.ville.errors %}
+        <span class="admin-form__error">{{ error }}</span>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="admin-form__field">
+      {{ form.description.label(class_="admin-form__label") }}
+      {{ form.description(class_="admin-form__textarea", rows="5") }}
+      {% for error in form.description.errors %}
+      <span class="admin-form__error">{{ error }}</span>
+      {% endfor %}
+    </div>
+
+    <div class="admin-form__actions">
+      <button type="submit" class="btn btn-primary">Enregistrer les modifications</button>
+    </div>
+  </form>
+</section>
+{% endblock %}
