@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block seo_title %}Modération - Réunion Wiki{% endblock %}
+{% block seo_description %}Tableau de bord des propositions Réunion Wiki.{% endblock %}
+
+{% block content %}
+<section class="admin-dashboard">
+  <header class="admin-dashboard__header">
+    <div>
+      <h1>Tableau de bord modération</h1>
+      <p>
+        Bonjour {{ admin_username or "admin" }} —
+        <a href="{{ url_for('admin_logout') }}">déconnexion</a>
+      </p>
+    </div>
+    <ul class="admin-dashboard__stats">
+      <li><strong>{{ stats.get('en_attente', 0) }}</strong> en attente</li>
+      <li><strong>{{ stats.get('valide', 0) }}</strong> publiés</li>
+      <li><strong>{{ stats.get('refuse', 0) }}</strong> refusés</li>
+    </ul>
+  </header>
+
+  <section class="admin-dashboard__content">
+    <h2>Propositions en attente</h2>
+    {% if pending_sites %}
+    <div class="admin-table-wrapper">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>Nom</th>
+            <th>Catégorie</th>
+            <th>Ville</th>
+            <th>Lien</th>
+            <th>Description</th>
+            <th>Soumis le</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for site in pending_sites %}
+          <tr>
+            <td class="admin-table__cell--title">{{ site['nom'] }}</td>
+            <td>{{ site['categorie'] }}</td>
+            <td>{{ site['ville'] or "—" }}</td>
+            <td>
+              <a href="{{ site['lien'] }}" target="_blank" rel="noopener noreferrer">
+                Ouvrir ↗
+              </a>
+            </td>
+            <td class="admin-table__cell--description">{{ site['description'] }}</td>
+            <td>{{ site['date_ajout']|format_date("%d/%m/%Y %H:%M") }}</td>
+            <td class="admin-table__cell--actions">
+              <form
+                method="post"
+                action="{{ url_for('admin_update_site', site_id=site['id']) }}"
+                class="admin-table__form"
+              >
+                {{ action_forms[site['id']].hidden_tag() }}
+                {{ action_forms[site['id']].site_id() }}
+                <input type="hidden" name="action" value="approve" />
+                <button type="submit" class="btn btn-approve">Valider</button>
+              </form>
+              <form
+                method="post"
+                action="{{ url_for('admin_update_site', site_id=site['id']) }}"
+                class="admin-table__form"
+              >
+                {{ action_forms[site['id']].hidden_tag() }}
+                {{ action_forms[site['id']].site_id() }}
+                <input type="hidden" name="action" value="reject" />
+                <button type="submit" class="btn btn-reject">Refuser</button>
+              </form>
+              <form
+                method="post"
+                action="{{ url_for('admin_update_site', site_id=site['id']) }}"
+                class="admin-table__form"
+                onsubmit="return confirm('Supprimer définitivement cette proposition ?');"
+              >
+                {{ action_forms[site['id']].hidden_tag() }}
+                {{ action_forms[site['id']].site_id() }}
+                <input type="hidden" name="action" value="delete" />
+                <button type="submit" class="btn btn-delete">Supprimer</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="admin-empty">Aucune proposition en attente pour le moment.</p>
+    {% endif %}
+  </section>
+</section>
+{% endblock %}

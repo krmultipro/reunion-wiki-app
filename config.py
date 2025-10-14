@@ -29,6 +29,9 @@ class Config:
         for email in os.getenv('MAIL_RECIPIENTS', '').split(',')
         if email.strip()
     ]
+    ADMIN_USERNAME = os.getenv('ADMIN_USERNAME', '')
+    ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD', '')
+    ADMIN_PASSWORD_HASH = os.getenv('ADMIN_PASSWORD_HASH', '')
     
     # PERFORMANCE : Configuration du cache
     SEND_FILE_MAX_AGE_DEFAULT = 31536000  # 1 an pour les fichiers statiques

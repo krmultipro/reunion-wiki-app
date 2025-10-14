@@ -8,13 +8,15 @@ from flask import (
     flash,
     url_for,
     redirect,
+    session,
     g,
     has_request_context,
+    abort,
 )
 from datetime import datetime
 import sqlite3
 import os
-from forms import SiteForm
+from forms import AdminLoginForm, ModerationActionForm, SiteForm
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from config import config
@@ -25,6 +27,9 @@ import unicodedata
 import smtplib
 import ssl
 from email.message import EmailMessage
+import secrets
+from functools import wraps
+from werkzeug.security import check_password_hash
 
 app = Flask(__name__)
 
@@ -95,6 +100,48 @@ def send_submission_notification(payload):
                 smtp.send_message(message)
     except Exception as e:
         app.logger.error(f"Erreur lors de l'envoi de l'email de notification: {e}")
+
+
+def verify_admin_credentials(username, password):
+    """Vérifie les identifiants admin configurés via les variables d'environnement."""
+    stored_username = app.config.get('ADMIN_USERNAME')
+    stored_password = app.config.get('ADMIN_PASSWORD')
+    stored_hash = app.config.get('ADMIN_PASSWORD_HASH')
+
+    if not stored_username:
+        app.logger.warning("Tentative de connexion admin alors que ADMIN_USERNAME est vide.")
+        return False
+
+    if not secrets.compare_digest(username, stored_username):
+        return False
+
+    if stored_hash:
+        try:
+            return check_password_hash(stored_hash, password)
+        except ValueError:
+            app.logger.error("ADMIN_PASSWORD_HASH invalide : utilisez werkzeug.security.generate_password_hash.")
+            return False
+
+    if stored_password:
+        return secrets.compare_digest(stored_password, password)
+
+    app.logger.warning("Tentative de connexion admin sans mot de passe configuré.")
+    return False
+
+
+def admin_required(func):
+    """Décorateur de protection des routes admin."""
+
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        if not session.get('admin_authenticated'):
+            next_url = request.path if request.method == "GET" else url_for('admin_dashboard')
+            if not next_url.startswith('/'):
+                next_url = url_for('admin_dashboard')
+            return redirect(url_for('admin_login', next=next_url))
+        return func(*args, **kwargs)
+
+    return wrapper
 
 # GESTION D'ERREURS : Pages d'erreur personnalisées
 @app.errorhandler(404)
@@ -279,6 +326,143 @@ def get_nom_categorie_depuis_slug(slug):
         if cat_slug == slug:
             return cat
     return None
+
+
+@app.route("/admin/login", methods=["GET", "POST"])
+def admin_login():
+    form = AdminLoginForm()
+    next_url = request.args.get("next")
+    if not next_url or not next_url.startswith("/"):
+        next_url = url_for("admin_dashboard")
+
+    if form.validate_on_submit():
+        if verify_admin_credentials(form.username.data, form.password.data):
+            session.permanent = True
+            session["admin_authenticated"] = True
+            session["admin_username"] = form.username.data
+            flash("Connexion réussie.", "success")
+            return redirect(next_url)
+        flash("Identifiants invalides.", "error")
+
+    return render_template("admin/login.html", form=form, next_url=next_url)
+
+
+@app.route("/admin/logout")
+def admin_logout():
+    session.pop("admin_authenticated", None)
+    session.pop("admin_username", None)
+    flash("Déconnexion effectuée.", "success")
+    return redirect(url_for("admin_login"))
+
+
+@app.route("/admin", methods=["GET"])
+@admin_required
+def admin_dashboard():
+    conn = get_db_connection()
+    if not conn:
+        flash("Impossible de se connecter à la base de données.", "error")
+        return redirect(url_for("accueil"))
+
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            """
+            SELECT id, nom, categorie, ville, lien, description, status, date_ajout
+            FROM sites
+            WHERE status = 'en_attente'
+            ORDER BY date_ajout DESC, id DESC
+            """
+        )
+        pending_sites = cur.fetchall()
+
+        cur.execute(
+            "SELECT status, COUNT(*) as total FROM sites GROUP BY status"
+        )
+        stats_rows = cur.fetchall()
+    except sqlite3.Error as e:
+        app.logger.error(f"Erreur lors de la récupération des propositions: {e}")
+        flash("Erreur lors de la récupération des propositions.", "error")
+        pending_sites = []
+        stats_rows = []
+    finally:
+        conn.close()
+
+    stats = {row["status"]: row["total"] for row in stats_rows}
+
+    action_forms = {}
+    for site in pending_sites:
+        form = ModerationActionForm()
+        form.site_id.data = str(site["id"])
+        action_forms[site["id"]] = form
+
+    return render_template(
+        "admin/dashboard.html",
+        pending_sites=pending_sites,
+        stats=stats,
+        action_forms=action_forms,
+        admin_username=session.get("admin_username"),
+    )
+
+
+@app.route("/admin/propositions/<int:site_id>", methods=["POST"])
+@admin_required
+def admin_update_site(site_id):
+    form = ModerationActionForm()
+    if not form.validate_on_submit():
+        flash("Formulaire invalide.", "error")
+        return redirect(url_for("admin_dashboard"))
+
+    try:
+        site_id_form = int(form.site_id.data)
+    except (TypeError, ValueError):
+        abort(400)
+
+    if site_id_form != site_id:
+        abort(400)
+
+    action = form.action.data
+    if action not in {"approve", "reject", "delete"}:
+        flash("Action inconnue.", "error")
+        return redirect(url_for("admin_dashboard"))
+
+    conn = get_db_connection()
+    if not conn:
+        flash("Impossible d'accéder à la base de données.", "error")
+        return redirect(url_for("admin_dashboard"))
+
+    message = ""
+    try:
+        cur = conn.cursor()
+        if action == "approve":
+            cur.execute(
+                "UPDATE sites SET status = 'valide', date_ajout = DATETIME('now') WHERE id = ?",
+                (site_id,),
+            )
+            message = "Proposition validée et publiée."
+        elif action == "reject":
+            cur.execute(
+                "UPDATE sites SET status = 'refuse' WHERE id = ?",
+                (site_id,),
+            )
+            message = "Proposition refusée."
+        else:
+            cur.execute("DELETE FROM sites WHERE id = ?", (site_id,))
+            message = "Proposition supprimée."
+
+        if cur.rowcount == 0:
+            flash("Proposition introuvable.", "error")
+            conn.rollback()
+        else:
+            conn.commit()
+            flash(message, "success")
+    except sqlite3.Error as e:
+        conn.rollback()
+        app.logger.error(f"Erreur lors de la mise à jour de la proposition {site_id}: {e}")
+        flash("Erreur lors de la mise à jour de la proposition.", "error")
+    finally:
+        conn.close()
+
+    return redirect(url_for("admin_dashboard"))
 
 @app.route("/")
 def accueil():

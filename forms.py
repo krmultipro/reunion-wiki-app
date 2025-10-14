@@ -5,7 +5,7 @@ SÉCURITÉ : Validation côté serveur pour éviter les injections
 """
 
 from flask_wtf import FlaskForm
-from wtforms import StringField, TextAreaField, SelectField, validators
+from wtforms import HiddenField, PasswordField, SelectField, StringField, SubmitField, TextAreaField
 from wtforms.validators import DataRequired, Length, URL, ValidationError
 import re
 
@@ -84,3 +84,28 @@ class SiteForm(FlaskForm):
         """Champ trappé pour les robots : doit rester vide"""
         if field.data:
             raise ValidationError("Formulaire invalide.")
+
+
+class AdminLoginForm(FlaskForm):
+    """Formulaire de connexion à l'espace de modération"""
+
+    username = StringField(
+        "Identifiant",
+        [
+            DataRequired(message="Identifiant requis"),
+            Length(max=80, message="Identifiant trop long"),
+        ],
+        filters=[_sanitize_basic],
+    )
+    password = PasswordField(
+        "Mot de passe",
+        [DataRequired(message="Mot de passe requis")],
+    )
+    submit = SubmitField("Se connecter")
+
+
+class ModerationActionForm(FlaskForm):
+    """Actions de modération sur une proposition"""
+
+    site_id = HiddenField(validators=[DataRequired()])
+    action = HiddenField(validators=[DataRequired()])

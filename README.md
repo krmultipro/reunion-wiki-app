@@ -17,6 +17,7 @@ Le projet est développé et maintenu par Kery dans le cadre d’un déploiement
 - SEO optimisé : métadonnées dynamiques, sitemap, robots.txt, FAQ, canonical par slug.
 - Sécurité : CSRF, validation WTForms, rate limiting, headers de protection, configuration par environnement.
 - Monitoring : logs Nginx/Gunicorn, GoAccess (statistiques publiques), sauvegardes cron, systemd service.
+- Espace admin sécurisé (`/admin`) pour valider, refuser ou supprimer les propositions directement sur la base de production.
 
 Retrouve l’historique des versions dans [`CHANGELOG.md`](CHANGELOG.md).
 
@@ -94,9 +95,31 @@ MAIL_RECIPIENTS=reunionwiki974@gmail.com
 # Rate limiting (flask-limiter)
 RATELIMIT_DEFAULT=200 per day, 50 per hour
 # RATELIMIT_STORAGE_URL=redis://localhost:6379/0  # optionnel
+
+# Compte de modération (/admin)
+ADMIN_USERNAME=mon-admin
+ADMIN_PASSWORD=motdepassefort
+# ou utilisez un hash sécurisé et commentez ADMIN_PASSWORD :
+# ADMIN_PASSWORD_HASH=pbkdf2:sha256:...
 ```
 
 Les variables sont chargées automatiquement par `config.py`. Ne jamais commiter `.env`.
+
+---
+
+## 🛡️ Interface admin & modération
+- URL : `/admin` (formulaire de connexion `/admin/login`, déconnexion `/admin/logout`).
+- Les identifiants sont lus dans l’environnement (`ADMIN_USERNAME` + `ADMIN_PASSWORD` **ou** `ADMIN_PASSWORD_HASH`).
+- Pour générer un hash sécurisé :
+  ```bash
+  python3 - <<'PY'
+  from werkzeug.security import generate_password_hash
+  print(generate_password_hash("motdepassefort"))
+  PY
+  ```
+  Copie le résultat dans `ADMIN_PASSWORD_HASH` et supprime `ADMIN_PASSWORD`.
+- Une fois connecté, tu peux valider, refuser ou supprimer les propositions en attente ; la mise à jour est faite directement dans `base.db` (celle du VPS).
+- Chaque action est journalisée dans les logs Gunicorn (`journalctl -u reunionwiki -f`).
 
 ---
 
