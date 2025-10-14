@@ -1,24 +1,23 @@
 {% extends "base.html" %}
 
-{% block seo_title %}Modifier une proposition - Réunion Wiki{% endblock %}
-{% block seo_description %}Edition d'une proposition en attente sur Réunion Wiki.{% endblock %}
+{% block seo_title %}{{ page_title }} - Réunion Wiki{% endblock %}
+{% block seo_description %}{{ subtitle or "Interface de modération Réunion Wiki." }}{% endblock %}
 
 {% block content %}
 <section class="admin-card">
   <header class="admin-card__header">
     <div>
-      <h1>Modifier la proposition #{{ site['id'] }}</h1>
-      <p>
-        Édite les informations avant validation. Statut actuel :
-        <strong>{{ site['status'] }}</strong>.
-      </p>
+      <h1>{{ page_title }}</h1>
+      {% if subtitle %}
+      <p>{{ subtitle|safe }}</p>
+      {% endif %}
     </div>
     <a class="btn btn-secondary" href="{{ url_for('admin_dashboard') }}">
       ← Retour au tableau de bord
     </a>
   </header>
 
-  <form method="post" class="admin-form" novalidate>
+  <form method="post" action="{{ form_action }}" class="admin-form" novalidate>
     {{ form.hidden_tag() }}
 
     <div class="admin-form__field">
@@ -63,7 +62,7 @@
     </div>
 
     <div class="admin-form__actions">
-      <button type="submit" class="btn btn-primary">Enregistrer les modifications</button>
+      <button type="submit" class="btn btn-primary">{{ submit_label }}</button>
     </div>
   </form>
 </section>

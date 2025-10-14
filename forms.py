@@ -108,4 +108,3 @@ class ModerationActionForm(FlaskForm):
     """Actions de modération sur une proposition"""
 
     site_id = HiddenField(validators=[DataRequired()])
-    action = HiddenField(validators=[DataRequired()])

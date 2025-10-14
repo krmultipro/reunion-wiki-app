@@ -8,6 +8,7 @@ Le projet suit un versionnement simple où chaque version majeure correspond à 
 - Notifications email automatiques vers `reunionwiki974@gmail.com` lors de chaque soumission (paramétrable via `.env`).
 - Navigation mobile revue façon “ruban” scrollable, suppression du burger menu.
 - Nettoyage CSS mobile (forms responsive) et ajustement du service worker (stratégie réseau-first) pour éviter les versions en cache.
+- Espace admin sécurisé : validation, modification, publication ou suppression des propositions et ajout manuel d’un nouveau site publié.
 
 ## v1 – Navigation et structure (2024-06-15)
 - Création d’une barre de navigation dynamique listant toutes les catégories + liens FAQ, Contact, page “Derniers sites ajoutés”.
@@ -21,4 +22,3 @@ Le projet suit un versionnement simple où chaque version majeure correspond à 
 - Architecture Flask minimale (routes, templates Jinja2, base SQLite, fichier `schema.sql`).
 - Mise en place de l’infrastructure OVH : Gunicorn + Nginx + HTTPS, sauvegardes cron, logs, système systemd.
 - Intégration du portail statique (HTML/CSS) avec ambiance réunionnaise et structure responsive de base.
-

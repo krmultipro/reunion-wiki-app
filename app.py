@@ -393,7 +393,6 @@ def admin_dashboard():
     for site in pending_sites:
         form = ModerationActionForm()
         form.site_id.data = str(site["id"])
-        form.action.data = ""
         action_forms[site["id"]] = form
 
     return render_template(
@@ -410,6 +409,7 @@ def admin_dashboard():
 def admin_update_site(site_id):
     form = ModerationActionForm()
     if not form.validate_on_submit():
+        app.logger.warning(f"Modération formulaire invalide: {form.errors}")
         flash("Formulaire invalide.", "error")
         return redirect(url_for("admin_dashboard"))
 
@@ -421,7 +421,7 @@ def admin_update_site(site_id):
     if site_id_form != site_id:
         abort(400)
 
-    action = form.action.data
+    action = request.form.get("action")
     if action not in {"approve", "reject", "delete"}:
         flash("Action inconnue.", "error")
         return redirect(url_for("admin_dashboard"))
@@ -497,9 +497,13 @@ def admin_edit_site(site_id):
         return redirect(url_for("admin_dashboard"))
 
     form = SiteForm()
+    form.honeypot.data = ""
     categories_list = get_categories()
     form.categorie.choices = [(cat, cat) for cat in categories_list]
     form.categorie.choices.insert(0, ("", "Sélectionnez une catégorie"))
+    posted_category = request.form.get("categorie")
+    if posted_category and posted_category not in [choice[0] for choice in form.categorie.choices]:
+        form.categorie.choices.append((posted_category, posted_category))
 
     if request.method == "GET":
         form.nom.data = site["nom"]
@@ -557,6 +561,64 @@ def admin_edit_site(site_id):
         form=form,
         site=site,
         admin_username=session.get("admin_username"),
+        form_action=url_for("admin_edit_site", site_id=site_id),
+        submit_label="Enregistrer les modifications",
+        page_title=f"Modifier la proposition #{site_id}",
+        subtitle=f"Statut actuel : <strong>{site['status']}</strong>",
+    )
+
+
+@app.route("/admin/propositions/new", methods=["GET", "POST"])
+@admin_required
+def admin_create_site():
+    form = SiteForm()
+    form.honeypot.data = ""
+    categories_list = get_categories()
+    form.categorie.choices = [(cat, cat) for cat in categories_list]
+    form.categorie.choices.insert(0, ("", "Sélectionnez une catégorie"))
+    posted_category = request.form.get("categorie")
+    if posted_category and posted_category not in [choice[0] for choice in form.categorie.choices]:
+        form.categorie.choices.append((posted_category, posted_category))
+
+    if form.validate_on_submit():
+        conn = get_db_connection()
+        if not conn:
+            flash("Impossible de se connecter à la base de données.", "error")
+            return redirect(url_for("admin_dashboard"))
+        try:
+            cur = conn.cursor()
+            cur.execute(
+                """
+                INSERT INTO sites (nom, ville, lien, description, categorie, status, date_ajout, en_vedette)
+                VALUES (?, ?, ?, ?, ?, 'valide', DATETIME('now'), 0)
+                """,
+                (
+                    form.nom.data,
+                    form.ville.data or None,
+                    form.lien.data,
+                    form.description.data,
+                    form.categorie.data,
+                ),
+            )
+            conn.commit()
+            flash("Nouveau site ajouté et publié.", "success")
+            return redirect(url_for("admin_dashboard"))
+        except sqlite3.Error as e:
+            conn.rollback()
+            app.logger.error(f"Erreur lors de la création d'un site depuis l'admin: {e}")
+            flash("Erreur lors de l'ajout du site.", "error")
+        finally:
+            conn.close()
+
+    return render_template(
+        "admin/edit_site.html",
+        form=form,
+        site=None,
+        admin_username=session.get("admin_username"),
+        form_action=url_for("admin_create_site"),
+        submit_label="Publier le site",
+        page_title="Ajouter un nouveau site",
+        subtitle="Complète les champs pour publier le site instantanément.",
     )
 
 @app.route("/")

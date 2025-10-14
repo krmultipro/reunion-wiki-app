@@ -17,7 +17,7 @@ Le projet est développé et maintenu par Kery dans le cadre d’un déploiement
 - SEO optimisé : métadonnées dynamiques, sitemap, robots.txt, FAQ, canonical par slug.
 - Sécurité : CSRF, validation WTForms, rate limiting, headers de protection, configuration par environnement.
 - Monitoring : logs Nginx/Gunicorn, GoAccess (statistiques publiques), sauvegardes cron, systemd service.
-- Espace admin sécurisé (`/admin`) pour valider, refuser ou supprimer les propositions directement sur la base de production.
+- Espace admin sécurisé (`/admin`) pour valider, modifier, publier ou supprimer les propositions directement sur la base de production.
 
 Retrouve l’historique des versions dans [`CHANGELOG.md`](CHANGELOG.md).
 
@@ -118,7 +118,7 @@ Les variables sont chargées automatiquement par `config.py`. Ne jamais commiter
   PY
   ```
   Copie le résultat dans `ADMIN_PASSWORD_HASH` et supprime `ADMIN_PASSWORD`.
-- Une fois connecté, tu peux valider, refuser ou supprimer les propositions en attente ; la mise à jour est faite directement dans `base.db` (celle du VPS).
+- Une fois connecté, tu peux valider, modifier, publier un nouveau site ou supprimer les propositions en attente ; la mise à jour est faite directement dans `base.db` (celle du VPS).
 - Chaque action est journalisée dans les logs Gunicorn (`journalctl -u reunionwiki -f`).
 
 ---

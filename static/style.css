@@ -813,6 +813,18 @@ footer a:hover {
   margin-bottom: 1.5rem;
 }
 
+.admin-dashboard__intro p {
+  margin: 0.25rem 0 0;
+}
+
+.admin-dashboard__actions {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+}
+
 .admin-dashboard__header h1 {
   margin: 0;
 }
@@ -939,8 +951,16 @@ footer a:hover {
     gap: 0.6rem;
   }
 
+  .admin-dashboard__actions {
+    justify-content: flex-start;
+  }
+
   .admin-table__cell--actions {
     grid-template-columns: repeat(2, minmax(110px, 1fr));
+  }
+
+  .admin-form__group {
+    flex-direction: column;
   }
 }
 

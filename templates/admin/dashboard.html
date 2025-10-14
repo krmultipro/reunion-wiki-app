@@ -6,19 +6,24 @@
 {% block content %}
 <section class="admin-dashboard">
   <header class="admin-dashboard__header">
-    <div>
+    <div class="admin-dashboard__intro">
       <h1>Tableau de bord modération</h1>
-      <p>
-        Bonjour {{ admin_username or "admin" }} —
-        <a href="{{ url_for('admin_logout') }}">déconnexion</a>
-      </p>
+      <p>Bonjour {{ admin_username or "admin" }}.</p>
     </div>
-    <ul class="admin-dashboard__stats">
-      <li><strong>{{ stats.get('en_attente', 0) }}</strong> en attente</li>
-      <li><strong>{{ stats.get('valide', 0) }}</strong> publiés</li>
-      <li><strong>{{ stats.get('refuse', 0) }}</strong> refusés</li>
-    </ul>
+    <div class="admin-dashboard__actions">
+      <a class="btn btn-primary" href="{{ url_for('admin_create_site') }}">
+        + Ajouter un site
+      </a>
+      <a class="btn btn-secondary" href="{{ url_for('admin_logout') }}">
+        Déconnexion
+      </a>
+    </div>
   </header>
+  <ul class="admin-dashboard__stats">
+    <li><strong>{{ stats.get('en_attente', 0) }}</strong> en attente</li>
+    <li><strong>{{ stats.get('valide', 0) }}</strong> publiés</li>
+    <li><strong>{{ stats.get('refuse', 0) }}</strong> refusés</li>
+  </ul>
 
   <section class="admin-dashboard__content">
     <h2>Propositions en attente</h2>
@@ -61,7 +66,7 @@
                 action="{{ url_for('admin_update_site', site_id=site['id']) }}"
                 class="admin-table__form"
               >
-                {{ action_forms[site['id']].hidden_tag() }}
+                {{ action_forms[site['id']].csrf_token }}
                 {{ action_forms[site['id']].site_id(value=site['id']) }}
                 <input type="hidden" name="action" value="approve" />
                 <button type="submit" class="btn btn-approve">Valider</button>
@@ -71,7 +76,7 @@
                 action="{{ url_for('admin_update_site', site_id=site['id']) }}"
                 class="admin-table__form"
               >
-                {{ action_forms[site['id']].hidden_tag() }}
+                {{ action_forms[site['id']].csrf_token }}
                 {{ action_forms[site['id']].site_id(value=site['id']) }}
                 <input type="hidden" name="action" value="reject" />
                 <button type="submit" class="btn btn-reject">Refuser</button>
@@ -82,7 +87,7 @@
                 class="admin-table__form"
                 onsubmit="return confirm('Supprimer définitivement cette proposition ?');"
               >
-                {{ action_forms[site['id']].hidden_tag() }}
+                {{ action_forms[site['id']].csrf_token }}
                 {{ action_forms[site['id']].site_id(value=site['id']) }}
                 <input type="hidden" name="action" value="delete" />
                 <button type="submit" class="btn btn-delete">Supprimer</button>
