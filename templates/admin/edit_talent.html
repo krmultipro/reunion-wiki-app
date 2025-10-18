@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block seo_title %}{{ page_title }} - Réunion Wiki{% endblock %}
+{% block seo_description %}Interface de gestion des talents pour l'administration Réunion Wiki.{% endblock %}
+
+{% block content %}
+<section class="admin-card">
+  <header class="admin-card__header">
+    <div>
+      <h1>{{ page_title }}</h1>
+      {% if subtitle %}
+      <p>{{ subtitle|safe }}</p>
+      {% endif %}
+    </div>
+    <a class="btn btn-secondary" href="{{ url_for('admin_talents', status=status_filter, q=search_query) }}">
+      ← Retour aux talents
+    </a>
+  </header>
+
+  <form method="post" action="{{ form_action }}" class="admin-form" novalidate>
+    {{ form.hidden_tag() }}
+
+    <div class="admin-form__field">
+      {{ form.pseudo.label(class_="admin-form__label") }}
+      {{ form.pseudo(class_="admin-form__input") }}
+      {% for error in form.pseudo.errors %}
+      <span class="admin-form__error">{{ error }}</span>
+      {% endfor %}
+    </div>
+
+    <div class="admin-form__field">
+      {{ form.instagram.label(class_="admin-form__label") }}
+      {{ form.instagram(class_="admin-form__input") }}
+      {% for error in form.instagram.errors %}
+      <span class="admin-form__error">{{ error }}</span>
+      {% endfor %}
+    </div>
+
+    <div class="admin-form__field">
+      {{ form.description.label(class_="admin-form__label") }}
+      {{ form.description(class_="admin-form__textarea", rows="5") }}
+      {% for error in form.description.errors %}
+      <span class="admin-form__error">{{ error }}</span>
+      {% endfor %}
+    </div>
+
+    <div class="admin-form__group">
+      <div class="admin-form__field">
+        {{ form.category.label(class_="admin-form__label") }}
+        {{ form.category(class_="admin-form__input") }}
+        {% for error in form.category.errors %}
+        <span class="admin-form__error">{{ error }}</span>
+        {% endfor %}
+      </div>
+      <div class="admin-form__field">
+        {{ form.status.label(class_="admin-form__label") }}
+        {{ form.status(class_="admin-form__input") }}
+        {% for error in form.status.errors %}
+        <span class="admin-form__error">{{ error }}</span>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="admin-form__field">
+      {{ form.image.label(class_="admin-form__label") }}
+      {{ form.image(class_="admin-form__input") }}
+      <small class="admin-form__hint">Optionnel : chemin vers une image statique (ex : talents/pseudo.jpg).</small>
+      {% for error in form.image.errors %}
+      <span class="admin-form__error">{{ error }}</span>
+      {% endfor %}
+    </div>
+
+    <div class="admin-form__actions">
+      <button type="submit" class="btn btn-primary">{{ submit_label }}</button>
+    </div>
+  </form>
+</section>
+{% endblock %}

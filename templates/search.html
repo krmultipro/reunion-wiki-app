@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block seo_title %}
+{% if query %}
+Résultats pour « {{ query }} » - Réunion Wiki
+{% else %}
+Rechercher un site - Réunion Wiki
+{% endif %}
+{% endblock %}
+
+{% block seo_description %}
+Retrouvez rapidement un site utile de La Réunion grâce à la recherche Réunion Wiki.
+{% endblock %}
+
+{% block content %}
+<section class="search-page">
+  <header class="search-page__header">
+    <h1>Recherche</h1>
+    <form action="{{ url_for('search') }}" method="get" class="search-page__form" role="search">
+      <label class="sr-only" for="search-query">Rechercher un site</label>
+      <input
+        id="search-query"
+        name="q"
+        type="search"
+        placeholder="Nom, catégorie, ville..."
+        value="{{ query }}"
+        required
+        minlength="2"
+      />
+      <button type="submit" class="btn btn-primary">Rechercher</button>
+    </form>
+    {% if query %}
+    <p class="search-page__summary">
+      {{ total }} résultat{{ 's' if total != 1 else '' }} pour
+      <strong>« {{ query }} »</strong>
+    </p>
+    {% else %}
+    <p class="search-page__summary">
+      Tape au moins deux caractères pour lancer une recherche.
+    </p>
+    {% endif %}
+  </header>
+
+  {% if total %}
+  <div class="search-results">
+    {% for site in results %}
+    <article class="search-result-card">
+      <header class="search-result-card__header">
+        <h2>{{ site["nom"] }}</h2>
+        <span class="search-result-card__category">{{ site["categorie"] }}</span>
+      </header>
+      <p class="search-result-card__description">
+        {{ site["description"] }}
+      </p>
+      <footer class="search-result-card__footer">
+        <a
+          href="{{ site['lien'] }}"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="btn btn-primary"
+        >
+          Visiter le site ↗
+        </a>
+        <div class="search-result-card__meta">
+          {% if site["ville"] %}
+          <span>📍 {{ site["ville"] }}</span>
+          {% endif %}
+          <span>Mise à jour : {{ site["date_ajout"]|format_date }}</span>
+        </div>
+      </footer>
+    </article>
+    {% endfor %}
+  </div>
+  {% elif query %}
+  <p class="search-empty">
+    Aucun site ne correspond à ta recherche. Essaie un autre mot-clé ou parcoure les catégories.
+  </p>
+  {% endif %}
+</section>
+{% endblock %}

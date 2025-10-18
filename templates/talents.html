@@ -1,0 +1,117 @@
+{% extends "base.html" %} {% block seo_title %}Talents de La Réunion –
+Influenceurs, Comédiens & Chanteurs{% endblock %} {% block seo_description %}Découvrez les
+influenceurs, comédiens et chanteurs réunionnais à suivre : portraits, styles et liens vers
+leurs comptes Instagram.{% endblock %} {% block content %}
+<section class="talents-hero">
+  <h1>Talents de La Réunion</h1>
+  <p>
+    Ma sélection éditoriale d'influenceurs, de comédiens et de chanteurs péi. Glisse pour
+    découvrir les profils, clique sur le nom pour ouvrir leur Instagram, et propose ton talent préféré.
+  </p>
+  <small
+    >Je mets cette liste à jour régulièrement – propose ton talent préféré via
+    le formulaire.</small
+  >
+</section>
+
+{% if talents %}
+{% for category, people in talents.items() %}
+{% if people %}
+<section class="talents-carousel" data-carousel>
+  <div class="talents-carousel__header">
+    <div>
+      <h2>{{ category }}</h2>
+      <p>Glisser pour explorer</p>
+    </div>
+    <div class="carousel-controls" aria-hidden="true">
+      <button
+        type="button"
+        class="carousel-btn carousel-btn--prev"
+        aria-label="Précédent"
+      >
+        ‹
+      </button>
+      <button
+        type="button"
+        class="carousel-btn carousel-btn--next"
+        aria-label="Suivant"
+      >
+        ›
+      </button>
+    </div>
+  </div>
+
+  <div class="talents-carousel__track" data-carousel-track>
+    {% for talent in people %}
+    <article class="talent-card">
+      <div class="talent-card__image">
+        {% if talent.image %}
+        <img
+          src="{{ url_for('static', filename=talent.image) }}"
+          alt="Portrait de {{ talent.name }}"
+        />
+        {% else %}
+        <div class="talent-card__placeholder" aria-hidden="true">
+          {{ talent.name[:1]|upper }}
+        </div>
+        {% endif %}
+      </div>
+      <h3>
+        <a
+          href="{{ talent.instagram }}"
+          target="_blank"
+          rel="noopener noreferrer"
+          >{{ talent.name }}</a
+        >
+      </h3>
+      <p class="talent-card__tagline">{{ talent.tagline }}</p>
+    </article>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+{% endfor %}
+{% else %}
+<p class="talents-empty">
+  Aucun talent publié pour le moment. Propose ton profil préféré via le formulaire ci-dessous.
+</p>
+{% endif %}
+
+<section class="talents-form" id="proposer-talent">
+  <h2>Proposer un talent</h2>
+  <p>
+    Tu connais un influenceur, un comédien ou un chanteur à mettre en avant ?
+    Renseigne son pseudo Instagram, le lien vers son compte et une courte description.
+  </p>
+  <form method="post" action="{{ url_for('talents') }}" class="talents-form__form" novalidate>
+    {{ form.hidden_tag() }}
+    <div class="form-honeypot">
+      {{ form.honeypot.label }} {{ form.honeypot() }}
+    </div>
+    <div class="talents-form__field">
+      {{ form.pseudo.label(class_="talents-form__label") }}
+      {{ form.pseudo(class_="talents-form__input") }}
+      {% for error in form.pseudo.errors %}
+      <span class="talents-form__error">{{ error }}</span>
+      {% endfor %}
+    </div>
+    <div class="talents-form__field">
+      {{ form.instagram.label(class_="talents-form__label") }}
+      {{ form.instagram(class_="talents-form__input") }}
+      {% for error in form.instagram.errors %}
+      <span class="talents-form__error">{{ error }}</span>
+      {% endfor %}
+    </div>
+    <div class="talents-form__field">
+      {{ form.description.label(class_="talents-form__label") }}
+      {{ form.description(class_="talents-form__textarea", rows="4") }}
+      {% for error in form.description.errors %}
+      <span class="talents-form__error">{{ error }}</span>
+      {% endfor %}
+    </div>
+    <button type="submit" class="btn btn-primary talents-form__submit">
+      Envoyer la proposition
+    </button>
+  </form>
+</section>
+{% endblock %}

@@ -8,7 +8,11 @@ Le projet suit un versionnement simple où chaque version majeure correspond à 
 - Notifications email automatiques vers `reunionwiki974@gmail.com` lors de chaque soumission (paramétrable via `.env`).
 - Navigation mobile revue façon “ruban” scrollable, suppression du burger menu.
 - Nettoyage CSS mobile (forms responsive) et ajustement du service worker (stratégie réseau-first) pour éviter les versions en cache.
-- Espace admin sécurisé : validation, modification, publication ou suppression des propositions et ajout manuel d’un nouveau site publié.
+- Espace admin sécurisé : filtres de statut, recherche, validation, modification, publication ou suppression des propositions et ajout manuel d’un nouveau site publié.
+- Nouvelle barre de recherche (icône loupe) accessible sur toutes les pages.
+- Page contact dédiée avec liens email, formulaire et réseaux sociaux.
+- Page blog avec recommandations thématiques pour un meilleur SEO éditorial.
+- Refonte de l'accueil avec carrousels glissables (catégories, derniers ajouts) et CTA intégrés.
 
 ## v1 – Navigation et structure (2024-06-15)
 - Création d’une barre de navigation dynamique listant toutes les catégories + liens FAQ, Contact, page “Derniers sites ajoutés”.

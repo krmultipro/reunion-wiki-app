@@ -13,11 +13,15 @@ Le projet est développé et maintenu par Kery dans le cadre d’un déploiement
 
 - Liste de catégories thématiques (Emploi & formation, Culture & loisirs, Nourriture, Transport, Météo & alertes, Actualités, Achats) + page “Nouveaux sites”.
 - Carte “Proposer un site” sur l’accueil, les pages catégories et page dédiée, avec validation serveur, honeypot anti-bot et notification email.
+- Accueil en carrousels (catégories, nouveautés) avec navigation tactile/flèches.
 - Navigation mobile façon “ruban” scrollable, PWA installable (manifest + service worker réseau-first).
 - SEO optimisé : métadonnées dynamiques, sitemap, robots.txt, FAQ, canonical par slug.
 - Sécurité : CSRF, validation WTForms, rate limiting, headers de protection, configuration par environnement.
 - Monitoring : logs Nginx/Gunicorn, GoAccess (statistiques publiques), sauvegardes cron, systemd service.
 - Espace admin sécurisé (`/admin`) pour valider, modifier, publier ou supprimer les propositions directement sur la base de production.
+- Recherche rapide (loupe en haut de page) sur nom, catégorie, description, ville et URL.
+- Page contact dédiée (email, formulaire, réseaux) pour centraliser les échanges avec la communauté.
+- Page blog avec sélections thématiques et conseils SEO-friendly.
 
 Retrouve l’historique des versions dans [`CHANGELOG.md`](CHANGELOG.md).
 
@@ -118,7 +122,7 @@ Les variables sont chargées automatiquement par `config.py`. Ne jamais commiter
   PY
   ```
   Copie le résultat dans `ADMIN_PASSWORD_HASH` et supprime `ADMIN_PASSWORD`.
-- Une fois connecté, tu peux valider, modifier, publier un nouveau site ou supprimer les propositions en attente ; la mise à jour est faite directement dans `base.db` (celle du VPS).
+- Une fois connecté, tu peux filtrer par statut, rechercher par mot-clé, modifier, publier un nouveau site ou supprimer des propositions ; la mise à jour est faite directement dans `base.db` (celle du VPS).
 - Chaque action est journalisée dans les logs Gunicorn (`journalctl -u reunionwiki -f`).
 
 ---

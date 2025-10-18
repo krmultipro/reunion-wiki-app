@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block seo_title %}Blog Réunion Wiki - Sélections et conseils{% endblock %}
+{% block seo_description %}Découvrez mes sélections thématiques et conseils pour trouver les meilleurs sites internet de La Réunion : emploi, culture, transports, gastronomie et plus encore.{% endblock %}
+
+{% block content %}
+<section class="blog-hero">
+  <h1>Les meilleurs sites internet de La Réunion</h1>
+  <p>
+    Je sélectionne les ressources en ligne les plus utiles pour la vie quotidienne sur l'île :
+    infos pratiques, culture, mobilité, météo, services publics... Parcoure mes recommandations
+    thématiques pour gagner du temps et trouver rapidement le bon site.
+  </p>
+</section>
+
+<section class="blog-section">
+  <h2>Mes sélections par thématique</h2>
+  <p>
+    Chaque catégorie est mise à jour en fonction des retours de la communauté.
+    Clique sur un thème pour voir tous les sites que je vérifie manuellement avant publication.
+  </p>
+  <ul class="blog-list">
+    {% for cat in categories %}
+    <li>
+      <a href="/categorie/{{ categories_slug[cat] }}">{{ cat }}</a>
+      <span class="blog-list__hint">
+        {% if "emploi" in cat|lower %}Offres d'emploi, formations locales, insertion professionnelle
+        {% elif "culture" in cat|lower %}Musique, événements, musées, sorties et loisirs
+        {% elif "nourriture" in cat|lower %}Recettes péi, producteurs locaux, restaurants et marchés
+        {% elif "transport" in cat|lower %}Bus, covoiturage, horaires de navigation, info trafic
+        {% elif "météo" in cat|lower or "meteo" in cat|lower %}Bulletins météo, vigilance cyclonique, observation en temps réel
+        {% elif "actualités" in cat|lower or "actualites" in cat|lower %}Presse locale, radios, chaînes TV et médias indépendants
+        {% elif "achat" in cat|lower %}Petites annonces, e-commerce réunionnais, bons plans
+        {% else %}Sites pratiques à découvrir pour le quotidien{% endif %}
+      </span>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+
+<section class="blog-section">
+  <h2>Pourquoi cette sélection&nbsp;?</h2>
+  <p>
+    Tous les sites présentés ont été vérifiés manuellement : je privilégie les ressources
+    locales, accessibles gratuitement et mises à jour. Les propositions de la communauté sont
+    passées en revue dans l'espace admin avant publication (anti-spam, contenus propres, sources fiables).
+  </p>
+  <p>
+    Tu peux contribuer à l'enrichissement du portail en utilisant le formulaire <a href="{{ url_for('formulaire') }}">Proposer un site</a>
+    ou en me contactant via la page <a href="{{ url_for('contact') }}">Contact</a>.
+  </p>
+</section>
+
+<section class="blog-section">
+  <h2>Reste informé</h2>
+  <ul class="blog-tips">
+    <li>Mets Réunion Wiki en favori pour accéder rapidement aux services essentiels.</li>
+    <li>Installe l'application PWA (icône loupe → « Ajouter à l'écran d'accueil » sur mobile).</li>
+    <li>Suis <a href="https://www.instagram.com/reunionwiki" target="_blank" rel="noopener">@reunionwiki</a> pour les nouveautés.</li>
+  </ul>
+</section>
+{% endblock %}

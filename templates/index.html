@@ -8,114 +8,187 @@ internet utiles de La Réunion.{% endblock %} {% block header_content %}
 </p>
 {% endblock %} {% block content %}
 
-<div class="categories">
-  {% for categorie, sites in data.items() %}
-  <div class="category">
-    <h2>
-      <a href="/categorie/{{ categories_slug[categorie] }}">{{categorie}}</a>
-    </h2>
-    <ul>
-      {% for site in sites %}
-      <li>
-        <a href="{{site['lien']}}" target="_blank" rel="noopener noreferrer">
-          <strong>{{ site['nom'] }}</strong>{% if site['ville'] %} - 📍 {{
-          site['ville'] }}{% endif %} ↗
-        </a>
-        : {{ site['description']|truncate(80, True, '...') }}
-      </li>
-      {% endfor %}
-      <li>
-        <div id="bouton_plus">
-          <a href="/categorie/{{ categories_slug[categorie] }}"
-            >Découvrir plus de sites</a
-          >
-        </div>
-      </li>
-    </ul>
-  </div>
-  {% endfor %}
-  <div class="recent-sites-section">
-    <div class="section-header">
-      <h2>
-        <span class="section-icon">🆕</span>
-        <a href="/nouveaux-sites">Derniers sites ajoutés</a>
-      </h2>
-      <p class="section-subtitle">Les dernières découvertes de la communauté</p>
+<h2 class="home-section-title">Explorer les catégories</h2>
+<p class="home-section-subtitle">
+  Glisse latéralement pour parcourir les thèmes les plus consultés.
+</p>
+<section class="home-carousel" data-carousel>
+  <div class="home-carousel__top">
+    <p class="home-carousel__hint">Glisser pour explorer</p>
+    <div class="carousel-controls" aria-hidden="true">
+      <button
+        type="button"
+        class="carousel-btn carousel-btn--prev"
+        aria-label="Catégorie précédente"
+      >
+        ‹
+      </button>
+      <button
+        type="button"
+        class="carousel-btn carousel-btn--next"
+        aria-label="Catégorie suivante"
+      >
+        ›
+      </button>
     </div>
-
-    <div class="recent-sites-grid">
-      {% for site in derniers_sites %}
-      <div class="recent-site-card">
-        <div class="recent-site-header">
+  </div>
+  <div class="home-carousel__track" data-carousel-track>
+    {% for categorie, sites in data.items() %}
+    <article class="category-card" aria-label="Catégorie {{ categorie }}">
+      <h3>
+        <a href="/categorie/{{ categories_slug[categorie] }}"
+          >{{ categorie }}</a
+        >
+      </h3>
+      <ul class="category-card__list">
+        {% for site in sites[:3] %}
+        <li>
           <a
             href="{{ site['lien'] }}"
             target="_blank"
             rel="noopener noreferrer"
-            class="recent-site-title"
           >
             {{ site['nom'] }}
           </a>
-          <span class="recent-site-badge">Nouveau</span>
-        </div>
+        </li>
+        {% endfor %}
+      </ul>
+      <a
+        class="category-card__cta"
+        href="/categorie/{{ categories_slug[categorie] }}"
+      >
+        Voir la catégorie →
+      </a>
+    </article>
+    {% endfor %}
+  </div>
+</section>
 
-        <div class="recent-site-meta">
+<h2 class="home-section-title">Talents de La Réunion</h2>
+<p class="home-section-subtitle">
+  Influenceurs, comédiens & chanteurs péi à suivre sur Instagram.
+</p>
+{% for category, people in talents.items() %}
+<section class="home-carousel" data-carousel>
+  <div class="home-carousel__top">
+    <p class="home-carousel__hint">
+      Glisser pour parcourir {{ category|lower }}
+    </p>
+    <div class="carousel-controls" aria-hidden="true">
+      <button
+        type="button"
+        class="carousel-btn carousel-btn--prev"
+        aria-label="Profil précédent"
+      >
+        ‹
+      </button>
+      <button
+        type="button"
+        class="carousel-btn carousel-btn--next"
+        aria-label="Profil suivant"
+      >
+        ›
+      </button>
+    </div>
+  </div>
+  <div class="home-carousel__track" data-carousel-track>
+    {% for talent in people %}
+    <article class="talent-card">
+      <div class="talent-card__image">
+        {% if talent.image %}
+        <img
+          src="{{ url_for('static', filename=talent.image) }}"
+          alt="Portrait de {{ talent.name }}"
+        />
+        {% else %}
+        <div class="talent-card__placeholder" aria-hidden="true">
+          {{ talent.name[:1]|upper }}
+        </div>
+        {% endif %}
+      </div>
+      <h3>
+        <a
+          href="{{ talent.instagram }}"
+          target="_blank"
+          rel="noopener noreferrer"
+          >{{ talent.name }}</a
+        >
+      </h3>
+      <p class="talent-card__tagline">{{ talent.tagline }}</p>
+    </article>
+    {% endfor %}
+  </div>
+</section>
+{% endfor %}
+
+<h2 class="home-section-title">Derniers sites ajoutés</h2>
+<p class="home-section-subtitle">
+  Les dernières découvertes de la communauté, publiées et vérifiées par mes soins.
+</p>
+<section class="home-row">
+  <div class="home-carousel home-carousel--secondary" data-carousel>
+    <div class="home-carousel__top">
+      <p class="home-carousel__hint">Glisser pour parcourir les nouveautés</p>
+      <div class="carousel-controls" aria-hidden="true">
+        <button
+          type="button"
+          class="carousel-btn carousel-btn--prev"
+          aria-label="Site précédent"
+        >
+          ‹
+        </button>
+        <button
+          type="button"
+          class="carousel-btn carousel-btn--next"
+          aria-label="Site suivant"
+        >
+          ›
+        </button>
+      </div>
+    </div>
+    <div class="home-carousel__track" data-carousel-track>
+      {% for site in derniers_sites %}
+      <article class="recent-card">
+        <header class="recent-card__header">
+          <a
+            href="{{ site['lien'] }}"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {{ site['nom'] }}
+          </a>
+          <span class="recent-card__badge">Nouveau</span>
+        </header>
+        <p class="recent-card__description">
+          {{ site['description']|truncate(110, True, '...') }}
+        </p>
+        <footer class="recent-card__footer">
           <a
             href="/categorie/{{ categories_slug[site['categorie']] }}"
-            class="recent-site-category"
+            class="recent-card__category"
           >
             {{ site['categorie'] }}
           </a>
-          <span class="recent-site-date"
-            >{{ site['date_ajout']|format_date }}</span
-          >
-        </div>
-
-        <p class="recent-site-description">
-          {{ site['description']| truncate(100, True, '...') }}
-        </p>
-      </div>
+          <time datetime="{{ site['date_ajout'] }}">
+            {{ site['date_ajout']|format_date }}
+          </time>
+        </footer>
+      </article>
       {% endfor %}
     </div>
-
-    <div class="section-footer">
+    <div class="carousel-cta">
       <a href="/nouveaux-sites" class="view-all-btn">
         <span>Voir tous les nouveaux sites</span>
         <span class="btn-arrow">→</span>
       </a>
     </div>
   </div>
-  <section class="seo-top-sites">
-    <h2>Les meilleurs sites internet de La Réunion</h2>
-    <p>
-      Réunion Wiki sélectionne les sites les plus utiles pour la vie quotidienne
-      à La Réunion, classés par thème :
-    </p>
-    <ul>
-      {% for cat in categories %}
-      <li>
-        <a href="/categorie/{{ categories_slug[cat] }}">{{ cat }}</a> : {% if
-        "emploi" in cat|lower %} offres d'emploi, formations locales, insertion
-        {% elif "culture" in cat|lower %} musique, événements, musées, sorties
-        {% elif "nourriture" in cat|lower %} recettes péi, producteurs, restos,
-        marchés {% elif "transport" in cat|lower %} bus, covoiturage, horaires,
-        routes {% elif "météo" in cat|lower or "meteo" in cat|lower %} cyclone,
-        vigilance, météo en temps réel {% elif "actualités" in cat|lower or
-        "actualites" in cat|lower %} infos locales, presse, médias réunionnais
-        {% elif "achat" in cat|lower %} petites annonces, e-commerce, bons plans
-        locaux {% else %} sites utiles à découvrir {% endif %}
-      </li>
-      {% endfor %}
-    </ul>
-    <p>
-      Ce portail est mis à jour régulièrement avec des sites fiables, faciles à
-      utiliser et 100% réunionnais 🌴
-    </p>
-  </section>
-</div>
+</section>
 
 {% if form_inline %}
-<section id="proposer-un-site">
-  {% include "_proposer_form.html" with context %}
+<section class="home-propose-wrapper">
+  <aside class="home-propose" id="proposer-un-site">
+    {% include "_proposer_form.html" with context %}
+  </aside>
 </section>
-{% endif %}
-{% endblock %}
+{% endif %} {% endblock %}

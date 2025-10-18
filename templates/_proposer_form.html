@@ -3,7 +3,8 @@
   <header class="proposer-card__header">
     <h2 id="proposer-card-title">Proposer un site utile</h2>
     <p>
-      Tu connais une ressource fiable qui mérite sa place sur Réunion Wiki ? Partage-la et nous la vérifierons avant publication.
+      Tu connais une ressource fiable qui mérite sa place sur Réunion Wiki ?
+      Partage-la et je la vérifierai avant publication.
     </p>
   </header>
 
@@ -15,15 +16,13 @@
   >
     {{ form.hidden_tag() }}
     <div class="form-honeypot">
-      {{ form.honeypot.label }}
-      {{ form.honeypot() }}
+      {{ form.honeypot.label }} {{ form.honeypot() }}
     </div>
 
     <div class="form-grid">
       <div class="form-field">
-        {{ form.nom.label(class="form-label") }}
-        {{ form.nom(class="form-input", placeholder="Ex : Météo France Réunion") }}
-        {% if form.nom.errors %}
+        {{ form.nom.label(class="form-label") }} {{ form.nom(class="form-input",
+        placeholder="Ex : Météo France Réunion") }} {% if form.nom.errors %}
         <div class="form-errors" id="{{ form.nom.id }}-errors">
           {% for error in form.nom.errors %}
           <span class="error-item">{{ error }}</span>
@@ -32,9 +31,9 @@
         {% endif %}
       </div>
       <div class="form-field">
-        {{ form.lien.label(class="form-label") }}
-        {{ form.lien(class="form-input", placeholder="https://example.com") }}
-        {% if form.lien.errors %}
+        {{ form.lien.label(class="form-label") }} {{
+        form.lien(class="form-input", placeholder="https://example.com") }} {%
+        if form.lien.errors %}
         <div class="form-errors" id="{{ form.lien.id }}-errors">
           {% for error in form.lien.errors %}
           <span class="error-item">{{ error }}</span>
@@ -43,9 +42,8 @@
         {% endif %}
       </div>
       <div class="form-field">
-        {{ form.categorie.label(class="form-label") }}
-        {{ form.categorie(class="form-select") }}
-        {% if form.categorie.errors %}
+        {{ form.categorie.label(class="form-label") }} {{
+        form.categorie(class="form-select") }} {% if form.categorie.errors %}
         <div class="form-errors" id="{{ form.categorie.id }}-errors">
           {% for error in form.categorie.errors %}
           <span class="error-item">{{ error }}</span>
@@ -54,9 +52,9 @@
         {% endif %}
       </div>
       <div class="form-field">
-        {{ form.ville.label(class="form-label") }}
-        {{ form.ville(class="form-input", placeholder="Ex : Saint-Denis (optionnel)") }}
-        {% if form.ville.errors %}
+        {{ form.ville.label(class="form-label") }} {{
+        form.ville(class="form-input", placeholder="Ex : Saint-Denis
+        (optionnel)") }} {% if form.ville.errors %}
         <div class="form-errors" id="{{ form.ville.id }}-errors">
           {% for error in form.ville.errors %}
           <span class="error-item">{{ error }}</span>
@@ -65,9 +63,10 @@
         {% endif %}
       </div>
       <div class="form-field form-field--wide">
-        {{ form.description.label(class="form-label") }}
-        {{ form.description(class="form-textarea", rows="4", placeholder="Décrivez brièvement ce site et pourquoi il est utile...") }}
-        {% if form.description.errors %}
+        {{ form.description.label(class="form-label") }} {{
+        form.description(class="form-textarea", rows="4", placeholder="Décrivez
+        brièvement ce site et pourquoi il est utile...") }} {% if
+        form.description.errors %}
         <div class="form-errors" id="{{ form.description.id }}-errors">
           {% for error in form.description.errors %}
           <span class="error-item">{{ error }}</span>
@@ -78,9 +77,13 @@
     </div>
 
     <div class="form-actions">
-      <button type="submit" class="btn btn-primary">Envoyer ma proposition</button>
+      <button type="submit" class="btn btn-primary">
+        Envoyer ma proposition
+      </button>
       <p class="form-note">
-        Nous validons chaque contribution pour garantir la qualité des liens partagés. Besoin du mode détaillé ? <a href="{{ url_for('formulaire') }}">Ouvre le formulaire complet</a>.
+        Je valide chaque contribution pour garantir la qualité des liens
+        partagés. Besoin du mode détaillé ?
+        <a href="{{ url_for('formulaire') }}">Ouvre le formulaire complet</a>.
       </p>
     </div>
   </form>

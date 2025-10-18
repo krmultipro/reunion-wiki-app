@@ -91,6 +91,13 @@
 
     <!-- Navigation principale -->
     <nav class="main-nav">
+      <button
+        class="nav-search-toggle"
+        aria-expanded="false"
+        aria-label="Ouvrir la recherche"
+      >
+        🔍
+      </button>
       <div class="nav-scroll" data-scrollable>
         <!-- Liste des liens -->
         <ul class="nav-links" id="main-nav-links">
@@ -129,6 +136,24 @@
         <li><a href="{{ url_for('faq') }}">FAQ</a></li>
         <li>
           <a
+            href="{{ url_for('talents') }}"
+            class="{{ 'active' if request.path == url_for('talents') else '' }}"
+            aria-current="{{ 'page' if request.path == url_for('talents') else '' }}"
+          >
+            Talents
+          </a>
+        </li>
+        <li>
+          <a
+            href="{{ url_for('blog') }}"
+            class="{{ 'active' if request.path == url_for('blog') else '' }}"
+            aria-current="{{ 'page' if request.path == url_for('blog') else '' }}"
+          >
+            Blog
+          </a>
+        </li>
+        <li>
+          <a
             href="{{ url_for('formulaire') }}"
             class="{{ 'active' if request.path == url_for('formulaire') else '' }}"
             aria-current="{{ 'page' if request.path == url_for('formulaire') else '' }}"
@@ -137,13 +162,46 @@
           </a>
         </li>
         <li>
-          <a href="https://forms.gle/GScJkMiEZXVSted78" target="_blank"
-            >Contact</a
+          <a
+            href="{{ url_for('contact') }}"
+            class="{{ 'active' if request.path == url_for('contact') else '' }}"
+            aria-current="{{ 'page' if request.path == url_for('contact') else '' }}"
           >
+            Contact
+          </a>
         </li>
       </ul>
       </div>
     </nav>
+
+    <form
+      class="nav-search-panel"
+      action="{{ url_for('search') }}"
+      method="get"
+      role="search"
+    >
+      <div class="nav-search-panel__inner">
+        <label class="sr-only" for="nav-search-input">Rechercher un site</label>
+        <input
+          id="nav-search-input"
+          name="q"
+          type="search"
+          placeholder="Rechercher un site (ex : emploi, transport...)"
+          value="{{ request.args.get('q', '') if request.endpoint == 'search' else '' }}"
+          required
+          minlength="2"
+          autocomplete="off"
+        />
+        <button type="submit" class="btn btn-primary">Rechercher</button>
+        <button
+          type="button"
+          class="nav-search-close"
+          aria-label="Fermer la recherche"
+        >
+          ✕
+        </button>
+      </div>
+    </form>
 
     <main>{% block content %}{% endblock %}</main>
 
@@ -167,9 +225,7 @@
       <nav>
         <a href="{{ url_for('faq') }}">FAQ</a> |
         <a href="/mentions-legales" target="_blank">Mentions légales</a> |
-        <a href="https://forms.gle/GScJkMiEZXVSted78" target="_blank"
-          >Contact</a
-        >
+        <a href="{{ url_for('contact') }}">Contact</a>
       </nav>
     </footer>
 
@@ -248,6 +304,83 @@
         updateShadows();
         scroller.addEventListener("scroll", updateShadows, { passive: true });
         window.addEventListener("resize", updateShadows);
+      });
+    </script>
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const toggle = document.querySelector(".nav-search-toggle");
+        const panel = document.querySelector(".nav-search-panel");
+        const closeBtn = document.querySelector(".nav-search-close");
+        const input = document.querySelector("#nav-search-input");
+
+        if (!toggle || !panel || !closeBtn || !input) return;
+
+        const openSearch = () => {
+          panel.classList.add("nav-search-panel--open");
+          toggle.setAttribute("aria-expanded", "true");
+          window.setTimeout(() => input.focus(), 50);
+        };
+
+        const closeSearch = () => {
+          panel.classList.remove("nav-search-panel--open");
+          toggle.setAttribute("aria-expanded", "false");
+          toggle.focus();
+        };
+
+        toggle.addEventListener("click", () => {
+          if (panel.classList.contains("nav-search-panel--open")) {
+            closeSearch();
+          } else {
+            openSearch();
+          }
+        });
+
+        closeBtn.addEventListener("click", closeSearch);
+        panel.addEventListener("keydown", (event) => {
+          if (event.key === "Escape") {
+            event.preventDefault();
+            closeSearch();
+          }
+        });
+      });
+    </script>
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        document.querySelectorAll("[data-carousel]").forEach((carousel) => {
+          const track = carousel.querySelector("[data-carousel-track]");
+          if (!track) return;
+
+          const prev = carousel.querySelector(".carousel-btn--prev");
+          const next = carousel.querySelector(".carousel-btn--next");
+
+          const updateButtons = () => {
+            if (!prev || !next) return;
+            const maxScroll = track.scrollWidth - track.clientWidth;
+            const atStart = track.scrollLeft <= 0;
+            const atEnd = track.scrollLeft >= maxScroll - 1;
+            prev.classList.toggle("is-visible", !atStart && maxScroll > 0);
+            next.classList.toggle("is-visible", !atEnd && maxScroll > 0);
+            prev.disabled = atStart;
+            next.disabled = atEnd;
+          };
+
+          const scrollByAmount = () => {
+            track.scrollBy({ left: track.clientWidth * 0.8, behavior: "smooth" });
+          };
+
+          if (prev) {
+            prev.addEventListener("click", () => {
+              track.scrollBy({ left: -track.clientWidth * 0.8, behavior: "smooth" });
+            });
+          }
+          if (next) {
+            next.addEventListener("click", scrollByAmount);
+          }
+
+          track.addEventListener("scroll", updateButtons, { passive: true });
+          window.addEventListener("resize", updateButtons);
+          updateButtons();
+        });
       });
     </script>
   </body>
