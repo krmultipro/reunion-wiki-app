@@ -101,76 +101,78 @@
       <div class="nav-scroll" data-scrollable>
         <!-- Liste des liens -->
         <ul class="nav-links" id="main-nav-links">
-        <li>
-          <a
-            href="{{ url_for('accueil') }}"
-            class="{{ 'active' if request.path == url_for('accueil') else '' }}"
-            aria-current="{{ 'page' if request.path == url_for('accueil') else '' }}"
-          >
-            Accueil
-          </a>
-        </li>
+          <li>
+            <a
+              href="{{ url_for('accueil') }}"
+              class="{{ 'active' if request.path == url_for('accueil') else '' }}"
+              aria-current="{{ 'page' if request.path == url_for('accueil') else '' }}"
+            >
+              Accueil
+            </a>
+          </li>
 
-        {% for cat in categories %} {% set slug = categories_slug[cat] %} {% set
-        cat_url = url_for('voir_categorie', slug=slug) %}
-        <li>
-          <a
-            href="{{ cat_url }}"
-            class="{{ 'active' if request.path.startswith(cat_url) else '' }}"
-            aria-current="{{ 'page' if request.path.startswith(cat_url) else '' }}"
-          >
-            {{ cat }}
-          </a>
-        </li>
-        {% endfor %}
+          {% for cat in categories %} {% set slug = categories_slug[cat] %} {%
+          set cat_url = url_for('voir_categorie', slug=slug) %}
+          <li>
+            <a
+              href="{{ cat_url }}"
+              class="{{ 'active' if request.path.startswith(cat_url) else '' }}"
+              aria-current="{{ 'page' if request.path.startswith(cat_url) else '' }}"
+            >
+              {{ cat }}
+            </a>
+          </li>
+          {% endfor %}
 
-        <li>
-          <a
-            href="{{ url_for('nouveaux_sites') }}"
-            class="{{ 'active' if request.path == url_for('nouveaux_sites') else '' }}"
-            aria-current="{{ 'page' if request.path == url_for('nouveaux_sites') else '' }}"
-          >
-            Derniers sites ajoutés
-          </a>
-        </li>
-        <li><a href="{{ url_for('faq') }}">FAQ</a></li>
-        <li>
-          <a
-            href="{{ url_for('talents') }}"
-            class="{{ 'active' if request.path == url_for('talents') else '' }}"
-            aria-current="{{ 'page' if request.path == url_for('talents') else '' }}"
-          >
-            Talents
-          </a>
-        </li>
-        <li>
-          <a
-            href="{{ url_for('blog') }}"
-            class="{{ 'active' if request.path == url_for('blog') else '' }}"
-            aria-current="{{ 'page' if request.path == url_for('blog') else '' }}"
-          >
-            Blog
-          </a>
-        </li>
-        <li>
-          <a
-            href="{{ url_for('formulaire') }}"
-            class="{{ 'active' if request.path == url_for('formulaire') else '' }}"
-            aria-current="{{ 'page' if request.path == url_for('formulaire') else '' }}"
-          >
-            Proposer un site
-          </a>
-        </li>
-        <li>
-          <a
-            href="{{ url_for('contact') }}"
-            class="{{ 'active' if request.path == url_for('contact') else '' }}"
-            aria-current="{{ 'page' if request.path == url_for('contact') else '' }}"
-          >
-            Contact
-          </a>
-        </li>
-      </ul>
+          <li>
+            <a
+              href="{{ url_for('nouveaux_sites') }}"
+              class="{{ 'active' if request.path == url_for('nouveaux_sites') else '' }}"
+              aria-current="{{ 'page' if request.path == url_for('nouveaux_sites') else '' }}"
+            >
+              Derniers sites ajoutés
+            </a>
+          </li>
+          <li>
+            <a
+              href="{{ url_for('formulaire') }}"
+              class="{{ 'active' if request.path == url_for('formulaire') else '' }}"
+              aria-current="{{ 'page' if request.path == url_for('formulaire') else '' }}"
+            >
+              Proposer un site
+            </a>
+          </li>
+          <li>
+            <a
+              href="{{ url_for('talents') }}"
+              class="{{ 'active' if request.path == url_for('talents') else '' }}"
+              aria-current="{{ 'page' if request.path == url_for('talents') else '' }}"
+            >
+              Talents
+            </a>
+          </li>
+          <li><a href="{{ url_for('faq') }}">FAQ</a></li>
+
+          <li>
+            <a
+              href="{{ url_for('blog') }}"
+              class="{{ 'active' if request.path == url_for('blog') else '' }}"
+              aria-current="{{ 'page' if request.path == url_for('blog') else '' }}"
+            >
+              Blog
+            </a>
+          </li>
+
+          <li>
+            <a
+              href="{{ url_for('contact') }}"
+              class="{{ 'active' if request.path == url_for('contact') else '' }}"
+              aria-current="{{ 'page' if request.path == url_for('contact') else '' }}"
+            >
+              Contact
+            </a>
+          </li>
+        </ul>
       </div>
     </nav>
 
@@ -365,12 +367,18 @@
           };
 
           const scrollByAmount = () => {
-            track.scrollBy({ left: track.clientWidth * 0.8, behavior: "smooth" });
+            track.scrollBy({
+              left: track.clientWidth * 0.8,
+              behavior: "smooth",
+            });
           };
 
           if (prev) {
             prev.addEventListener("click", () => {
-              track.scrollBy({ left: -track.clientWidth * 0.8, behavior: "smooth" });
+              track.scrollBy({
+                left: -track.clientWidth * 0.8,
+                behavior: "smooth",
+              });
             });
           }
           if (next) {

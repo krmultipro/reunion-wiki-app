@@ -956,7 +956,7 @@ footer a:hover {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, var(--bleu-océan), var(--vert-fougere));
+  background: var(--vert-fougere);
   color: var(--blanc);
   box-shadow: 0 12px 20px rgba(0, 119, 204, 0.25);
 }
@@ -1273,7 +1273,7 @@ footer a:hover {
 }
 
 .admin-status-tab--active {
-  background: linear-gradient(135deg, var(--bleu-océan), var(--vert-fougere));
+  background: var(--vert-fougere);
   color: var(--blanc);
   box-shadow: 0 8px 18px rgba(0, 119, 204, 0.18);
 }
@@ -1421,7 +1421,7 @@ footer a:hover {
 }
 
 .btn-approve {
-  background: linear-gradient(135deg, var(--bleu-océan), var(--vert-fougere));
+  background: var(--vert-fougere);
   color: var(--blanc);
 }
 
@@ -2017,15 +2017,14 @@ form .button input {
   outline: none;
   border: none;
   color: #fff;
-  background: linear-gradient(-135deg, var(--bleu-océan), var(--vert-fougere));
-
+  background: var(--vert-fougere);
   font-size: 18px;
   font-weight: 500;
   letter-spacing: 1px;
   border-radius: 5px;
 }
 form .button input:hover {
-  background: linear-gradient(135deg, var(--bleu-océan), var(--vert-fougere));
+  background: rgba(11, 132, 87, 0.85);
 }
 @media (max-width: 584px) {
   .container {
