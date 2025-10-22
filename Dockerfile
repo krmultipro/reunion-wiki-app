@@ -11,10 +11,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 ENV FLASK_ENV=production \
-    DATABASE_PATH=/app/base.db
+    DATABASE_PATH=/app/data/base.db
 
 EXPOSE 8000
 
 CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:8000", "app:app"]
-
 

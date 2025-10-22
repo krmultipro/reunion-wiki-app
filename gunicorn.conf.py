@@ -45,7 +45,7 @@ pidfile = os.path.join(runtime_dir, "gunicorn.pid")
 # Environnement
 raw_env = [
     'FLASK_ENV=production',
-    'DATABASE_PATH=/var/www/reunion-wiki-app/base.db'
+    'DATABASE_PATH=/var/www/reunion-wiki-app/data/base.db'
 ]
 
 # Headers de sécurité

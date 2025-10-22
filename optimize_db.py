@@ -7,12 +7,15 @@ PERFORMANCE : Ajoute des index pour accélérer les requêtes
 
 import sqlite3
 import os
+from pathlib import Path
 from dotenv import load_dotenv
 
 # Chargement des variables d'environnement
 load_dotenv()
 
-DATABASE_PATH = os.getenv('DATABASE_PATH', 'base.db')
+BASE_DIR = Path(__file__).resolve().parent
+DEFAULT_DB = BASE_DIR / "data" / "base.db"
+DATABASE_PATH = os.getenv('DATABASE_PATH', str(DEFAULT_DB))
 
 def optimize_database():
     """Ajoute des index pour optimiser les performances"""

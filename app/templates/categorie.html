@@ -1,0 +1,56 @@
+{% extends "base.html" %} {# --- SEO dynamique transmis par app.py --- #} {%
+block seo_title %}{{ seo_title }}{% endblock %} {% block seo_description %}{{
+seo_description }}{% endblock %} {% block canonical %}{{ canonical }}{% endblock
+%} {% block og_url %}{{ canonical }}{% endblock %} {% block content %}
+<div class="category_page">
+  <h1>{{ nom_categorie }} à La Réunion</h1>
+
+  <p class="intro">
+    Retrouvez ici une sélection de sites {{ nom_categorie|lower }} pour toute
+    l'île : adresses utiles, informations pratiques et ressources locales.
+  </p>
+
+  <ul>
+    {% for site in sites %}
+    <li>
+      <a href="{{ site['lien'] }}" target="_blank" rel="noopener noreferrer">
+        <strong>{{ site['nom'] }}</strong>
+        {% if site['ville'] %} – {{ site['ville'] }}{% endif %} ↗
+      </a>
+      : {{ site['description'] }}
+    </li>
+    {% endfor %}
+  </ul>
+  {% if form_inline %}
+  <div class="category-inline-form">
+    {% include "_proposer_form.html" with context %}
+  </div>
+  {% endif %}
+
+  <div id="bouton_plus">
+    <a href="/">← Retour à l'accueil</a>
+  </div>
+</div>
+{% endblock %} {# --- Option SEO bonus : JSON-LD pour liste de sites --- #} {%
+block head %}
+<script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "name": "Sites {{ nom_categorie }} – Réunion Wiki",
+    "itemListElement": [
+      {% for site in sites %}
+      {
+        "@type": "ListItem",
+        "position": {{ loop.index }},
+        "item": {
+          "@type": "WebSite",
+          "name": {{ site['nom']|tojson }},
+          "url": {{ site['lien']|tojson }}
+        }
+      }{% if not loop.last %},{% endif %}
+      {% endfor %}
+    ]
+  }
+</script>
+{% endblock %}

@@ -1,0 +1,14 @@
+Nouvelle proposition de site sur Réunion Wiki
+==================================================
+
+Nom du site : {{ nom }}
+URL         : {{ lien }}
+Catégorie   : {{ categorie }}
+Ville       : {{ ville or 'Non renseignée' }}
+Description :
+{{ description }}
+
+Envoyé le : {{ date_submission }}
+Adresse IP : {{ remote_addr }}
+
+Connecte-toi à l'interface d'administration pour valider ou refuser cette proposition.

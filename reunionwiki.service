@@ -7,7 +7,7 @@ User=reunionwik
 Group=www-data
 WorkingDirectory=/var/www/reunion-wiki-app
 Environment=FLASK_ENV=production
-Environment=DATABASE_PATH=/var/www/reunion-wiki-app/base.db
+Environment=DATABASE_PATH=/var/www/reunion-wiki-app/data/base.db
 ExecStart=/var/www/reunion-wiki-app/venv/bin/gunicorn \
   --config /var/www/reunion-wiki-app/gunicorn.conf.py \
   app:app

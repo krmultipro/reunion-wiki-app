@@ -23,7 +23,7 @@ Le projet est développé et maintenu par Kery dans le cadre d’un déploiement
 - Page contact dédiée (email, formulaire, réseaux) pour centraliser les échanges avec la communauté.
 - Page blog avec sélections thématiques et conseils SEO-friendly.
 
-Retrouve l’historique des versions dans [`CHANGELOG.md`](CHANGELOG.md).
+Retrouve l’historique des versions dans [`docs/CHANGELOG.md`](docs/CHANGELOG.md).
 
 ---
 
@@ -35,6 +35,32 @@ Retrouve l’historique des versions dans [`CHANGELOG.md`](CHANGELOG.md).
 - **Notifications** : SMTP (msmtp côté VPS ou configuration Gmail via variables d’environnement).
 - **Déploiement** : VPS OVH (Gunicorn + Nginx + Certbot), service systemd `reunionwiki`.
 - **Monitoring & sécurité** : UFW, Fail2Ban, backups cron, accès SSH par clés.
+
+## 🗂 Structure du projet
+
+```text
+app/
+  __init__.py        # Application Flask principale
+  forms.py           # Formulaires WTForms
+  static/            # Assets (CSS, JS, images…)
+  templates/         # Gabarits Jinja2
+data/
+  base.db            # Base SQLite locale (non versionnée)
+  backups/           # Sauvegardes et exports
+docs/
+  CHANGELOG.md
+  .env.example
+  notes_dev.md
+scripts/
+  backup_base.py
+  export_sites.py
+  ...                # Scripts d’admin / déploiement
+tests/
+  test_routes.py
+app.py               # Point d’entrée (import app)
+config.py            # Configuration centralisée
+optimize_db.py       # Maintenance de la base
+```
 
 ---
 
@@ -63,7 +89,7 @@ pip install --upgrade pip
 pip install -r requirements.txt
 
 # 4. Copier l'exemple de configuration (à créer au besoin)
-cp script/.env.sample .env  # adapter les valeurs
+cp docs/.env.example .env  # adapter les valeurs
 
 # 5. Initialiser/optimiser la base (facultatif en dev)
 python3 optimize_db.py
@@ -82,7 +108,7 @@ Créer un fichier `.env` à la racine (non versionné). Exemple minimal :
 
 ```bash
 SECRET_KEY=change-me
-DATABASE_PATH=base.db
+DATABASE_PATH=data/base.db
 FLASK_ENV=development
 
 # Notifications email (désactivées par défaut)
@@ -122,14 +148,14 @@ Les variables sont chargées automatiquement par `config.py`. Ne jamais commiter
   PY
   ```
   Copie le résultat dans `ADMIN_PASSWORD_HASH` et supprime `ADMIN_PASSWORD`.
-- Une fois connecté, tu peux filtrer par statut, rechercher par mot-clé, modifier, publier un nouveau site ou supprimer des propositions ; la mise à jour est faite directement dans `base.db` (celle du VPS).
+- Une fois connecté, tu peux filtrer par statut, rechercher par mot-clé, modifier, publier un nouveau site ou supprimer des propositions ; la mise à jour est faite directement dans `data/base.db` (celle du VPS).
 - Chaque action est journalisée dans les logs Gunicorn (`journalctl -u reunionwiki -f`).
 
 ---
 
 ## 🧪 Validation rapide
 
-- `python3 -m compileall app.py forms.py config.py optimize_db.py`  
+- `python3 -m compileall app config.py optimize_db.py`  
   (permet de détecter des erreurs de syntaxe avant push)
 - Tests manuels : navigation, soumission du formulaire, vérification des mails (si activés).
 
@@ -154,8 +180,8 @@ journalctl -u reunionwiki -f
 sudo systemctl restart reunionwiki
 
 # Exporter la table `sites` (CSV horodaté)
-python3 script/export_sites.py \
-  --database /var/www/reunion-wiki-app/base.db \
+python3 scripts/export_sites.py \
+  --database /var/www/reunion-wiki-app/data/base.db \
   --output-dir /home/reunionwiki/exports
 ```
 
@@ -170,7 +196,7 @@ python3 script/export_sites.py \
    sudo mv reunion-wiki-app reunion-wiki-app.bak.$(date +%Y%m%d)
    git clone <URL_DU_REPO> reunion-wiki-app
    ```
-3. Copier les fichiers sensibles depuis l’ancienne version (`.env`, `base.db`, uploads, etc.).
+3. Copier les fichiers sensibles depuis l’ancienne version (`.env`, `data/base.db`, uploads, etc.).
 4. Vérifier les permissions (`sudo chown -R reunionwiki:reunionwiki /var/www/reunion-wiki-app`).
 5. Redémarrer Gunicorn via systemd :
    ```bash

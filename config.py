@@ -5,7 +5,12 @@ SÉCURITÉ : Configuration centralisée avec variables d'environnement
 """
 
 import os
+from pathlib import Path
 from dotenv import load_dotenv
+
+# Chemins de base
+BASE_DIR = Path(__file__).resolve().parent
+DEFAULT_DB_PATH = BASE_DIR / "data" / "base.db"
 
 # Chargement des variables d'environnement
 load_dotenv()
@@ -13,7 +18,7 @@ load_dotenv()
 class Config:
     """Configuration de base"""
     SECRET_KEY = os.getenv('SECRET_KEY', 'dev-key-change-in-production')
-    DATABASE_PATH = os.getenv('DATABASE_PATH', 'base.db')
+    DATABASE_PATH = os.getenv('DATABASE_PATH', str(DEFAULT_DB_PATH))
     
     # NOTIFICATIONS : configuration email (désactivée par défaut)
     MAIL_ENABLED = os.getenv('MAIL_ENABLED', 'false').lower() == 'true'

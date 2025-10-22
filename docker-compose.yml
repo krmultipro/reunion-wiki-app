@@ -13,7 +13,7 @@ services:
     environment:
       - FLASK_ENV=production
       - RATELIMIT_STORAGE_URL=redis://redis:6379/0
-      - DATABASE_PATH=/app/base.db
+      - DATABASE_PATH=/app/data/base.db
     depends_on:
       - redis
     volumes:

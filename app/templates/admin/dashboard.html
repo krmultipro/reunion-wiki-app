@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+
+{% block seo_title %}Modération - Réunion Wiki{% endblock %}
+{% block seo_description %}Tableau de bord des propositions Réunion Wiki.{% endblock %}
+
+{% block content %}
+<section class="admin-dashboard">
+  <header class="admin-dashboard__header">
+    <div class="admin-dashboard__intro">
+      <h1>Tableau de bord modération</h1>
+      <p>Bonjour {{ admin_username or "admin" }}.</p>
+    </div>
+    <div class="admin-dashboard__actions">
+      <a class="btn btn-primary" href="{{ url_for('admin_create_site') }}">
+        + Ajouter un site
+      </a>
+      <a class="btn btn-secondary" href="{{ url_for('admin_talents') }}">
+        Gérer les talents
+      </a>
+      <a class="btn btn-secondary" href="{{ url_for('admin_logout') }}">
+        Déconnexion
+      </a>
+    </div>
+  </header>
+  <div class="admin-dashboard__filters">
+    <nav class="admin-status-tabs" aria-label="Filtrer par statut">
+      {% set tabs = [
+        ('en_attente', 'En attente', stats.get('en_attente', 0)),
+        ('valide', 'Publiés', stats.get('valide', 0)),
+        ('refuse', 'Refusés', stats.get('refuse', 0)),
+        ('tout', 'Tous', stats.get('tout', 0))
+      ] %}
+      {% for code, label, count in tabs %}
+      <a
+        href="{{ url_for('admin_dashboard', status=code, q=search_query) }}"
+        class="admin-status-tab {{ 'admin-status-tab--active' if status_filter == code else '' }}"
+      >
+        {{ label }} <span>{{ count }}</span>
+      </a>
+      {% endfor %}
+    </nav>
+    <form class="admin-search-form" method="get" action="{{ url_for('admin_dashboard') }}">
+      <input type="hidden" name="status" value="{{ status_filter }}" />
+      <input
+        type="search"
+        name="q"
+        placeholder="Rechercher un site (nom, catégorie, description...)"
+        value="{{ search_query }}"
+        minlength="2"
+      />
+      <button type="submit" class="btn btn-primary">Rechercher</button>
+      {% if search_query %}
+      <a class="admin-search-reset" href="{{ url_for('admin_dashboard', status=status_filter) }}">Effacer</a>
+      {% endif %}
+    </form>
+  </div>
+
+  <section class="admin-dashboard__content">
+    <header class="admin-dashboard__content-header">
+      {% if status_filter == 'en_attente' %}
+      <h2>Propositions en attente</h2>
+      {% elif status_filter == 'valide' %}
+      <h2>Sites publiés</h2>
+      {% elif status_filter == 'refuse' %}
+      <h2>Sites refusés</h2>
+      {% else %}
+      <h2>Tous les sites</h2>
+      {% endif %}
+      {% if search_query %}
+      <p>{{ entries|length }} résultat{{ 's' if entries|length != 1 else '' }} pour « {{ search_query }} ».</p>
+      {% endif %}
+    </header>
+
+    {% if entries %}
+    <div class="admin-table-wrapper">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>Nom</th>
+            <th>Catégorie</th>
+            <th>Ville</th>
+            <th>Lien</th>
+            <th>Description</th>
+            <th>Mise à jour</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for site in entries %}
+          <tr>
+            <td class="admin-table__cell--title">{{ site['nom'] }}</td>
+            <td>{{ site['categorie'] }}</td>
+            <td>{{ site['ville'] or "—" }}</td>
+            <td>
+              <a href="{{ site['lien'] }}" target="_blank" rel="noopener noreferrer">
+                Ouvrir ↗
+              </a>
+            </td>
+            <td class="admin-table__cell--description">{{ site['description'] }}</td>
+            <td class="admin-table__cell--meta">
+              {{ site['date_ajout']|format_date("%d/%m/%Y %H:%M") }}<br />
+              <span class="admin-status-badge admin-status-badge--{{ site['status'] }}">
+                {{ site['status'] }}
+              </span>
+            </td>
+            <td class="admin-table__cell--actions">
+              <a
+                class="btn btn-edit"
+                href="{{ url_for('admin_edit_site', site_id=site['id'], status=status_filter, q=search_query) }}"
+              >
+                Modifier
+              </a>
+              <form
+                method="post"
+                action="{{ url_for('admin_update_site', site_id=site['id']) }}"
+                class="admin-table__form"
+              >
+                {{ action_forms[site['id']].csrf_token }}
+                {{ action_forms[site['id']].site_id(value=site['id']) }}
+                <input type="hidden" name="action" value="approve" />
+                <input type="hidden" name="status_filter" value="{{ status_filter }}" />
+                <input type="hidden" name="search_query" value="{{ search_query }}" />
+                <button type="submit" class="btn btn-approve">Valider</button>
+              </form>
+              <form
+                method="post"
+                action="{{ url_for('admin_update_site', site_id=site['id']) }}"
+                class="admin-table__form"
+              >
+                {{ action_forms[site['id']].csrf_token }}
+                {{ action_forms[site['id']].site_id(value=site['id']) }}
+                <input type="hidden" name="action" value="reject" />
+                <input type="hidden" name="status_filter" value="{{ status_filter }}" />
+                <input type="hidden" name="search_query" value="{{ search_query }}" />
+                <button type="submit" class="btn btn-reject">Refuser</button>
+              </form>
+              <form
+                method="post"
+                action="{{ url_for('admin_update_site', site_id=site['id']) }}"
+                class="admin-table__form"
+                onsubmit="return confirm('Supprimer définitivement cette proposition ?');"
+              >
+                {{ action_forms[site['id']].csrf_token }}
+                {{ action_forms[site['id']].site_id(value=site['id']) }}
+                <input type="hidden" name="action" value="delete" />
+                <input type="hidden" name="status_filter" value="{{ status_filter }}" />
+                <input type="hidden" name="search_query" value="{{ search_query }}" />
+                <button type="submit" class="btn btn-delete">Supprimer</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="admin-empty">
+      {% if search_query %}
+      Aucun site ne correspond à cette recherche.
+      {% elif status_filter == 'en_attente' %}
+      Aucune proposition en attente pour le moment.
+      {% elif status_filter == 'valide' %}
+      Aucun site publié n'est disponible.
+      {% elif status_filter == 'refuse' %}
+      Aucun site refusé pour l'instant.
+      {% else %}
+      Aucun résultat à afficher.
+      {% endif %}
+    </p>
+    {% endif %}
+  </section>
+</section>
+{% endblock %}

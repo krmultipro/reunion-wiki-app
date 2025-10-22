@@ -1,0 +1,41 @@
+{% extends "base.html" %} {% block seo_title %}Contact - Réunion Wiki{% endblock
+%} {% block seo_description %}Contactez-moi pour toute question, proposition ou
+partenariat autour de Réunion Wiki.{% endblock %} {% block content %}
+<section class="contact-page">
+  <header class="contact-page__header">
+    <h1>Contact</h1>
+    <p>
+      Tu as une idée à proposer, une question à poser ou tu souhaites me
+      contacter ? Choisis le canal qui te convient et je te réponds dès que
+      possible.
+    </p>
+  </header>
+
+  <div class="contact-grid">
+    {% for channel in contact_channels %}
+    <article class="contact-card">
+      <h2>{{ channel.title }}</h2>
+      <p class="contact-card__value">{{ channel.value }}</p>
+      <a
+        class="btn btn-primary"
+        href="{{ channel.action }}"
+        target="{{ '_blank' if channel.action.startswith('http') else '_self' }}"
+        rel="noopener noreferrer"
+      >
+        {{ channel.label }}
+      </a>
+    </article>
+    {% endfor %}
+  </div>
+
+  <section class="contact-support">
+    {% for block in support_blocks %}
+    <div class="contact-support__card">
+      <h3>{{ block.title }}</h3>
+      <p>{{ block.description }}</p>
+      <a class="btn btn-secondary" href="{{ block.link }}">{{ block.label }}</a>
+    </div>
+    {% endfor %}
+  </section>
+</section>
+{% endblock %}

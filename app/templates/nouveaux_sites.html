@@ -1,0 +1,27 @@
+{% extends "base.html" %} {% block title %}Derniers sites ajoutés - Réunion
+Wiki{% endblock %} {% block content %}
+<div class="category_page">
+  <h2>📌 Derniers sites ajoutés</h2>
+  <ul>
+    {% for site in sites %}
+    <li>
+      <a href="{{ site['lien'] }}" target="_blank" rel="noopener noreferrer">
+        <strong>{{ site['nom'] }}</strong> </a
+      ><br />
+      <small>
+        <a
+          href="/categorie/{{ categories_slug[site['categorie']] }}"
+          style="font-style: italic"
+        >
+          {{ site['categorie'] }}
+        </a> </small
+      ><br />
+      <small>{{ site['description'][:100] }}</small>
+      <small> | Ajouté le {{ site['date_ajout']|format_date }}</small>
+    </li>
+
+    {% endfor %}
+  </ul>
+  <div id="bouton_plus"><a href="/">← Retour à l'accueil</a></div>
+</div>
+{% endblock %}
