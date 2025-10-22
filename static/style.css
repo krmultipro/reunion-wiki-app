@@ -651,14 +651,14 @@ footer a:hover {
 }
 
 .talent-card {
-  width: min(210px, 70vw);
+  width: clamp(160px, 68vw, 200px);
   text-align: center;
   color: var(--gris-texte);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.65rem;
-  padding: 1rem;
+  gap: 0.5rem;
+  padding: 0.85rem;
 }
 
 .category-card:hover,
@@ -1699,7 +1699,7 @@ footer a:hover {
 
 .talents-hero h1 {
   margin: 0 0 0.8rem;
-  font-size: 2.3rem;
+  font-size: 2rem;
   color: var(--vert-fougere);
 }
 
@@ -1717,8 +1717,9 @@ footer a:hover {
 
 .talents-carousel__header {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
   margin-bottom: 0.75rem;
   color: #1d1d1f;
 }
@@ -1750,8 +1751,8 @@ footer a:hover {
 }
 
 .talent-card__image {
-  width: min(135px, 60vw);
-  max-width: 135px;
+  width: min(110px, 60vw);
+  max-width: 110px;
   aspect-ratio: 1 / 1;
   border-radius: 12px;
   overflow: hidden;
@@ -1782,7 +1783,7 @@ footer a:hover {
 
 .talent-card h3 {
   margin: 0;
-  font-size: 1.05rem;
+  font-size: 0.95rem;
 }
 
 .talent-card h3 a {
@@ -1793,7 +1794,7 @@ footer a:hover {
 .talent-card__tagline {
   margin: 0;
   color: #4c5558;
-  font-size: 0.95rem;
+  font-size: 0.85rem;
 }
 
 .talents-empty {
@@ -1805,8 +1806,8 @@ footer a:hover {
 
 .talents-form {
   max-width: 720px;
-  margin: 3rem auto 4rem;
-  padding: 2rem;
+  margin: 2.5rem 1rem 3rem;
+  padding: 1.5rem;
   background: var(--blanc);
   border-radius: 18px;
   border: 1px solid rgba(11, 132, 87, 0.18);
@@ -1878,39 +1879,39 @@ footer a:hover {
   padding-right: 2.4rem;
 }
 
-@media (max-width: 640px) {
+@media (min-width: 576px) {
   .talents-carousel__header {
-    flex-direction: column;
-    align-items: flex-start;
+    flex-direction: row;
+    align-items: center;
     gap: 0.5rem;
   }
 
   .talent-card {
-    width: clamp(160px, 68vw, 200px);
-    padding: 0.85rem;
-    gap: 0.5rem;
+    width: min(210px, 70vw);
+    padding: 1rem;
+    gap: 0.65rem;
   }
 
   .talent-card__image {
-    width: min(110px, 60vw);
-    max-width: 110px;
+    width: min(135px, 100%);
+    max-width: 135px;
   }
 
   .talent-card h3 {
-    font-size: 0.95rem;
+    font-size: 1.05rem;
   }
 
   .talent-card__tagline {
-    font-size: 0.85rem;
+    font-size: 0.95rem;
   }
 
   .talents-hero h1 {
-    font-size: 2rem;
+    font-size: 2.3rem;
   }
 
   .talents-form {
-    padding: 1.5rem;
-    margin: 2.5rem 1rem 3rem;
+    padding: 2rem;
+    margin: 3rem auto 4rem;
   }
 }
 
