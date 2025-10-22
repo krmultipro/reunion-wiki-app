@@ -7,187 +7,196 @@ internet utiles de La Réunion.{% endblock %} {% block header_content %}
   sites essentiels de La Réunion.
 </p>
 {% endblock %} {% block content %}
-
-<h2 class="home-section-title">Sites internet de La Réunion</h2>
-<p class="home-section-subtitle">Les sites internet classés par catégories.</p>
-<section class="home-carousel" data-carousel>
-  <div class="home-carousel__top">
-    <p class="home-carousel__hint">Glisser pour explorer</p>
-    <div class="carousel-controls" aria-hidden="true">
-      <button
-        type="button"
-        class="carousel-btn carousel-btn--prev"
-        aria-label="Catégorie précédente"
-      >
-        ‹
-      </button>
-      <button
-        type="button"
-        class="carousel-btn carousel-btn--next"
-        aria-label="Catégorie suivante"
-      >
-        ›
-      </button>
+<div class="container py-5">
+  <section class="mb-5">
+    <div class="text-center mb-4">
+      <h2 class="display-6 text-success">Sites internet de La Réunion</h2>
+      <p class="lead text-muted mb-0">Les sites internet classés par catégories.</p>
     </div>
-  </div>
-  <div class="home-carousel__track" data-carousel-track>
-    {% for categorie, sites in data.items() %}
-    <article class="category-card" aria-label="Catégorie {{ categorie }}">
-      <h3>
-        <a href="/categorie/{{ categories_slug[categorie] }}"
-          >{{ categorie }}</a
-        >
-      </h3>
-      <ul class="category-card__list">
-        {% for site in sites[:3] %}
-        <li>
-          <a
-            href="{{ site['lien'] }}"
-            target="_blank"
-            rel="noopener noreferrer"
+    <div class="home-carousel" data-carousel>
+      <div class="home-carousel__top">
+        <p class="home-carousel__hint">Glisser pour explorer</p>
+        <div class="carousel-controls" aria-hidden="true">
+          <button
+            type="button"
+            class="carousel-btn carousel-btn--prev"
+            aria-label="Catégorie précédente"
           >
-            {{ site['nom'] }}
-          </a>
-        </li>
-        {% endfor %}
-      </ul>
-      <a
-        class="category-card__cta"
-        href="/categorie/{{ categories_slug[categorie] }}"
-      >
-        Voir la catégorie →
-      </a>
-    </article>
-    {% endfor %}
-  </div>
-</section>
-
-<h2 class="home-section-title">Talents de La Réunion</h2>
-<p class="home-section-subtitle">
-  Influenceurs, comédiens & chanteurs péi à suivre sur Instagram.
-</p>
-{% for category, people in talents.items() %}
-<section class="home-carousel" data-carousel>
-  <div class="home-carousel__top">
-    <p class="home-carousel__hint">
-      Glisser pour parcourir {{ category|lower }}
-    </p>
-    <div class="carousel-controls" aria-hidden="true">
-      <button
-        type="button"
-        class="carousel-btn carousel-btn--prev"
-        aria-label="Profil précédent"
-      >
-        ‹
-      </button>
-      <button
-        type="button"
-        class="carousel-btn carousel-btn--next"
-        aria-label="Profil suivant"
-      >
-        ›
-      </button>
-    </div>
-  </div>
-  <div class="home-carousel__track" data-carousel-track>
-    {% for talent in people %}
-    <article class="talent-card">
-      <div class="talent-card__image">
-        {% if talent.image %}
-        <img
-          src="{{ url_for('static', filename=talent.image) }}"
-          alt="Portrait de {{ talent.name }}"
-        />
-        {% else %}
-        <div class="talent-card__placeholder" aria-hidden="true">
-          {{ talent.name[:1]|upper }}
+            ‹
+          </button>
+          <button
+            type="button"
+            class="carousel-btn carousel-btn--next"
+            aria-label="Catégorie suivante"
+          >
+            ›
+          </button>
         </div>
-        {% endif %}
       </div>
-      <h3>
-        <a
-          href="{{ talent.instagram }}"
-          target="_blank"
-          rel="noopener noreferrer"
-          >{{ talent.name }}</a
-        >
-      </h3>
-      <p class="talent-card__tagline">{{ talent.tagline }}</p>
-    </article>
-    {% endfor %}
-  </div>
-</section>
-{% endfor %}
-
-<h2 class="home-section-title">Derniers sites ajoutés</h2>
-<p class="home-section-subtitle">
-  Les dernières découvertes de la communauté, publiées et vérifiées par mes
-  soins.
-</p>
-<section class="home-row">
-  <div class="home-carousel home-carousel--secondary" data-carousel>
-    <div class="home-carousel__top">
-      <p class="home-carousel__hint">Glisser pour parcourir les nouveautés</p>
-      <div class="carousel-controls" aria-hidden="true">
-        <button
-          type="button"
-          class="carousel-btn carousel-btn--prev"
-          aria-label="Site précédent"
-        >
-          ‹
-        </button>
-        <button
-          type="button"
-          class="carousel-btn carousel-btn--next"
-          aria-label="Site suivant"
-        >
-          ›
-        </button>
+      <div class="home-carousel__track" data-carousel-track>
+        {% for categorie, sites in data.items() %}
+        <article class="category-card" aria-label="Catégorie {{ categorie }}">
+          <h3>
+            <a href="/categorie/{{ categories_slug[categorie] }}"
+              >{{ categorie }}</a
+            >
+          </h3>
+          <ul class="category-card__list">
+            {% for site in sites[:3] %}
+            <li>
+              <a
+                href="{{ site['lien'] }}"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {{ site['nom'] }}
+              </a>
+            </li>
+            {% endfor %}
+          </ul>
+          <a
+            class="category-card__cta"
+            href="/categorie/{{ categories_slug[categorie] }}"
+          >
+            Voir la catégorie →
+          </a>
+        </article>
+        {% endfor %}
       </div>
     </div>
-    <div class="home-carousel__track" data-carousel-track>
-      {% for site in derniers_sites %}
-      <article class="recent-card">
-        <header class="recent-card__header">
-          <a
-            href="{{ site['lien'] }}"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            {{ site['nom'] }}
-          </a>
-          <span class="recent-card__badge">Nouveau</span>
-        </header>
-        <p class="recent-card__description">
-          {{ site['description']|truncate(110, True, '...') }}
+  </section>
+
+  <section class="mb-5">
+    <div class="text-center mb-4">
+      <h2 class="display-6 text-success">Talents de La Réunion</h2>
+      <p class="lead text-muted mb-0">
+        Influenceurs, comédiens & chanteurs péi à suivre sur Instagram.
+      </p>
+    </div>
+    {% for category, people in talents.items() %}
+    <div class="home-carousel mb-4" data-carousel>
+      <div class="home-carousel__top">
+        <p class="home-carousel__hint">
+          Glisser pour parcourir {{ category|lower }}
         </p>
-        <footer class="recent-card__footer">
-          <a
-            href="/categorie/{{ categories_slug[site['categorie']] }}"
-            class="recent-card__category"
+        <div class="carousel-controls" aria-hidden="true">
+          <button
+            type="button"
+            class="carousel-btn carousel-btn--prev"
+            aria-label="Profil précédent"
           >
-            {{ site['categorie'] }}
-          </a>
-          <time datetime="{{ site['date_ajout'] }}">
-            {{ site['date_ajout']|format_date }}
-          </time>
-        </footer>
-      </article>
-      {% endfor %}
+            ‹
+          </button>
+          <button
+            type="button"
+            class="carousel-btn carousel-btn--next"
+            aria-label="Profil suivant"
+          >
+            ›
+          </button>
+        </div>
+      </div>
+      <div class="home-carousel__track" data-carousel-track>
+        {% for talent in people %}
+        <article class="talent-card">
+          <div class="talent-card__image">
+            {% if talent.image %}
+            <img
+              src="{{ url_for('static', filename=talent.image) }}"
+              alt="Portrait de {{ talent.name }}"
+            />
+            {% else %}
+            <div class="talent-card__placeholder" aria-hidden="true">
+              {{ talent.name[:1]|upper }}
+            </div>
+            {% endif %}
+          </div>
+          <h3>
+            <a
+              href="{{ talent.instagram }}"
+              target="_blank"
+              rel="noopener noreferrer"
+              >{{ talent.name }}</a
+            >
+          </h3>
+          <p class="talent-card__tagline">{{ talent.tagline }}</p>
+        </article>
+        {% endfor %}
+      </div>
     </div>
-    <div class="carousel-cta">
-      <a href="/nouveaux-sites" class="view-all-btn">
-        <span>Voir tous les nouveaux sites</span>
-        <span class="btn-arrow">→</span>
-      </a>
-    </div>
-  </div>
-</section>
+    {% endfor %}
+  </section>
 
-{% if form_inline %}
-<section class="home-propose-wrapper">
-  <aside class="home-propose" id="proposer-un-site">
+  <section class="mb-5">
+    <div class="text-center mb-4">
+      <h2 class="display-6 text-success">Derniers sites ajoutés</h2>
+      <p class="lead text-muted mb-0">
+        Les dernières découvertes de la communauté, publiées et vérifiées par mes soins.
+      </p>
+    </div>
+    <div class="home-carousel home-carousel--secondary" data-carousel>
+      <div class="home-carousel__top">
+        <p class="home-carousel__hint">Glisser pour parcourir les nouveautés</p>
+        <div class="carousel-controls" aria-hidden="true">
+          <button
+            type="button"
+            class="carousel-btn carousel-btn--prev"
+            aria-label="Site précédent"
+          >
+            ‹
+          </button>
+          <button
+            type="button"
+            class="carousel-btn carousel-btn--next"
+            aria-label="Site suivant"
+          >
+            ›
+          </button>
+        </div>
+      </div>
+      <div class="home-carousel__track" data-carousel-track>
+        {% for site in derniers_sites %}
+        <article class="recent-card">
+          <header class="recent-card__header">
+            <a
+              href="{{ site['lien'] }}"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {{ site['nom'] }}
+            </a>
+            <span class="recent-card__badge">Nouveau</span>
+          </header>
+          <p class="recent-card__description">
+            {{ site['description']|truncate(110, True, '...') }}
+          </p>
+          <footer class="recent-card__footer">
+            <a
+              href="/categorie/{{ categories_slug[site['categorie']] }}"
+              class="recent-card__category"
+            >
+              {{ site['categorie'] }}
+            </a>
+            <time datetime="{{ site['date_ajout'] }}">
+              {{ site['date_ajout']|format_date }}
+            </time>
+          </footer>
+        </article>
+        {% endfor %}
+      </div>
+      <div class="carousel-cta">
+        <a href="/nouveaux-sites" class="view-all-btn">
+          <span>Voir tous les nouveaux sites</span>
+          <span class="btn-arrow">→</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  {% if form_inline %}
+  <section class="my-5" id="proposer-un-site">
     {% include "_proposer_form.html" with context %}
-  </aside>
-</section>
-{% endif %} {% endblock %}
+  </section>
+  {% endif %}
+</div>
+{% endblock %}
