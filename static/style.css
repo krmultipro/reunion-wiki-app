@@ -651,9 +651,14 @@ footer a:hover {
 }
 
 .talent-card {
-  width: min(220px, 72vw);
+  width: min(210px, 70vw);
   text-align: center;
   color: var(--gris-texte);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 1rem;
 }
 
 .category-card:hover,
@@ -1745,12 +1750,13 @@ footer a:hover {
 }
 
 .talent-card__image {
-  width: min(150px, 100%);
-  max-width: 150px;
+  width: min(135px, 60vw);
+  max-width: 135px;
   aspect-ratio: 1 / 1;
   border-radius: 12px;
   overflow: hidden;
-  margin: 0 auto 0.9rem;
+  margin: 0;
+  align-self: center;
   background: rgba(11, 132, 87, 0.08);
 }
 
@@ -1785,7 +1791,7 @@ footer a:hover {
 }
 
 .talent-card__tagline {
-  margin: 0.4rem 0 0;
+  margin: 0;
   color: #4c5558;
   font-size: 0.95rem;
 }
@@ -1880,7 +1886,22 @@ footer a:hover {
   }
 
   .talent-card {
-    width: 78vw;
+    width: clamp(160px, 68vw, 200px);
+    padding: 0.85rem;
+    gap: 0.5rem;
+  }
+
+  .talent-card__image {
+    width: min(110px, 60vw);
+    max-width: 110px;
+  }
+
+  .talent-card h3 {
+    font-size: 0.95rem;
+  }
+
+  .talent-card__tagline {
+    font-size: 0.85rem;
   }
 
   .talents-hero h1 {
