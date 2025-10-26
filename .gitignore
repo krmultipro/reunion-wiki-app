@@ -144,7 +144,9 @@ dmypy.json
 
 # Fichiers spécifiques au projet
 *.db
+data/*.db
+data/*.db-*
+data/backups/
 backups/
-base.db
-base.db
-base.db
+!data/.gitkeep
+!data/backups/.gitkeep

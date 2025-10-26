@@ -1,4 +1,0 @@
-Sitemap: https://reunionwiki.re/static/sitemap.xml
-User-agent: *
-Disallow:
-
