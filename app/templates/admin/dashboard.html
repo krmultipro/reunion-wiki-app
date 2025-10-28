@@ -11,13 +11,13 @@
       <p>Bonjour {{ admin_username or "admin" }}.</p>
     </div>
     <div class="admin-dashboard__actions">
-      <a class="btn btn-primary" href="{{ url_for('admin_create_site') }}">
+      <a class="btn btn-primary" href="{{ url_for('admin.create_site') }}">
         + Ajouter un site
       </a>
-      <a class="btn btn-secondary" href="{{ url_for('admin_talents') }}">
+      <a class="btn btn-secondary" href="{{ url_for('admin.talents') }}">
         Gérer les talents
       </a>
-      <a class="btn btn-secondary" href="{{ url_for('admin_logout') }}">
+      <a class="btn btn-secondary" href="{{ url_for('admin.logout') }}">
         Déconnexion
       </a>
     </div>
@@ -32,14 +32,14 @@
       ] %}
       {% for code, label, count in tabs %}
       <a
-        href="{{ url_for('admin_dashboard', status=code, q=search_query) }}"
+        href="{{ url_for('admin.dashboard', status=code, q=search_query) }}"
         class="admin-status-tab {{ 'admin-status-tab--active' if status_filter == code else '' }}"
       >
         {{ label }} <span>{{ count }}</span>
       </a>
       {% endfor %}
     </nav>
-    <form class="admin-search-form" method="get" action="{{ url_for('admin_dashboard') }}">
+    <form class="admin-search-form" method="get" action="{{ url_for('admin.dashboard') }}">
       <input type="hidden" name="status" value="{{ status_filter }}" />
       <input
         type="search"
@@ -50,7 +50,7 @@
       />
       <button type="submit" class="btn btn-primary">Rechercher</button>
       {% if search_query %}
-      <a class="admin-search-reset" href="{{ url_for('admin_dashboard', status=status_filter) }}">Effacer</a>
+      <a class="admin-search-reset" href="{{ url_for('admin.dashboard', status=status_filter) }}">Effacer</a>
       {% endif %}
     </form>
   </div>
@@ -106,13 +106,13 @@
             <td class="admin-table__cell--actions">
               <a
                 class="btn btn-edit"
-                href="{{ url_for('admin_edit_site', site_id=site['id'], status=status_filter, q=search_query) }}"
+                href="{{ url_for('admin.edit_site', site_id=site['id'], status=status_filter, q=search_query) }}"
               >
                 Modifier
               </a>
               <form
                 method="post"
-                action="{{ url_for('admin_update_site', site_id=site['id']) }}"
+                action="{{ url_for('admin.update_site', site_id=site['id']) }}"
                 class="admin-table__form"
               >
                 {{ action_forms[site['id']].csrf_token }}
@@ -124,7 +124,7 @@
               </form>
               <form
                 method="post"
-                action="{{ url_for('admin_update_site', site_id=site['id']) }}"
+                action="{{ url_for('admin.update_site', site_id=site['id']) }}"
                 class="admin-table__form"
               >
                 {{ action_forms[site['id']].csrf_token }}
@@ -136,7 +136,7 @@
               </form>
               <form
                 method="post"
-                action="{{ url_for('admin_update_site', site_id=site['id']) }}"
+                action="{{ url_for('admin.update_site', site_id=site['id']) }}"
                 class="admin-table__form"
                 onsubmit="return confirm('Supprimer définitivement cette proposition ?');"
               >

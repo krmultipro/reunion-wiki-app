@@ -40,10 +40,24 @@ Retrouve l’historique des versions dans [`docs/CHANGELOG.md`](docs/CHANGELOG.m
 
 ```text
 app/
-  __init__.py        # Application Flask principale
+  __init__.py        # Application factory (enregistre blueprints & extensions)
+  database.py        # Connexion SQLite centralisée
+  extensions.py      # Extensions tierces (Flask-Limiter…)
+  filters.py         # Filtres Jinja personnalisés
+  hooks.py           # Hooks globaux (after_request…)
   forms.py           # Formulaires WTForms
+  routes/
+    public.py        # Routes publiques (accueil, formulaire, talents…)
+    admin.py         # Interface d’administration (dashboard, talents)
+  services/
+    sites.py         # Logique “sites” (catégories, listes…)
+    talents.py       # Logique “talents” (seed, CRUD, choix)
+    emails.py        # Notifications email
+    auth.py          # Authentification admin / décorateurs
+  utils/
+    text.py          # Helpers texte (slugify…)
   static/            # Assets (CSS, JS, images…)
-  templates/         # Gabarits Jinja2
+  templates/         # Gabarits Jinja2 (public & admin)
 data/
   base.db            # Base SQLite locale (non versionnée)
   backups/           # Sauvegardes et exports

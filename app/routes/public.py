@@ -1,0 +1,341 @@
+"""Public-facing routes (home, categories, forms, etc.)."""
+
+from __future__ import annotations
+
+from datetime import datetime
+import sqlite3
+
+from flask import (
+    Blueprint,
+    flash,
+    current_app,
+    make_response,
+    redirect,
+    render_template,
+    request,
+    send_from_directory,
+    url_for,
+)
+
+from ..database import get_db_connection
+from ..extensions import limiter
+from ..forms import SiteForm, TalentProposalForm
+from ..services.emails import send_submission_notification
+from ..services.sites import (
+    get_categories,
+    get_categories_slug,
+    get_derniers_sites_global,
+    get_nom_categorie_depuis_slug,
+    get_sites_en_vedette,
+)
+from ..services.talents import create_talent_proposal, get_talents_data
+from ..utils.text import slugify
+
+public_bp = Blueprint("public", __name__)
+
+
+@public_bp.route("/")
+def accueil():
+    data = get_sites_en_vedette()
+    derniers_sites = get_derniers_sites_global(12)
+    talents_home = get_talents_data()
+
+    form_inline = SiteForm()
+    form_inline.categorie.choices = [(cat, cat) for cat in get_categories()]
+    form_inline.categorie.choices.insert(0, ("", "Sélectionnez une catégorie"))
+
+    return render_template(
+        "index.html",
+        data=data,
+        derniers_sites=derniers_sites,
+        talents=talents_home,
+        form_inline=form_inline,
+    )
+
+
+@public_bp.route("/categorie/<slug>")
+def voir_categorie(slug: str):
+    nom_categorie = get_nom_categorie_depuis_slug(slug)
+    if not nom_categorie:
+        return render_template("404.html"), 404
+
+    canonical_slug = slugify(nom_categorie)
+    if slug != canonical_slug:
+        return redirect(url_for("public.voir_categorie", slug=canonical_slug), code=301)
+
+    conn = get_db_connection()
+    if not conn:
+        return render_template("500.html"), 500
+    cur = conn.cursor()
+    cur.execute(
+        """
+        SELECT *
+        FROM sites
+        WHERE categorie = ? AND status = 'valide'
+        ORDER BY en_vedette DESC, date_ajout DESC
+        """,
+        (nom_categorie,),
+    )
+    sites = cur.fetchall()
+    conn.close()
+
+    seo_title = f"{nom_categorie} à La Réunion – Réunion Wiki"
+    seo_description = (
+        f"Découvrez les meilleurs sites {nom_categorie.lower()} : infos utiles et adresses à La Réunion."
+    )
+    canonical = url_for("public.voir_categorie", slug=canonical_slug, _external=True)
+
+    form_inline = SiteForm()
+    categories = get_categories()
+    form_inline.categorie.choices = [(cat, cat) for cat in categories]
+    form_inline.categorie.choices.insert(0, ("", "Sélectionnez une catégorie"))
+    if nom_categorie in categories:
+        form_inline.categorie.data = nom_categorie
+
+    return render_template(
+        "categorie.html",
+        nom_categorie=nom_categorie,
+        sites=sites,
+        slug=canonical_slug,
+        seo_title=seo_title,
+        seo_description=seo_description,
+        canonical=canonical,
+        form_inline=form_inline,
+    )
+
+
+@public_bp.route("/nouveaux-sites")
+def nouveaux_sites():
+    conn = get_db_connection()
+    if not conn:
+        return render_template("500.html"), 500
+    cur = conn.cursor()
+    cur.execute(
+        """
+        SELECT nom, lien, categorie, description, date_ajout
+        FROM sites
+        WHERE status = 'valide'
+        ORDER BY date_ajout DESC
+        """
+    )
+    sites = cur.fetchall()
+    conn.close()
+
+    return render_template("nouveaux_sites.html", sites=sites)
+
+
+@public_bp.route("/recherche")
+def search():
+    query = request.args.get("q", "").strip()
+    results = []
+    total = 0
+
+    if query and len(query) >= 2:
+        conn = get_db_connection()
+        if not conn:
+            flash(
+                "Impossible d'accéder à la base de données pour la recherche.",
+                "error",
+            )
+            return render_template(
+                "search.html",
+                query=query,
+                results=[],
+                total=0,
+            )
+        try:
+            cur = conn.cursor()
+            like_query = f"%{query}%"
+            cur.execute(
+                """
+                SELECT id, nom, categorie, ville, lien, description, date_ajout
+                FROM sites
+                WHERE status = 'valide'
+                  AND (
+                        nom LIKE ? COLLATE NOCASE
+                        OR categorie LIKE ? COLLATE NOCASE
+                        OR description LIKE ? COLLATE NOCASE
+                        OR IFNULL(ville, '') LIKE ? COLLATE NOCASE
+                        OR lien LIKE ? COLLATE NOCASE
+                  )
+                ORDER BY en_vedette DESC, date_ajout DESC
+                LIMIT 100
+                """,
+                (like_query, like_query, like_query, like_query, like_query),
+            )
+            results = cur.fetchall()
+            total = len(results)
+        except sqlite3.Error as exc:
+            flash("Erreur lors de la recherche.", "error")
+            current_app.logger.error(f"Erreur lors de la recherche '{query}': {exc}")
+        finally:
+            conn.close()
+
+    elif query:
+        flash("Tape au moins 2 caractères pour lancer la recherche.", "error")
+
+    return render_template(
+        "search.html",
+        query=query,
+        results=results,
+        total=total,
+    )
+
+
+@public_bp.route("/blog")
+def blog():
+    categories = get_categories()
+    categories_slug = get_categories_slug()
+    return render_template(
+        "blog.html", categories=categories, categories_slug=categories_slug
+    )
+
+
+@public_bp.route("/talents", methods=["GET", "POST"])
+@limiter.limit("5 per hour")
+def talents():
+    form = TalentProposalForm()
+    if form.validate_on_submit():
+        success = create_talent_proposal(
+            form.pseudo.data,
+            form.instagram.data,
+            form.description.data,
+        )
+        if success:
+            flash(
+                "Merci ! Ta proposition de talent est en attente de validation.",
+                "success",
+            )
+            return redirect(url_for("public.talents"))
+        flash(
+            "Erreur lors de l'enregistrement de ta proposition. Réessaie plus tard.",
+            "error",
+        )
+    talents_by_category = get_talents_data()
+    return render_template("talents.html", talents=talents_by_category, form=form)
+
+
+@public_bp.route("/mentions-legales")
+def mentions_legales():
+    return render_template("mentions_legales.html")
+
+
+@public_bp.route("/contact")
+def contact():
+    contact_channels = [
+        {
+            "title": "Email",
+            "value": "reunionwiki974@gmail.com",
+            "action": "mailto:reunionwiki974@gmail.com",
+            "label": "Envoyer un email",
+        },
+        {
+            "title": "Formulaire",
+            "value": "Formulaire Google",
+            "action": "https://forms.gle/GScJkMiEZXVSted78",
+            "label": "Proposer une idée",
+        },
+        {
+            "title": "Instagram",
+            "value": "@kery.rdd",
+            "action": "https://www.instagram.com/kery.rdd",
+            "label": "Suivre le projet",
+        },
+    ]
+
+    support_blocks = [
+        {
+            "title": "Besoin d'aide rapide ?",
+            "description": "Consulte la FAQ.",
+            "link": url_for("public.faq"),
+            "label": "Voir la FAQ",
+        },
+        {
+            "title": "Tu veux contribuer ?",
+            "description": "Propose un site directement via le formulaire dédié ou contacte moi pour des données supplémentaires.",
+            "link": url_for("public.formulaire"),
+            "label": "Proposer un site",
+        },
+    ]
+
+    return render_template(
+        "contact.html",
+        contact_channels=contact_channels,
+        support_blocks=support_blocks,
+    )
+
+
+@public_bp.route("/service-worker.js")
+def service_worker():
+    response = make_response(send_from_directory("static", "service-worker.js"))
+    response.headers["Content-Type"] = "application/javascript"
+    return response
+
+
+@public_bp.route("/google87e16279463c4021.html")
+def google_verification():
+    return current_app.send_static_file("google87e16279463c4021.html")
+
+
+@public_bp.route("/formulaire", methods=["GET", "POST"])
+@limiter.limit("5 per minute")
+def formulaire():
+    form = SiteForm()
+    form.categorie.choices = [(cat, cat) for cat in get_categories()]
+    form.categorie.choices.insert(0, ("", "Sélectionnez une catégorie"))
+
+    if form.validate_on_submit():
+        nom = form.nom.data
+        ville = form.ville.data or None
+        lien = form.lien.data
+        description = form.description.data
+        categorie = form.categorie.data
+
+        if categorie not in get_categories():
+            flash("Catégorie non valide.", "error")
+            return render_template("formulaire.html", form=form)
+
+        conn = get_db_connection()
+        if not conn:
+            flash("Erreur technique. Veuillez réessayer plus tard.", "error")
+            return render_template("formulaire.html", form=form)
+
+        try:
+            cur = conn.cursor()
+            cur.execute(
+                """
+                INSERT INTO sites (nom, ville, lien, description, categorie, status, date_ajout)
+                VALUES (?, ?, ?, ?, ?, 'en_attente', DATETIME('now'))
+                """,
+                (nom, ville, lien, description, categorie),
+            )
+            conn.commit()
+            send_submission_notification(
+                {
+                    "nom": nom,
+                    "ville": ville,
+                    "lien": lien,
+                    "description": description,
+                    "categorie": categorie,
+                    "date_submission": datetime.utcnow().strftime("%d/%m/%Y %H:%M"),
+                    "remote_addr": request.remote_addr or "IP inconnue",
+                }
+            )
+            flash(
+                "Merci, ta proposition a bien été envoyée ! Elle sera validée prochainement.",
+                "success",
+            )
+            return redirect(url_for("public.accueil"))
+        except sqlite3.Error as exc:
+            conn.rollback()
+            current_app.logger.error(f"Erreur lors de l'insertion du site: {exc}")
+            flash("Erreur lors de l'enregistrement. Veuillez réessayer.", "error")
+        finally:
+            conn.close()
+
+    return render_template("formulaire.html", form=form)
+
+
+@public_bp.route("/faq")
+def faq():
+    return render_template("faq.html")

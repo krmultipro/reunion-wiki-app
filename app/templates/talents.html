@@ -83,7 +83,7 @@ leurs comptes Instagram.{% endblock %} {% block content %}
     Tu connais un influenceur, un comédien ou un chanteur à mettre en avant ?
     Renseigne son pseudo Instagram, le lien vers son compte et une courte description.
   </p>
-  <form method="post" action="{{ url_for('talents') }}" class="talents-form__form" novalidate>
+  <form method="post" action="{{ url_for('public.talents') }}" class="talents-form__form" novalidate>
     {{ form.hidden_tag() }}
     <div class="form-honeypot">
       {{ form.honeypot.label }} {{ form.honeypot() }}

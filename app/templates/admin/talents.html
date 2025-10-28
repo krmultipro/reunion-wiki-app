@@ -11,13 +11,13 @@
       <p>Bonjour {{ admin_username or "admin" }}.</p>
     </div>
     <div class="admin-dashboard__actions">
-      <a class="btn btn-secondary" href="{{ url_for('admin_dashboard') }}">
+      <a class="btn btn-secondary" href="{{ url_for('admin.dashboard') }}">
         ← Retour aux sites
       </a>
-      <a class="btn btn-primary" href="{{ url_for('admin_create_talent') }}">
+      <a class="btn btn-primary" href="{{ url_for('admin.create_talent') }}">
         + Ajouter un talent
       </a>
-      <a class="btn btn-secondary" href="{{ url_for('admin_logout') }}">
+      <a class="btn btn-secondary" href="{{ url_for('admin.logout') }}">
         Déconnexion
       </a>
     </div>
@@ -33,14 +33,14 @@
       ] %}
       {% for code, label, count in tabs %}
       <a
-        href="{{ url_for('admin_talents', status=code, q=search_query) }}"
+        href="{{ url_for('admin.talents', status=code, q=search_query) }}"
         class="admin-status-tab {{ 'admin-status-tab--active' if status_filter == code else '' }}"
       >
         {{ label }} <span>{{ count }}</span>
       </a>
       {% endfor %}
     </nav>
-    <form class="admin-search-form" method="get" action="{{ url_for('admin_talents') }}">
+    <form class="admin-search-form" method="get" action="{{ url_for('admin.talents') }}">
       <input type="hidden" name="status" value="{{ status_filter }}" />
       <input
         type="search"
@@ -51,7 +51,7 @@
       />
       <button type="submit" class="btn btn-primary">Rechercher</button>
       {% if search_query %}
-      <a class="admin-search-reset" href="{{ url_for('admin_talents', status=status_filter) }}">Effacer</a>
+      <a class="admin-search-reset" href="{{ url_for('admin.talents', status=status_filter) }}">Effacer</a>
       {% endif %}
     </form>
   </div>
@@ -109,13 +109,13 @@
             <td class="admin-table__cell--actions">
               <a
                 class="btn btn-edit"
-                href="{{ url_for('admin_edit_talent', talent_id=talent['id'], status=status_filter, q=search_query) }}"
+                href="{{ url_for('admin.edit_talent', talent_id=talent['id'], status=status_filter, q=search_query) }}"
               >
                 Modifier
               </a>
               <form
                 method="post"
-                action="{{ url_for('admin_update_talent', talent_id=talent['id']) }}"
+                action="{{ url_for('admin.update_talent', talent_id=talent['id']) }}"
                 class="admin-table__form"
               >
                 {{ action_forms[talent['id']].csrf_token }}
@@ -127,7 +127,7 @@
               </form>
               <form
                 method="post"
-                action="{{ url_for('admin_update_talent', talent_id=talent['id']) }}"
+                action="{{ url_for('admin.update_talent', talent_id=talent['id']) }}"
                 class="admin-table__form"
               >
                 {{ action_forms[talent['id']].csrf_token }}
@@ -139,7 +139,7 @@
               </form>
               <form
                 method="post"
-                action="{{ url_for('admin_update_talent', talent_id=talent['id']) }}"
+                action="{{ url_for('admin.update_talent', talent_id=talent['id']) }}"
                 class="admin-table__form"
                 onsubmit="return confirm('Supprimer définitivement ce talent ?');"
               >

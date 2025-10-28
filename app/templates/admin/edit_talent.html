@@ -12,7 +12,7 @@
       <p>{{ subtitle|safe }}</p>
       {% endif %}
     </div>
-    <a class="btn btn-secondary" href="{{ url_for('admin_talents', status=status_filter, q=search_query) }}">
+    <a class="btn btn-secondary" href="{{ url_for('admin.talents', status=status_filter, q=search_query) }}">
       ← Retour aux talents
     </a>
   </header>

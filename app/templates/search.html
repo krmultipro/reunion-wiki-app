@@ -16,7 +16,7 @@ Retrouvez rapidement un site utile de La Réunion grâce à la recherche Réunio
 <section class="search-page">
   <header class="search-page__header">
     <h1>Recherche</h1>
-    <form action="{{ url_for('search') }}" method="get" class="search-page__form" role="search">
+    <form action="{{ url_for('public.search') }}" method="get" class="search-page__form" role="search">
       <label class="sr-only" for="search-query">Rechercher un site</label>
       <input
         id="search-query"
