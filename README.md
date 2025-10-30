@@ -226,11 +226,12 @@ python3 scripts/export_sites.py \
 ## 🔐 Sécurité & bonnes pratiques
 
 - Validation serveur stricte (WTForms + filtres custom) et champ honeypot.
-- CSRF sur tous les formulaires, rate limiting global et par endpoint.
-- Headers HTTP durcis (`X-Frame-Options`, `X-Content-Type-Options`, etc.).
+- CSRF sur tous les formulaires, rate limiting global et par endpoint (dont `/admin/login`).
+- Headers HTTP durcis (`X-Frame-Options`, `X-Content-Type-Options`, etc.) + cookies de session HTTPOnly/SameSite.
 - Auth SMTP via mots de passe d’application (Gmail) ; pas de mot de passe en clair dans le code.
 - Service worker en mode réseau-first pour éviter les pages obsolètes.
 - Sauvegardes automatiques via cron (`/root/backup_reunionwiki.sh`) vers `/home/reunionwiki/`.
+- Traçabilité admin : journalisation des connexions/actions (modération, talents) dans les logs Flask.
 - Accès SSH uniquement par clé, port personnalisé, Fail2Ban actif.
 
 ---

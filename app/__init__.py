@@ -18,6 +18,17 @@ from .routes.public import public_bp
 from .services.sites import get_categories, get_categories_slug
 
 
+def apply_security_settings(app: Flask, env: str) -> None:
+    """Harden session/cookie settings while respecting explicit overrides."""
+    app.config.setdefault("SESSION_COOKIE_HTTPONLY", True)
+    app.config.setdefault("REMEMBER_COOKIE_HTTPONLY", True)
+    app.config.setdefault("SESSION_COOKIE_SAMESITE", "Lax")
+
+    if env == "production":
+        app.config.setdefault("SESSION_COOKIE_SECURE", True)
+        app.config.setdefault("REMEMBER_COOKIE_SECURE", True)
+
+
 def create_app() -> Flask:
     """Create and configure the Flask application."""
     app = Flask(__name__)
@@ -25,6 +36,7 @@ def create_app() -> Flask:
     env = os.getenv("FLASK_ENV", "development")
     app.config.from_object(config.get(env, config["default"]))
 
+    apply_security_settings(app, env)
     init_extensions(app)
     init_filters(app)
     register_hooks(app)

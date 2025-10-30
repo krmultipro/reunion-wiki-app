@@ -17,6 +17,7 @@ from flask import (
 )
 
 from ..database import get_db_connection
+from ..extensions import limiter
 from ..forms import (
     AdminLoginForm,
     ModerationActionForm,
@@ -38,6 +39,7 @@ admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 
 
 @admin_bp.route("/login", methods=["GET", "POST"])
+@limiter.limit("5 per minute")
 def login():
     form = AdminLoginForm()
     next_url = request.args.get("next")
@@ -49,8 +51,18 @@ def login():
             session.permanent = True
             session["admin_authenticated"] = True
             session["admin_username"] = form.username.data
+            current_app.logger.info(
+                "Connexion admin réussie pour '%s' depuis %s",
+                form.username.data,
+                request.remote_addr or "IP inconnue",
+            )
             flash("Connexion réussie.", "success")
             return redirect(next_url)
+        current_app.logger.warning(
+            "Échec connexion admin pour '%s' depuis %s",
+            form.username.data,
+            request.remote_addr or "IP inconnue",
+        )
         flash("Identifiants invalides.", "error")
 
     return render_template("admin/login.html", form=form, next_url=next_url)
@@ -58,6 +70,12 @@ def login():
 
 @admin_bp.route("/logout")
 def logout():
+    username = session.get("admin_username") or "inconnu"
+    current_app.logger.info(
+        "Déconnexion admin pour '%s' depuis %s",
+        username,
+        request.remote_addr or "IP inconnue",
+    )
     session.pop("admin_authenticated", None)
     session.pop("admin_username", None)
     flash("Déconnexion effectuée.", "success")
@@ -207,6 +225,13 @@ def update_site(site_id: int):
             conn.rollback()
         else:
             conn.commit()
+            current_app.logger.info(
+                "Action admin '%s' sur proposition #%s par '%s' (%s)",
+                action,
+                site_id,
+                session.get("admin_username") or "inconnu",
+                request.remote_addr or "IP inconnue",
+            )
             flash(message, "success")
     except sqlite3.Error as exc:
         conn.rollback()
@@ -297,6 +322,12 @@ def edit_site(site_id: int):
             else:
                 conn_to_update.commit()
                 flash("Proposition mise à jour avec succès.", "success")
+                current_app.logger.info(
+                    "Mise à jour admin de la proposition #%s par '%s' (%s)",
+                    site_id,
+                    session.get("admin_username") or "inconnu",
+                    request.remote_addr or "IP inconnue",
+                )
                 conn.close()
                 conn_to_update.close()
                 return redirect(url_for("admin.dashboard"))
@@ -366,6 +397,12 @@ def create_site():
             )
             conn.commit()
             flash("Nouveau site ajouté et publié.", "success")
+            current_app.logger.info(
+                "Création admin d'un site (%s) par '%s' (%s)",
+                form.lien.data,
+                session.get("admin_username") or "inconnu",
+                request.remote_addr or "IP inconnue",
+            )
             return redirect(url_for("admin.dashboard"))
         except sqlite3.Error as exc:
             conn.rollback()
@@ -541,6 +578,13 @@ def update_talent(talent_id: int):
             conn.rollback()
         else:
             conn.commit()
+            current_app.logger.info(
+                "Action admin '%s' sur talent #%s par '%s' (%s)",
+                action,
+                talent_id,
+                session.get("admin_username") or "inconnu",
+                request.remote_addr or "IP inconnue",
+            )
             flash(message, "success")
     except sqlite3.Error as exc:
         conn.rollback()
@@ -639,6 +683,12 @@ def edit_talent(talent_id: int):
             else:
                 conn.commit()
                 flash("Talent mis à jour.", "success")
+                current_app.logger.info(
+                    "Mise à jour admin du talent #%s par '%s' (%s)",
+                    talent_id,
+                    session.get("admin_username") or "inconnu",
+                    request.remote_addr or "IP inconnue",
+                )
                 return redirect(
                     url_for("admin.talents", status=status_filter, q=search_query)
                 )
@@ -700,6 +750,12 @@ def create_talent():
             )
             conn.commit()
             flash("Talent ajouté.", "success")
+            current_app.logger.info(
+                "Création admin d'un talent (%s) par '%s' (%s)",
+                form.pseudo.data,
+                session.get("admin_username") or "inconnu",
+                request.remote_addr or "IP inconnue",
+            )
             target_status = (
                 form.status.data if form.status.data in TALENT_STATUSES else "en_attente"
             )
