@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import sqlite3
-
 from flask import (
     Blueprint,
     abort,
@@ -16,7 +14,7 @@ from flask import (
     url_for,
 )
 
-from ..database import get_db_connection
+from ..database import DatabaseError
 from ..extensions import limiter
 from ..forms import (
     AdminLoginForm,
@@ -26,13 +24,26 @@ from ..forms import (
     TalentModerationActionForm,
 )
 from ..services.auth import admin_required, verify_admin_credentials
-from ..services.sites import get_categories
+from ..services.sites import (
+    create_site_admin,
+    get_admin_sites,
+    get_categories,
+    get_site_by_id,
+    update_site_full,
+    update_site_status,
+    delete_site,
+)
 from ..services.talents import (
     TALENT_STATUSES,
     TALENT_STATUS_LABELS,
+    create_talent_admin,
+    get_admin_talents,
+    get_talent_by_id,
     get_talent_category_choices,
     get_talent_status_choices,
-    prepare_talents_storage,
+    update_talent_full,
+    update_talent_status,
+    delete_talent,
 )
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
@@ -88,67 +99,14 @@ def logout():
 def dashboard():
     status_filter = request.args.get("status", "en_attente")
     search_query = request.args.get("q", "").strip()
-    allowed_statuses = {"en_attente", "valide", "refuse", "tout"}
-    if status_filter not in allowed_statuses:
-        status_filter = "en_attente"
-
-    conn = get_db_connection()
-    if not conn:
-        flash("Impossible de se connecter à la base de données.", "error")
-        return redirect(url_for("public.accueil"))
 
     try:
-        cur = conn.cursor()
-        params: list[str] = []
-        query_clause = ""
-
-        if search_query and len(search_query) >= 2:
-            like_query = f"%{search_query}%"
-            query_clause = """AND (
-                    nom LIKE ? COLLATE NOCASE
-                    OR categorie LIKE ? COLLATE NOCASE
-                    OR description LIKE ? COLLATE NOCASE
-                    OR IFNULL(ville, '') LIKE ? COLLATE NOCASE
-                    OR lien LIKE ? COLLATE NOCASE
-                )"""
-            params.extend([like_query] * 5)
-
-        status_clause = ""
-        if status_filter != "tout":
-            status_clause = "AND status = ?"
-            params.append(status_filter)
-
-        cur.execute(
-            f"""
-            SELECT id, nom, categorie, ville, lien, description, status, date_ajout
-            FROM sites
-            WHERE 1 = 1
-            {status_clause}
-            {query_clause}
-            ORDER BY
-                CASE WHEN status = 'en_attente' THEN 0 ELSE 1 END,
-                date_ajout DESC,
-                id DESC
-            LIMIT 200
-            """,
-            tuple(params),
-        )
-        entries = cur.fetchall()
-
-        cur.execute("SELECT status, COUNT(*) as total FROM sites GROUP BY status")
-        stats_rows = cur.fetchall()
-    except sqlite3.Error as exc:
-        current_app.logger.error(
-            f"Erreur lors de la récupération des propositions: {exc}"
-        )
-        flash("Erreur lors de la récupération des propositions.", "error")
-        entries = []
-        stats_rows = []
-    finally:
-        conn.close()
-
-    stats = {row["status"]: row["total"] for row in stats_rows}
-    stats["tout"] = sum(stats.values())
+        data = get_admin_sites(status_filter=status_filter, search_query=search_query)
+        entries = data["entries"]
+        stats = data["stats"]
+    except DatabaseError:
+        flash("Impossible de se connecter à la base de données.", "error")
+        return redirect(url_for("public.accueil"))
 
     action_forms = {}
     for site in entries:
@@ -191,40 +149,15 @@ def update_site(site_id: int):
     status_redirect = request.form.get("status_filter", "en_attente")
     query_redirect = request.form.get("search_query", "")
 
-    conn = get_db_connection()
-    if not conn:
-        flash("Impossible d'accéder à la base de données.", "error")
-        return redirect(
-            url_for(
-                "admin.dashboard",
-                status=status_redirect,
-                q=query_redirect,
-            )
-        )
-
     try:
-        cur = conn.cursor()
         if action == "approve":
-            cur.execute(
-                "UPDATE sites SET status = 'valide', date_ajout = DATETIME('now') WHERE id = ?",
-                (site_id,),
-            )
-            message = "Proposition validée et publiée."
+            success, message = update_site_status(site_id, "valide")
         elif action == "reject":
-            cur.execute(
-                "UPDATE sites SET status = 'refuse' WHERE id = ?",
-                (site_id,),
-            )
-            message = "Proposition refusée."
+            success, message = update_site_status(site_id, "refuse")
         else:
-            cur.execute("DELETE FROM sites WHERE id = ?", (site_id,))
-            message = "Proposition supprimée."
+            success, message = delete_site(site_id)
 
-        if cur.rowcount == 0:
-            flash("La proposition est introuvable.", "error")
-            conn.rollback()
-        else:
-            conn.commit()
+        if success:
             current_app.logger.info(
                 "Action admin '%s' sur proposition #%s par '%s' (%s)",
                 action,
@@ -233,14 +166,10 @@ def update_site(site_id: int):
                 request.remote_addr or "IP inconnue",
             )
             flash(message, "success")
-    except sqlite3.Error as exc:
-        conn.rollback()
-        current_app.logger.error(
-            f"Erreur lors de la mise à jour du site {site_id}: {exc}"
-        )
+        else:
+            flash(message, "error")
+    except DatabaseError:
         flash("Erreur lors de la mise à jour.", "error")
-    finally:
-        conn.close()
 
     return redirect(
         url_for("admin.dashboard", status=status_redirect, q=query_redirect)
@@ -256,32 +185,13 @@ def edit_site(site_id: int):
     form.categorie.choices = [(cat, cat) for cat in categories_list]
     form.categorie.choices.insert(0, ("", "Sélectionnez une catégorie"))
 
-    conn = get_db_connection()
-    if not conn:
-        flash("Impossible de se connecter à la base de données.", "error")
-        return redirect(url_for("admin.dashboard"))
-
     try:
-        cur = conn.cursor()
-        cur.execute(
-            """
-            SELECT id, nom, ville, lien, description, categorie, status
-            FROM sites
-            WHERE id = ?
-            """,
-            (site_id,),
-        )
-        site = cur.fetchone()
-    except sqlite3.Error as exc:
-        current_app.logger.error(
-            f"Erreur lors de la récupération de la proposition {site_id}: {exc}"
-        )
+        site = get_site_by_id(site_id)
+    except DatabaseError:
         flash("Erreur lors de la récupération.", "error")
-        conn.close()
         return redirect(url_for("admin.dashboard"))
 
     if not site:
-        conn.close()
         flash("Proposition introuvable.", "error")
         return redirect(url_for("admin.dashboard"))
 
@@ -293,56 +203,31 @@ def edit_site(site_id: int):
         form.categorie.data = site["categorie"] or ""
 
     if form.validate_on_submit():
-        conn_to_update = get_db_connection()
-        if not conn_to_update:
-            flash("Impossible de se connecter à la base de données.", "error")
-            conn.close()
-            return redirect(url_for("admin.dashboard"))
         try:
-            cur_update = conn_to_update.cursor()
-            cur_update.execute(
-                """
-                UPDATE sites
-                SET nom = ?, ville = ?, lien = ?, description = ?, categorie = ?, status = ?
-                WHERE id = ?
-                """,
-                (
-                    form.nom.data,
-                    form.ville.data or None,
-                    form.lien.data,
-                    form.description.data,
-                    form.categorie.data,
-                    request.form.get("status") or site["status"],
-                    site_id,
-                ),
+            status = request.form.get("status") or site["status"]
+            success, message = update_site_full(
+                site_id=site_id,
+                nom=form.nom.data,
+                ville=form.ville.data or None,
+                lien=form.lien.data,
+                description=form.description.data,
+                categorie=form.categorie.data,
+                status=status,
             )
-            if cur_update.rowcount == 0:
-                flash("La mise à jour a échoué : proposition introuvable.", "error")
-                conn_to_update.rollback()
-            else:
-                conn_to_update.commit()
-                flash("Proposition mise à jour avec succès.", "success")
+            if success:
                 current_app.logger.info(
                     "Mise à jour admin de la proposition #%s par '%s' (%s)",
                     site_id,
                     session.get("admin_username") or "inconnu",
                     request.remote_addr or "IP inconnue",
                 )
-                conn.close()
-                conn_to_update.close()
+                flash(message, "success")
                 return redirect(url_for("admin.dashboard"))
-            conn_to_update.close()
-        except sqlite3.Error as exc:
-            conn_to_update.rollback()
-            conn_to_update.close()
-            conn.close()
-            current_app.logger.error(
-                f"Erreur lors de la mise à jour du site {site_id}: {exc}"
-            )
+            else:
+                flash(message, "error")
+        except DatabaseError:
             flash("Erreur lors de la mise à jour.", "error")
-            return redirect(url_for("admin.dashboard"))
 
-    conn.close()
     return render_template(
         "admin/edit_site.html",
         form=form,
@@ -376,42 +261,27 @@ def create_site():
         form.categorie.choices.append((posted_category, posted_category))
 
     if form.validate_on_submit():
-        conn = get_db_connection()
-        if not conn:
-            flash("Impossible de se connecter à la base de données.", "error")
-            return redirect(url_for("admin.dashboard", status="valide"))
         try:
-            cur = conn.cursor()
-            cur.execute(
-                """
-                INSERT INTO sites (nom, ville, lien, description, categorie, status, date_ajout, en_vedette)
-                VALUES (?, ?, ?, ?, ?, 'valide', DATETIME('now'), 0)
-                """,
-                (
-                    form.nom.data,
-                    form.ville.data or None,
+            success, message = create_site_admin(
+                nom=form.nom.data,
+                ville=form.ville.data or None,
+                lien=form.lien.data,
+                description=form.description.data,
+                categorie=form.categorie.data,
+            )
+            if success:
+                current_app.logger.info(
+                    "Création admin d'un site (%s) par '%s' (%s)",
                     form.lien.data,
-                    form.description.data,
-                    form.categorie.data,
-                ),
-            )
-            conn.commit()
-            flash("Nouveau site ajouté et publié.", "success")
-            current_app.logger.info(
-                "Création admin d'un site (%s) par '%s' (%s)",
-                form.lien.data,
-                session.get("admin_username") or "inconnu",
-                request.remote_addr or "IP inconnue",
-            )
-            return redirect(url_for("admin.dashboard"))
-        except sqlite3.Error as exc:
-            conn.rollback()
-            current_app.logger.error(
-                f"Erreur lors de la création d'un site depuis l'admin: {exc}"
-            )
+                    session.get("admin_username") or "inconnu",
+                    request.remote_addr or "IP inconnue",
+                )
+                flash(message, "success")
+                return redirect(url_for("admin.dashboard"))
+            else:
+                flash(message, "error")
+        except DatabaseError:
             flash("Erreur lors de l'ajout du site.", "error")
-        finally:
-            conn.close()
 
     return render_template(
         "admin/edit_site.html",
@@ -430,73 +300,16 @@ def create_site():
 @admin_bp.route("/talents", methods=["GET"])
 @admin_required
 def talents():
-    prepare_talents_storage()
     status_filter = request.args.get("status", "en_attente")
-    allowed_statuses = set(TALENT_STATUSES + ["tout"])
-    if status_filter not in allowed_statuses:
-        status_filter = "en_attente"
-
     search_query = request.args.get("q", "").strip()
 
-    conn = get_db_connection()
-    if not conn:
+    try:
+        data = get_admin_talents(status_filter=status_filter, search_query=search_query)
+        entries = data["entries"]
+        stats = data["stats"]
+    except DatabaseError:
         flash("Impossible de se connecter à la base de données.", "error")
         return redirect(url_for("admin.dashboard"))
-
-    try:
-        cur = conn.cursor()
-        params: list[str] = []
-        query = """
-            SELECT id, pseudo, instagram, description, category, image, status, date_created, date_updated
-            FROM talents
-            WHERE 1 = 1
-        """
-
-        if status_filter != "tout":
-            query += " AND status = ?"
-            params.append(status_filter)
-
-        if search_query and len(search_query) >= 2:
-            like_query = f"%{search_query}%"
-            query += """
-                AND (
-                    pseudo LIKE ? COLLATE NOCASE
-                    OR instagram LIKE ? COLLATE NOCASE
-                    OR description LIKE ? COLLATE NOCASE
-                    OR IFNULL(category, '') LIKE ? COLLATE NOCASE
-                )
-            """
-            params.extend([like_query] * 4)
-
-        query += """
-            ORDER BY
-                CASE status
-                    WHEN 'en_attente' THEN 0
-                    WHEN 'valide' THEN 1
-                    ELSE 2
-                END,
-                date_updated DESC,
-                id DESC
-            LIMIT 200
-        """
-
-        cur.execute(query, tuple(params))
-        entries = cur.fetchall()
-
-        cur.execute("SELECT status, COUNT(*) AS total FROM talents GROUP BY status")
-        stats_rows = cur.fetchall()
-    except sqlite3.Error as exc:
-        current_app.logger.error(
-            f"Erreur lors de la récupération des talents admin: {exc}"
-        )
-        flash("Erreur lors de la récupération des talents.", "error")
-        entries = []
-        stats_rows = []
-    finally:
-        conn.close()
-
-    stats = {row["status"]: row["total"] for row in stats_rows}
-    stats["tout"] = sum(stats.values())
 
     action_forms = {}
     for talent in entries:
@@ -519,7 +332,6 @@ def talents():
 @admin_bp.route("/talents/<int:talent_id>", methods=["POST"])
 @admin_required
 def update_talent(talent_id: int):
-    prepare_talents_storage()
     form = TalentModerationActionForm()
     if not form.validate_on_submit():
         flash("Formulaire invalide.", "error")
@@ -544,40 +356,15 @@ def update_talent(talent_id: int):
     if status_redirect not in allowed_statuses:
         status_redirect = "en_attente"
 
-    conn = get_db_connection()
-    if not conn:
-        flash("Impossible d'accéder à la base de données.", "error")
-        return redirect(
-            url_for(
-                "admin.talents",
-                status=status_redirect,
-                q=query_redirect,
-            )
-        )
-
     try:
-        cur = conn.cursor()
         if action == "approve":
-            cur.execute(
-                "UPDATE talents SET status = 'valide', date_updated = DATETIME('now') WHERE id = ?",
-                (talent_id,),
-            )
-            message = "Talent publié."
+            success, message = update_talent_status(talent_id, "valide")
         elif action == "reject":
-            cur.execute(
-                "UPDATE talents SET status = 'refuse', date_updated = DATETIME('now') WHERE id = ?",
-                (talent_id,),
-            )
-            message = "Talent refusé."
+            success, message = update_talent_status(talent_id, "refuse")
         else:
-            cur.execute("DELETE FROM talents WHERE id = ?", (talent_id,))
-            message = "Talent supprimé."
+            success, message = delete_talent(talent_id)
 
-        if cur.rowcount == 0:
-            flash("Talent introuvable.", "error")
-            conn.rollback()
-        else:
-            conn.commit()
+        if success:
             current_app.logger.info(
                 "Action admin '%s' sur talent #%s par '%s' (%s)",
                 action,
@@ -586,14 +373,10 @@ def update_talent(talent_id: int):
                 request.remote_addr or "IP inconnue",
             )
             flash(message, "success")
-    except sqlite3.Error as exc:
-        conn.rollback()
-        current_app.logger.error(
-            f"Erreur lors de la mise à jour du talent {talent_id}: {exc}"
-        )
+        else:
+            flash(message, "error")
+    except DatabaseError:
         flash("Erreur lors de la mise à jour du talent.", "error")
-    finally:
-        conn.close()
 
     return redirect(url_for("admin.talents", status=status_redirect, q=query_redirect))
 
@@ -601,7 +384,6 @@ def update_talent(talent_id: int):
 @admin_bp.route("/talents/<int:talent_id>/edit", methods=["GET", "POST"])
 @admin_required
 def edit_talent(talent_id: int):
-    prepare_talents_storage()
     status_filter = request.args.get("status", "en_attente")
     search_query = request.args.get("q", "").strip()
 
@@ -609,37 +391,17 @@ def edit_talent(talent_id: int):
     form.category.choices = get_talent_category_choices()
     form.status.choices = get_talent_status_choices()
 
-    conn = get_db_connection()
-    if not conn:
-        flash("Impossible de se connecter à la base de données.", "error")
-        return redirect(url_for("admin.talents", status=status_filter, q=search_query))
-
     try:
-        cur = conn.cursor()
-        cur.execute(
-            """
-            SELECT id, pseudo, instagram, description, category, image, status
-            FROM talents
-            WHERE id = ?
-            """,
-            (talent_id,),
-        )
-        row = cur.fetchone()
-    except sqlite3.Error as exc:
-        current_app.logger.error(
-            f"Erreur lors de la récupération du talent {talent_id}: {exc}"
-        )
+        row = get_talent_by_id(talent_id)
+    except DatabaseError:
         flash("Erreur lors de la récupération du talent.", "error")
-        conn.close()
         return redirect(url_for("admin.talents", status=status_filter, q=search_query))
 
     if not row:
-        conn.close()
         flash("Talent introuvable.", "error")
         return redirect(url_for("admin.talents", status=status_filter, q=search_query))
 
     talent = dict(row)
-    conn.close()
 
     form.category.choices = get_talent_category_choices(talent.get("category"))
     form.status.choices = get_talent_status_choices()
@@ -653,53 +415,31 @@ def edit_talent(talent_id: int):
         form.status.data = talent["status"]
 
     if form.validate_on_submit():
-        conn = get_db_connection()
-        if not conn:
-            flash("Impossible de se connecter à la base de données.", "error")
-            return redirect(
-                url_for("admin.talents", status=status_filter, q=search_query)
-            )
         try:
-            cur = conn.cursor()
-            cur.execute(
-                """
-                UPDATE talents
-                SET pseudo = ?, instagram = ?, description = ?, category = ?, image = ?, status = ?, date_updated = DATETIME('now')
-                WHERE id = ?
-                """,
-                (
-                    form.pseudo.data,
-                    form.instagram.data,
-                    form.description.data,
-                    form.category.data or "",
-                    form.image.data or "",
-                    form.status.data,
-                    talent_id,
-                ),
+            success, message = update_talent_full(
+                talent_id=talent_id,
+                pseudo=form.pseudo.data,
+                instagram=form.instagram.data,
+                description=form.description.data,
+                category=form.category.data or "",
+                image=form.image.data or "",
+                status=form.status.data,
             )
-            if cur.rowcount == 0:
-                flash("Aucune mise à jour n'a été effectuée.", "warning")
-                conn.rollback()
-            else:
-                conn.commit()
-                flash("Talent mis à jour.", "success")
+            if success:
                 current_app.logger.info(
                     "Mise à jour admin du talent #%s par '%s' (%s)",
                     talent_id,
                     session.get("admin_username") or "inconnu",
                     request.remote_addr or "IP inconnue",
                 )
+                flash(message, "success")
                 return redirect(
                     url_for("admin.talents", status=status_filter, q=search_query)
                 )
-        except sqlite3.Error as exc:
-            conn.rollback()
-            current_app.logger.error(
-                f"Erreur lors de la mise à jour du talent {talent_id}: {exc}"
-            )
+            else:
+                flash(message, "warning")
+        except DatabaseError:
             flash("Erreur lors de la mise à jour du talent.", "error")
-        finally:
-            conn.close()
 
     return render_template(
         "admin/edit_talent.html",
@@ -722,52 +462,36 @@ def edit_talent(talent_id: int):
 @admin_bp.route("/talents/new", methods=["GET", "POST"])
 @admin_required
 def create_talent():
-    prepare_talents_storage()
     form = TalentAdminForm()
     form.category.choices = get_talent_category_choices()
     form.status.choices = get_talent_status_choices()
 
     if form.validate_on_submit():
-        conn = get_db_connection()
-        if not conn:
-            flash("Impossible de se connecter à la base de données.", "error")
-            return redirect(url_for("admin.talents"))
         try:
-            cur = conn.cursor()
-            cur.execute(
-                """
-                INSERT INTO talents (pseudo, instagram, description, category, image, status)
-                VALUES (?, ?, ?, ?, ?, ?)
-                """,
-                (
+            success, message = create_talent_admin(
+                pseudo=form.pseudo.data,
+                instagram=form.instagram.data,
+                description=form.description.data,
+                category=form.category.data or "",
+                image=form.image.data or "",
+                status=form.status.data,
+            )
+            if success:
+                current_app.logger.info(
+                    "Création admin d'un talent (%s) par '%s' (%s)",
                     form.pseudo.data,
-                    form.instagram.data,
-                    form.description.data,
-                    form.category.data or "",
-                    form.image.data or "",
-                    form.status.data,
-                ),
-            )
-            conn.commit()
-            flash("Talent ajouté.", "success")
-            current_app.logger.info(
-                "Création admin d'un talent (%s) par '%s' (%s)",
-                form.pseudo.data,
-                session.get("admin_username") or "inconnu",
-                request.remote_addr or "IP inconnue",
-            )
-            target_status = (
-                form.status.data if form.status.data in TALENT_STATUSES else "en_attente"
-            )
-            return redirect(url_for("admin.talents", status=target_status))
-        except sqlite3.Error as exc:
-            conn.rollback()
-            current_app.logger.error(
-                f"Erreur lors de l'ajout d'un talent depuis l'admin: {exc}"
-            )
+                    session.get("admin_username") or "inconnu",
+                    request.remote_addr or "IP inconnue",
+                )
+                flash(message, "success")
+                target_status = (
+                    form.status.data if form.status.data in TALENT_STATUSES else "en_attente"
+                )
+                return redirect(url_for("admin.talents", status=target_status))
+            else:
+                flash(message, "error")
+        except DatabaseError:
             flash("Erreur lors de l'ajout du talent.", "error")
-        finally:
-            conn.close()
 
     return render_template(
         "admin/edit_talent.html",

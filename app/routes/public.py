@@ -3,12 +3,11 @@
 from __future__ import annotations
 
 from datetime import datetime
-import sqlite3
 
 from flask import (
     Blueprint,
-    flash,
     current_app,
+    flash,
     make_response,
     redirect,
     render_template,
@@ -17,16 +16,20 @@ from flask import (
     url_for,
 )
 
-from ..database import get_db_connection
+from ..database import DatabaseError
 from ..extensions import limiter
 from ..forms import SiteForm, TalentProposalForm
 from ..services.emails import send_submission_notification
 from ..services.sites import (
+    get_all_validated_sites,
     get_categories,
     get_categories_slug,
     get_derniers_sites_global,
     get_nom_categorie_depuis_slug,
+    get_sites_by_category,
     get_sites_en_vedette,
+    search_sites,
+    submit_site_proposal,
 )
 from ..services.talents import create_talent_proposal, get_talents_data
 from ..utils.text import slugify
@@ -63,21 +66,10 @@ def voir_categorie(slug: str):
     if slug != canonical_slug:
         return redirect(url_for("public.voir_categorie", slug=canonical_slug), code=301)
 
-    conn = get_db_connection()
-    if not conn:
+    try:
+        sites = get_sites_by_category(nom_categorie)
+    except DatabaseError:
         return render_template("500.html"), 500
-    cur = conn.cursor()
-    cur.execute(
-        """
-        SELECT *
-        FROM sites
-        WHERE categorie = ? AND status = 'valide'
-        ORDER BY en_vedette DESC, date_ajout DESC
-        """,
-        (nom_categorie,),
-    )
-    sites = cur.fetchall()
-    conn.close()
 
     seo_title = f"{nom_categorie} à La Réunion – Réunion Wiki"
     seo_description = (
@@ -106,20 +98,10 @@ def voir_categorie(slug: str):
 
 @public_bp.route("/nouveaux-sites")
 def nouveaux_sites():
-    conn = get_db_connection()
-    if not conn:
+    try:
+        sites = get_all_validated_sites()
+    except DatabaseError:
         return render_template("500.html"), 500
-    cur = conn.cursor()
-    cur.execute(
-        """
-        SELECT nom, lien, categorie, description, date_ajout
-        FROM sites
-        WHERE status = 'valide'
-        ORDER BY date_ajout DESC
-        """
-    )
-    sites = cur.fetchall()
-    conn.close()
 
     return render_template("nouveaux_sites.html", sites=sites)
 
@@ -131,46 +113,16 @@ def search():
     total = 0
 
     if query and len(query) >= 2:
-        conn = get_db_connection()
-        if not conn:
+        try:
+            results = search_sites(query, limit=100)
+            total = len(results)
+        except DatabaseError:
             flash(
                 "Impossible d'accéder à la base de données pour la recherche.",
                 "error",
             )
-            return render_template(
-                "search.html",
-                query=query,
-                results=[],
-                total=0,
-            )
-        try:
-            cur = conn.cursor()
-            like_query = f"%{query}%"
-            cur.execute(
-                """
-                SELECT id, nom, categorie, ville, lien, description, date_ajout
-                FROM sites
-                WHERE status = 'valide'
-                  AND (
-                        nom LIKE ? COLLATE NOCASE
-                        OR categorie LIKE ? COLLATE NOCASE
-                        OR description LIKE ? COLLATE NOCASE
-                        OR IFNULL(ville, '') LIKE ? COLLATE NOCASE
-                        OR lien LIKE ? COLLATE NOCASE
-                  )
-                ORDER BY en_vedette DESC, date_ajout DESC
-                LIMIT 100
-                """,
-                (like_query, like_query, like_query, like_query, like_query),
-            )
-            results = cur.fetchall()
-            total = len(results)
-        except sqlite3.Error as exc:
-            flash("Erreur lors de la recherche.", "error")
-            current_app.logger.error(f"Erreur lors de la recherche '{query}': {exc}")
-        finally:
-            conn.close()
-
+            results = []
+            total = 0
     elif query:
         flash("Tape au moins 2 caractères pour lancer la recherche.", "error")
 
@@ -285,53 +237,30 @@ def formulaire():
     form.categorie.choices.insert(0, ("", "Sélectionnez une catégorie"))
 
     if form.validate_on_submit():
-        nom = form.nom.data
-        ville = form.ville.data or None
-        lien = form.lien.data
-        description = form.description.data
-        categorie = form.categorie.data
-
-        if categorie not in get_categories():
-            flash("Catégorie non valide.", "error")
-            return render_template("formulaire.html", form=form)
-
-        conn = get_db_connection()
-        if not conn:
-            flash("Erreur technique. Veuillez réessayer plus tard.", "error")
-            return render_template("formulaire.html", form=form)
-
-        try:
-            cur = conn.cursor()
-            cur.execute(
-                """
-                INSERT INTO sites (nom, ville, lien, description, categorie, status, date_ajout)
-                VALUES (?, ?, ?, ?, ?, 'en_attente', DATETIME('now'))
-                """,
-                (nom, ville, lien, description, categorie),
-            )
-            conn.commit()
+        success, message = submit_site_proposal(
+            nom=form.nom.data,
+            lien=form.lien.data,
+            description=form.description.data,
+            categorie=form.categorie.data,
+            ville=form.ville.data or None,
+        )
+        
+        if success:
             send_submission_notification(
                 {
-                    "nom": nom,
-                    "ville": ville,
-                    "lien": lien,
-                    "description": description,
-                    "categorie": categorie,
+                    "nom": form.nom.data,
+                    "ville": form.ville.data,
+                    "lien": form.lien.data,
+                    "description": form.description.data,
+                    "categorie": form.categorie.data,
                     "date_submission": datetime.utcnow().strftime("%d/%m/%Y %H:%M"),
                     "remote_addr": request.remote_addr or "IP inconnue",
                 }
             )
-            flash(
-                "Merci, ta proposition a bien été envoyée ! Elle sera validée prochainement.",
-                "success",
-            )
+            flash(message, "success")
             return redirect(url_for("public.accueil"))
-        except sqlite3.Error as exc:
-            conn.rollback()
-            current_app.logger.error(f"Erreur lors de l'insertion du site: {exc}")
-            flash("Erreur lors de l'enregistrement. Veuillez réessayer.", "error")
-        finally:
-            conn.close()
+        else:
+            flash(message, "error")
 
     return render_template("formulaire.html", form=form)
 

@@ -150,3 +150,10 @@ data/backups/
 backups/
 !data/.gitkeep
 !data/backups/.gitkeep
+
+# Fichiers PostScript erronés
+*.ps
+scripts/shutil
+
+# Dossiers vides (optionnel)
+images/

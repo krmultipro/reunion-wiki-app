@@ -23,58 +23,90 @@ Le projet est développé et maintenu par Kery dans le cadre d’un déploiement
 - Page contact dédiée (email, formulaire, réseaux) pour centraliser les échanges avec la communauté.
 - Page blog avec sélections thématiques et conseils SEO-friendly.
 
-Retrouve l’historique des versions dans [`docs/CHANGELOG.md`](docs/CHANGELOG.md).
+**Documentation complète** :
+- 📝 [Guide de développement](docs/GUIDE_DEVELOPPEMENT.md) : Conventions, workflow, bonnes pratiques
+- 📚 [API des Services](docs/API_SERVICES.md) : Documentation complète des fonctions de service
+- 📊 [Analyse de modularité](docs/ANALYSE_MODULARITE.md) : Analyse détaillée de l'architecture
+- 📜 [Changelog](docs/CHANGELOG.md) : Historique des versions
+- 💡 [Notes de développement](docs/notes_dev.md) : TODO et idées
 
 ---
 
 ## 🧱 Architecture
 
-- **Backend** : Python 3, Flask, Jinja2, Flask-WTF, Flask-Limiter.
-- **Base de données** : SQLite (index sur colonnes clés, script `optimize_db.py`).
-- **Frontend** : HTML5, CSS3, JS léger (PWA, nav scrollable), aucun framework.
-- **Notifications** : SMTP (msmtp côté VPS ou configuration Gmail via variables d’environnement).
-- **Déploiement** : VPS OVH (Gunicorn + Nginx + Certbot), service systemd `reunionwiki`.
-- **Monitoring & sécurité** : UFW, Fail2Ban, backups cron, accès SSH par clés.
+- **Backend** : Python 3.10+, Flask 3.1, Jinja2, Flask-WTF, Flask-Limiter
+- **Base de données** : SQLite avec context managers pour transactions sécurisées
+- **Frontend** : HTML5, CSS3, JavaScript vanilla (PWA, navigation scrollable)
+- **Architecture** : Application factory, blueprints, services layer, context managers DB
+- **Notifications** : SMTP (msmtp côté VPS ou Gmail via variables d'environnement)
+- **Déploiement** : VPS OVH (Gunicorn + Nginx + Certbot), service systemd `reunionwiki`
+- **Monitoring & sécurité** : UFW, Fail2Ban, backups cron, accès SSH par clés
 
 ## 🗂 Structure du projet
 
 ```text
 app/
   __init__.py        # Application factory (enregistre blueprints & extensions)
-  database.py        # Connexion SQLite centralisée
-  extensions.py      # Extensions tierces (Flask-Limiter…)
-  filters.py         # Filtres Jinja personnalisés
-  hooks.py           # Hooks globaux (after_request…)
-  forms.py           # Formulaires WTForms
+  database.py        # Connexion SQLite + context managers (db_transaction, db_query)
+  errors.py          # Gestionnaires d'erreurs globaux (404, 500)
+  extensions.py      # Extensions tierces (Flask-Limiter)
+  filters.py         # Filtres Jinja personnalisés (format_date)
+  hooks.py           # Hooks globaux (after_request pour headers sécurité)
+  forms.py           # Formulaires WTForms avec validation
   routes/
-    public.py        # Routes publiques (accueil, formulaire, talents…)
-    admin.py         # Interface d’administration (dashboard, talents)
+    public.py        # Routes publiques (accueil, catégories, formulaire, talents…)
+    admin.py         # Interface d'administration (dashboard, modération, talents)
   services/
-    sites.py         # Logique “sites” (catégories, listes…)
-    talents.py       # Logique “talents” (seed, CRUD, choix)
-    emails.py        # Notifications email
-    auth.py          # Authentification admin / décorateurs
+    sites.py         # Logique métier "sites" (CRUD, recherches, catégories)
+    talents.py       # Logique métier "talents" (CRUD, catégories, seed)
+    emails.py        # Notifications email (SMTP)
+    auth.py          # Authentification admin (décorateurs, vérification)
   utils/
-    text.py          # Helpers texte (slugify…)
-  static/            # Assets (CSS, JS, images…)
+    text.py          # Helpers texte (slugify)
+  static/            # Assets statiques (CSS, JS, images, favicons)
   templates/         # Gabarits Jinja2 (public & admin)
 data/
-  base.db            # Base SQLite locale (non versionnée)
-  backups/           # Sauvegardes et exports
+  base.db            # Base SQLite principale (non versionnée)
+  backups/           # Sauvegardes automatiques (horodatées)
 docs/
-  CHANGELOG.md
-  .env.example
-  notes_dev.md
+  ANALYSE_MODULARITE.md  # Analyse de la modularité et refactorisation
+  CHANGELOG.md           # Historique des versions
+  notes_dev.md           # Notes de développement
 scripts/
-  backup_base.py
-  export_sites.py
-  ...                # Scripts d’admin / déploiement
+  backup_base.py         # Script de sauvegarde automatique
+  export_sites.py        # Export CSV des sites
+  init_db.py             # Initialisation de la base de données
+  diagnostic.sh          # Script de diagnostic système
+  install_production.sh  # Installation en production
+  restart_app.sh         # Redémarrage de l'application
+  fix_vps_structure.sh   # Correction structure VPS
 tests/
-  test_routes.py
-app.py               # Point d’entrée (import app)
-config.py            # Configuration centralisée
-optimize_db.py       # Maintenance de la base
+  test_routes.py         # Tests unitaires (à compléter)
+app.py                   # Point d'entrée (import app)
+config.py                # Configuration centralisée (développement/production)
+optimize_db.py           # Maintenance et optimisation de la base SQLite
 ```
+
+### 📐 Architecture technique
+
+Le projet suit une **architecture modulaire en couches** :
+
+1. **Couche Routes** (`app/routes/`) : Gestion HTTP uniquement
+   - Routes publiques et admin séparées via blueprints
+   - Dévalidation, redirections, gestion des erreurs HTTP
+
+2. **Couche Services** (`app/services/`) : Logique métier
+   - Toutes les requêtes SQL centralisées
+   - Fonctions réutilisables et testables
+   - Gestion des transactions via context managers
+
+3. **Couche Données** (`app/database.py`) : Abstraction DB
+   - Context managers pour transactions (`db_transaction()`, `db_query()`)
+   - Gestion automatique des erreurs, commits et rollbacks
+
+4. **Couche Utilitaires** (`app/utils/`, `app/filters.py`) : Helpers réutilisables
+
+Voir [`docs/ANALYSE_MODULARITE.md`](docs/ANALYSE_MODULARITE.md) pour l'analyse détaillée.
 
 ---
 
