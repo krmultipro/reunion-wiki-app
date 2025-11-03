@@ -1,15 +1,16 @@
 {% extends "base.html" %}
 
 {% block seo_title %}Blog Réunion Wiki - Sélections et conseils{% endblock %}
-{% block seo_description %}Découvrez mes sélections thématiques et conseils pour trouver les meilleurs sites internet de La Réunion : emploi, culture, transports, gastronomie et plus encore.{% endblock %}
+{% block seo_description %}Découvrez mes sélections thématiques et conseils pour trouver les meilleurs sites internet de La Réunion et découvrir les talents locaux : emploi, culture, transports, gastronomie et plus encore.{% endblock %}
 
 {% block content %}
 <section class="blog-hero">
   <h1>Les meilleurs sites internet de La Réunion</h1>
   <p>
     Je sélectionne les ressources en ligne les plus utiles pour la vie quotidienne sur l'île :
-    infos pratiques, culture, mobilité, météo, services publics... Parcoure mes recommandations
-    thématiques pour gagner du temps et trouver rapidement le bon site.
+    infos pratiques, culture, mobilité, météo, services publics... Découvre aussi les talents
+    réunionnais à suivre sur Instagram : influenceurs, comédiens et chanteurs péi.
+    Parcoure mes recommandations thématiques pour gagner du temps et trouver rapidement ce que tu cherches.
   </p>
 </section>
 
@@ -47,16 +48,37 @@
   </p>
   <p>
     Tu peux contribuer à l'enrichissement du portail en utilisant le formulaire <a href="{{ url_for('public.formulaire') }}">Proposer un site</a>
-    ou en me contactant via la page <a href="{{ url_for('public.contact') }}">Contact</a>.
+    pour ajouter des sites utiles, ou en proposant des <a href="{{ url_for('public.talents') }}">talents à suivre</a> sur Instagram.
+    Tu peux aussi me contacter via la page <a href="{{ url_for('public.contact') }}">Contact</a>.
   </p>
 </section>
 
 <section class="blog-section">
   <h2>Reste informé</h2>
   <ul class="blog-tips">
+    <li>Depuis la page d'accueil, utilise les onglets <strong>Sites</strong> et <strong>Talents</strong> pour naviguer facilement.</li>
     <li>Mets Réunion Wiki en favori pour accéder rapidement aux services essentiels.</li>
     <li>Installe l'application PWA (icône loupe → « Ajouter à l'écran d'accueil » sur mobile).</li>
     <li>Suis <a href="https://www.instagram.com/reunionwiki" target="_blank" rel="noopener">@reunionwiki</a> pour les nouveautés.</li>
   </ul>
 </section>
+{% endblock %}
+
+{# Données structurées Schema.org pour la page Blog #}
+{% block head %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Blog",
+  "name": "Réunion Wiki - Blog",
+  "description": "Sélections thématiques et conseils pour trouver les meilleurs sites internet de La Réunion et découvrir les talents locaux",
+  "url": "https://reunionwiki.re/blog",
+  "inLanguage": "fr-FR",
+  "publisher": {
+    "@type": "Organization",
+    "name": "Réunion Wiki",
+    "url": "https://reunionwiki.re"
+  }
+}
+</script>
 {% endblock %}

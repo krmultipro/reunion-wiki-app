@@ -151,6 +151,12 @@ backups/
 !data/.gitkeep
 !data/backups/.gitkeep
 
+# Documents sensibles (sécurité, audits)
+docs/AUDIT_PRODUCTION.md
+docs/*_SECURITY*.md
+docs/*_AUDIT*.md
+*.audit.*
+
 # Fichiers PostScript erronés
 *.ps
 scripts/shutil

@@ -37,7 +37,8 @@ from ..utils.text import slugify
 public_bp = Blueprint("public", __name__)
 
 
-@public_bp.route("/")
+@public_bp.route("/", methods=["GET", "POST"])
+@limiter.limit(lambda: "1000 per hour" if current_app.config.get("DEBUG") else "5 per hour")
 def accueil():
     data = get_sites_en_vedette()
     derniers_sites = get_derniers_sites_global(12)
@@ -47,12 +48,32 @@ def accueil():
     form_inline.categorie.choices = [(cat, cat) for cat in get_categories()]
     form_inline.categorie.choices.insert(0, ("", "Sélectionnez une catégorie"))
 
+    # Formulaire pour les talents
+    form_talent = TalentProposalForm()
+    if form_talent.validate_on_submit():
+        success = create_talent_proposal(
+            form_talent.pseudo.data,
+            form_talent.instagram.data,
+            form_talent.description.data,
+        )
+        if success:
+            flash(
+                "Merci ! Ta proposition de talent est en attente de validation.",
+                "success",
+            )
+            return redirect(url_for("public.accueil") + "#talents-tab")
+        flash(
+            "Erreur lors de l'enregistrement de ta proposition. Réessaie plus tard.",
+            "error",
+        )
+
     return render_template(
         "index.html",
         data=data,
         derniers_sites=derniers_sites,
         talents=talents_home,
         form_inline=form_inline,
+        form_talent=form_talent,
     )
 
 
@@ -144,7 +165,7 @@ def blog():
 
 
 @public_bp.route("/talents", methods=["GET", "POST"])
-@limiter.limit("5 per hour")
+@limiter.limit(lambda: "1000 per hour" if current_app.config.get("DEBUG") else "5 per hour")
 def talents():
     form = TalentProposalForm()
     if form.validate_on_submit():
@@ -230,7 +251,7 @@ def google_verification():
 
 
 @public_bp.route("/formulaire", methods=["GET", "POST"])
-@limiter.limit("5 per minute")
+@limiter.limit(lambda: "100 per minute" if current_app.config.get("DEBUG") else "5 per minute")
 def formulaire():
     form = SiteForm()
     form.categorie.choices = [(cat, cat) for cat in get_categories()]

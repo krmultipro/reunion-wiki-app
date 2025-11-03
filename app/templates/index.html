@@ -4,46 +4,124 @@ internet utiles de La Réunion.{% endblock %} {% block header_content %}
 <p>
   Bienvenue sur <strong>Réunion Wiki 🌴</strong><br />
   Un répertoire <em>simple, rapide et local</em> pour accéder facilement aux
-  sites essentiels de La Réunion.
+  sites essentiels et découvrir les talents de La Réunion.
 </p>
 {% endblock %} {% block content %}
 <div class="container py-5">
-  <section class="mb-5">
-    <div class="text-center mb-4">
-      <h2 class="display-6 text-success">Sites internet de La Réunion</h2>
-      <p class="lead text-muted mb-0">Les sites internet classés par catégories.</p>
-    </div>
-    <div class="home-carousel" data-carousel>
-      <div class="home-carousel__top">
-        <p class="home-carousel__hint">Glisser pour explorer</p>
-        <div class="carousel-controls" aria-hidden="true">
-          <button
-            type="button"
-            class="carousel-btn carousel-btn--prev"
-            aria-label="Catégorie précédente"
-          >
-            ‹
-          </button>
-          <button
-            type="button"
-            class="carousel-btn carousel-btn--next"
-            aria-label="Catégorie suivante"
-          >
-            ›
-          </button>
-        </div>
-      </div>
-      <div class="home-carousel__track" data-carousel-track>
-        {% for categorie, sites in data.items() %}
-        <article class="category-card" aria-label="Catégorie {{ categorie }}">
+  <!-- Bulles d'onglets -->
+  <div class="home-tabs">
+    <button
+      class="home-tab-button active"
+      data-tab="sites"
+      aria-selected="true"
+      role="tab"
+      aria-controls="sites-tab"
+      id="sites-button"
+    >
+      Sites
+    </button>
+    <button
+      class="home-tab-button"
+      data-tab="talents"
+      aria-selected="false"
+      role="tab"
+      aria-controls="talents-tab"
+      id="talents-button"
+    >
+      Talents
+    </button>
+  </div>
+
+  <!-- Onglet Sites -->
+  <div
+    id="sites-tab"
+    class="home-tab-content active"
+    role="tabpanel"
+    aria-labelledby="sites-button"
+  >
+    <!-- Catégories de sites en vertical -->
+    <div class="categories-vertical">
+      {% for categorie, sites in data.items() %}
+      <article class="category-card-vertical" aria-label="Catégorie {{ categorie }}">
+        <div class="category-card-vertical__header">
+          <span class="category-card-vertical__icon">{{ get_category_icon(categorie) }}</span>
           <h3>
             <a href="/categorie/{{ categories_slug[categorie] }}"
               >{{ categorie }}</a
             >
           </h3>
-          <ul class="category-card__list">
+        </div>
+        <div class="category-card-vertical__content">
+          <ul class="category-card-vertical__sites">
             {% for site in sites[:3] %}
-            <li>
+            <li class="category-card-vertical__site-item">
+              <a
+                href="{{ site['lien'] }}"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="category-card-vertical__site-link"
+              >
+                <strong>{{ site['nom'] }}{% if site['ville'] %} - {{ site['ville'] }}{% endif %}</strong>
+                <span class="category-card-vertical__arrow">↗</span>
+              </a>
+              {% if site['description'] %}
+              <span class="category-card-vertical__site-description"
+                > {{ site['description'] }}</span
+              >
+              {% endif %}
+            </li>
+            {% endfor %}
+          </ul>
+          <a
+            class="category-card-vertical__cta"
+            href="/categorie/{{ categories_slug[categorie] }}"
+          >
+            Découvrir plus de sites
+          </a>
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+
+    <!-- Formulaire de proposition de sites -->
+    {% if form_inline %}
+    <section class="my-5" id="proposer-un-site">
+      {% include "_proposer_form.html" with context %}
+    </section>
+    {% endif %}
+
+    <!-- Derniers sites ajoutés -->
+    <section class="mb-5">
+      <div class="text-center mb-4">
+        <h2 class="display-6 text-success">Derniers sites ajoutés</h2>
+        <p class="lead text-muted mb-0">
+          Les dernières découvertes de la communauté, publiées et vérifiées par mes soins.
+        </p>
+      </div>
+      <div class="home-carousel home-carousel--secondary" data-carousel>
+        <div class="home-carousel__top">
+          <p class="home-carousel__hint">Glisser pour parcourir les nouveautés</p>
+          <div class="carousel-controls" aria-hidden="true">
+            <button
+              type="button"
+              class="carousel-btn carousel-btn--prev"
+              aria-label="Site précédent"
+            >
+              ‹
+            </button>
+            <button
+              type="button"
+              class="carousel-btn carousel-btn--next"
+              aria-label="Site suivant"
+            >
+              ›
+            </button>
+          </div>
+        </div>
+        <div class="home-carousel__track" data-carousel-track>
+          {% for site in derniers_sites %}
+          <article class="recent-card">
+            <header class="recent-card__header">
               <a
                 href="{{ site['lien'] }}"
                 target="_blank"
@@ -51,152 +129,231 @@ internet utiles de La Réunion.{% endblock %} {% block header_content %}
               >
                 {{ site['nom'] }}
               </a>
-            </li>
-            {% endfor %}
-          </ul>
-          <a
-            class="category-card__cta"
-            href="/categorie/{{ categories_slug[categorie] }}"
-          >
-            Voir la catégorie →
+              <span class="recent-card__badge">Nouveau</span>
+            </header>
+            <p class="recent-card__description">
+              {{ site['description']|truncate(110, True, '...') }}
+            </p>
+            <footer class="recent-card__footer">
+              <a
+                href="/categorie/{{ categories_slug[site['categorie']] }}"
+                class="recent-card__category"
+              >
+                {{ site['categorie'] }}
+              </a>
+              <time datetime="{{ site['date_ajout'] }}">
+                {{ site['date_ajout']|format_date }}
+              </time>
+            </footer>
+          </article>
+          {% endfor %}
+        </div>
+        <div class="carousel-cta">
+          <a href="/nouveaux-sites" class="view-all-btn">
+            <span>Voir tous les nouveaux sites</span>
+            <span class="btn-arrow">→</span>
           </a>
-        </article>
-        {% endfor %}
+        </div>
       </div>
-    </div>
-  </section>
+    </section>
+  </div>
 
-  <section class="mb-5">
-    <div class="text-center mb-4">
-      <h2 class="display-6 text-success">Talents de La Réunion</h2>
-      <p class="lead text-muted mb-0">
-        Influenceurs, comédiens & chanteurs péi à suivre sur Instagram.
-      </p>
-    </div>
-    {% for category, people in talents.items() %}
-    <div class="home-carousel mb-4" data-carousel>
-      <div class="home-carousel__top">
-        <p class="home-carousel__hint">
-          Glisser pour parcourir {{ category|lower }}
+  <!-- Onglet Talents -->
+  <div
+    id="talents-tab"
+    class="home-tab-content"
+    role="tabpanel"
+    aria-labelledby="talents-button"
+  >
+    <section class="mb-5">
+      <div class="text-center mb-4">
+        <h2 class="display-6 text-success">Talents de La Réunion</h2>
+        <p class="lead text-muted mb-0">
+          Influenceurs, comédiens & chanteurs péi à suivre sur Instagram.
         </p>
-        <div class="carousel-controls" aria-hidden="true">
-          <button
-            type="button"
-            class="carousel-btn carousel-btn--prev"
-            aria-label="Profil précédent"
-          >
-            ‹
-          </button>
-          <button
-            type="button"
-            class="carousel-btn carousel-btn--next"
-            aria-label="Profil suivant"
-          >
-            ›
-          </button>
-        </div>
       </div>
-      <div class="home-carousel__track" data-carousel-track>
-        {% for talent in people %}
-        <article class="talent-card">
-          <div class="talent-card__image">
-            {% if talent.image %}
-            <img
-              src="{{ url_for('static', filename=talent.image) }}"
-              alt="Portrait de {{ talent.name }}"
-            />
-            {% else %}
-            <div class="talent-card__placeholder" aria-hidden="true">
-              {{ talent.name[:1]|upper }}
+      {% if talents %}
+        {% for category, people in talents.items() %}
+          {% if people %}
+          <div class="home-carousel mb-4" data-carousel>
+            <div class="home-carousel__top">
+              <p class="home-carousel__hint">
+                Glisser pour parcourir {{ category|lower }}
+              </p>
+              <div class="carousel-controls" aria-hidden="true">
+                <button
+                  type="button"
+                  class="carousel-btn carousel-btn--prev"
+                  aria-label="Profil précédent"
+                >
+                  ‹
+                </button>
+                <button
+                  type="button"
+                  class="carousel-btn carousel-btn--next"
+                  aria-label="Profil suivant"
+                >
+                  ›
+                </button>
+              </div>
             </div>
-            {% endif %}
+            <div class="home-carousel__track" data-carousel-track>
+              {% for talent in people %}
+              <article class="talent-card">
+                <div class="talent-card__image">
+                  {% if talent.image %}
+                  <img
+                    src="{{ url_for('static', filename=talent.image) }}"
+                    alt="Portrait de {{ talent.name }}"
+                  />
+                  {% else %}
+                  <div class="talent-card__placeholder" aria-hidden="true">
+                    {{ talent.name[:1]|upper }}
+                  </div>
+                  {% endif %}
+                </div>
+                <h3>
+                  <a
+                    href="{{ talent.instagram }}"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    >{{ talent.name }}</a
+                  >
+                </h3>
+                <p class="talent-card__tagline">{{ talent.tagline }}</p>
+              </article>
+              {% endfor %}
+            </div>
           </div>
-          <h3>
-            <a
-              href="{{ talent.instagram }}"
-              target="_blank"
-              rel="noopener noreferrer"
-              >{{ talent.name }}</a
-            >
-          </h3>
-          <p class="talent-card__tagline">{{ talent.tagline }}</p>
-        </article>
+          {% endif %}
         {% endfor %}
-      </div>
-    </div>
-    {% endfor %}
-  </section>
-
-  <section class="mb-5">
-    <div class="text-center mb-4">
-      <h2 class="display-6 text-success">Derniers sites ajoutés</h2>
-      <p class="lead text-muted mb-0">
-        Les dernières découvertes de la communauté, publiées et vérifiées par mes soins.
+      {% else %}
+      <p class="talents-empty">
+        Aucun talent publié pour le moment. Propose ton profil préféré via le formulaire ci-dessous.
       </p>
-    </div>
-    <div class="home-carousel home-carousel--secondary" data-carousel>
-      <div class="home-carousel__top">
-        <p class="home-carousel__hint">Glisser pour parcourir les nouveautés</p>
-        <div class="carousel-controls" aria-hidden="true">
-          <button
-            type="button"
-            class="carousel-btn carousel-btn--prev"
-            aria-label="Site précédent"
-          >
-            ‹
-          </button>
-          <button
-            type="button"
-            class="carousel-btn carousel-btn--next"
-            aria-label="Site suivant"
-          >
-            ›
-          </button>
-        </div>
-      </div>
-      <div class="home-carousel__track" data-carousel-track>
-        {% for site in derniers_sites %}
-        <article class="recent-card">
-          <header class="recent-card__header">
-            <a
-              href="{{ site['lien'] }}"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              {{ site['nom'] }}
-            </a>
-            <span class="recent-card__badge">Nouveau</span>
-          </header>
-          <p class="recent-card__description">
-            {{ site['description']|truncate(110, True, '...') }}
-          </p>
-          <footer class="recent-card__footer">
-            <a
-              href="/categorie/{{ categories_slug[site['categorie']] }}"
-              class="recent-card__category"
-            >
-              {{ site['categorie'] }}
-            </a>
-            <time datetime="{{ site['date_ajout'] }}">
-              {{ site['date_ajout']|format_date }}
-            </time>
-          </footer>
-        </article>
-        {% endfor %}
-      </div>
-      <div class="carousel-cta">
-        <a href="/nouveaux-sites" class="view-all-btn">
-          <span>Voir tous les nouveaux sites</span>
-          <span class="btn-arrow">→</span>
-        </a>
-      </div>
-    </div>
-  </section>
+      {% endif %}
+    </section>
 
-  {% if form_inline %}
-  <section class="my-5" id="proposer-un-site">
-    {% include "_proposer_form.html" with context %}
-  </section>
-  {% endif %}
+    <!-- Formulaire d'ajout de talents -->
+    {% if form_talent %}
+    <section class="talents-form" id="proposer-talent">
+      <h2>Proposer un talent</h2>
+      <p>
+        Tu connais un influenceur, un comédien ou un chanteur à mettre en avant ?
+        Renseigne son pseudo Instagram, le lien vers son compte et une courte description.
+      </p>
+      <form method="post" action="{{ url_for('public.accueil') }}" class="talents-form__form" novalidate>
+        {{ form_talent.hidden_tag() }}
+        <div class="form-honeypot">
+          {{ form_talent.honeypot.label }} {{ form_talent.honeypot() }}
+        </div>
+        <div class="talents-form__field">
+          {{ form_talent.pseudo.label(class_="talents-form__label") }}
+          {{ form_talent.pseudo(class_="talents-form__input") }}
+          {% for error in form_talent.pseudo.errors %}
+          <span class="talents-form__error">{{ error }}</span>
+          {% endfor %}
+        </div>
+        <div class="talents-form__field">
+          {{ form_talent.instagram.label(class_="talents-form__label") }}
+          {{ form_talent.instagram(class_="talents-form__input") }}
+          {% for error in form_talent.instagram.errors %}
+          <span class="talents-form__error">{{ error }}</span>
+          {% endfor %}
+        </div>
+        <div class="talents-form__field">
+          {{ form_talent.description.label(class_="talents-form__label") }}
+          {{ form_talent.description(class_="talents-form__textarea", rows="4") }}
+          {% for error in form_talent.description.errors %}
+          <span class="talents-form__error">{{ error }}</span>
+          {% endfor %}
+        </div>
+        <button type="submit" class="btn btn-primary talents-form__submit">
+          Envoyer la proposition
+        </button>
+      </form>
+    </section>
+    {% endif %}
+  </div>
 </div>
+
+<script>
+  // Gestion des onglets
+  document.addEventListener("DOMContentLoaded", () => {
+    const tabs = document.querySelectorAll(".home-tab-button");
+    const contents = document.querySelectorAll(".home-tab-content");
+
+    // Vérifier s'il y a un hash dans l'URL pour activer l'onglet talents
+    const hash = window.location.hash;
+    let activeTab = "sites";
+    if (hash === "#talents-tab") {
+      activeTab = "talents";
+    }
+
+    // Fonction pour changer d'onglet
+    const switchTab = (tabName) => {
+      tabs.forEach((tab) => {
+        const isActive = tab.dataset.tab === tabName;
+        tab.classList.toggle("active", isActive);
+        tab.setAttribute("aria-selected", isActive);
+      });
+
+      contents.forEach((content) => {
+        const isActive = content.id === `${tabName}-tab`;
+        content.classList.toggle("active", isActive);
+      });
+
+      // Mettre à jour l'URL sans recharger la page
+      if (tabName === "talents") {
+        window.history.replaceState(null, "", "#talents-tab");
+      } else {
+        window.history.replaceState(null, "", window.location.pathname);
+      }
+    };
+
+    // Initialiser avec l'onglet actif
+    switchTab(activeTab);
+
+    // Si on arrive avec le hash #talents-tab, scroller vers l'onglet
+    if (hash === "#talents-tab") {
+      setTimeout(() => {
+        const talentsTab = document.getElementById("talents-tab");
+        if (talentsTab) {
+          talentsTab.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      }, 100);
+    }
+
+    // Ajouter les event listeners
+    tabs.forEach((tab) => {
+      tab.addEventListener("click", () => {
+        const tabName = tab.dataset.tab;
+        switchTab(tabName);
+      });
+    });
+  });
+</script>
+{% endblock %}
+
+{# Données structurées Schema.org pour la page d'accueil #}
+{% block head %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "Réunion Wiki",
+  "alternateName": "RéunionWiki",
+  "url": "https://reunionwiki.re",
+  "description": "Portail local pour accéder facilement aux sites essentiels et découvrir les talents de La Réunion",
+  "inLanguage": "fr-FR",
+  "potentialAction": {
+    "@type": "SearchAction",
+    "target": {
+      "@type": "EntryPoint",
+      "urlTemplate": "https://reunionwiki.re/recherche?q={search_term_string}"
+    },
+    "query-input": "required name=search_term_string"
+  }
+}
+</script>
 {% endblock %}

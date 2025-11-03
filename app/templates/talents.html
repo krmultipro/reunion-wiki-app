@@ -115,3 +115,40 @@ leurs comptes Instagram.{% endblock %} {% block content %}
   </form>
 </section>
 {% endblock %}
+
+{# Données structurées Schema.org pour la page Talents #}
+{% block head %}
+{% if talents %}
+{% set all_talents = [] %}
+{% for category, people in talents.items() %}
+  {% if people %}
+    {% for talent in people %}
+      {% set _ = all_talents.append(talent) %}
+    {% endfor %}
+  {% endif %}
+{% endfor %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "ItemList",
+  "name": "Talents de La Réunion – Influenceurs, Comédiens & Chanteurs",
+  "description": "Découvrez les influenceurs, comédiens et chanteurs réunionnais à suivre sur Instagram",
+  "itemListElement": [
+    {% for talent in all_talents %}
+    {
+      "@type": "ListItem",
+      "position": {{ loop.index }},
+      "item": {
+        "@type": "Person",
+        "name": {{ talent.name|tojson }},
+        "url": {{ talent.instagram|tojson }},
+        "jobTitle": {{ talent.tagline|tojson }},
+        "sameAs": {{ talent.instagram|tojson }}
+      }
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+  ]
+}
+</script>
+{% endif %}
+{% endblock %}

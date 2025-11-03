@@ -15,7 +15,13 @@ body {
   font-family: "Inter", sans-serif;
   color: var(--gris-texte);
   margin: 0;
-  padding: 1.2em;
+  padding: 0.5rem;
+}
+
+@media (min-width: 640px) {
+  body {
+    padding: 1.2em;
+  }
 }
 
 p strong {
@@ -551,10 +557,17 @@ footer a:hover {
 
 /* === Nouveau layout accueil === */
 .home-carousel {
-  margin: 1.75rem auto 0;
+  margin: 1rem auto 0;
   max-width: 1200px;
-  padding: 0 0.75rem;
+  padding: 0;
   position: relative;
+}
+
+@media (min-width: 640px) {
+  .home-carousel {
+    margin: 1.75rem auto 0;
+    padding: 0 0.75rem;
+  }
 }
 
 .home-carousel--secondary {
@@ -577,11 +590,17 @@ footer a:hover {
 
 .home-carousel__track {
   display: flex;
-  gap: 0.9rem;
+  gap: 0.75rem;
   overflow-x: auto;
   scroll-snap-type: x proximity;
-  padding: 0.5rem 0;
+  padding: 0.5rem 0.5rem;
   scroll-behavior: smooth;
+}
+
+@media (min-width: 640px) {
+  .home-carousel__track {
+    padding: 0.5rem 0;
+  }
 }
 
 .home-carousel__track > * {
@@ -639,8 +658,7 @@ footer a:hover {
 }
 
 .category-card,
-.recent-card,
-.talent-card {
+.recent-card {
   border: 1px solid rgba(11, 132, 87, 0.16);
   border-radius: 18px;
   padding: 1.1rem 1.25rem;
@@ -651,6 +669,11 @@ footer a:hover {
 }
 
 .talent-card {
+  border: 1px solid rgba(11, 132, 87, 0.16);
+  border-radius: 18px;
+  padding: 1.1rem 1.25rem;
+  background: var(--blanc);
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.06);
   width: clamp(160px, 68vw, 200px);
   text-align: center;
   color: var(--gris-texte);
@@ -658,7 +681,7 @@ footer a:hover {
   flex-direction: column;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.85rem;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
 .category-card:hover,
@@ -796,9 +819,15 @@ footer a:hover {
 .proposer-card {
   background: var(--blanc);
   border-radius: 16px;
-  padding: 1.8rem;
+  padding: 1.2rem;
   box-shadow: 0 12px 24px rgba(0, 0, 0, 0.06);
   border: 1px solid rgba(11, 132, 87, 0.08);
+}
+
+@media (min-width: 640px) {
+  .proposer-card {
+    padding: 1.8rem;
+  }
 }
 
 .proposer-card--full {
@@ -807,7 +836,13 @@ footer a:hover {
 }
 
 .proposer-card__header {
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.2rem;
+}
+
+@media (min-width: 640px) {
+  .proposer-card__header {
+    margin-bottom: 1.5rem;
+  }
 }
 
 .proposer-card__header h2 {
@@ -826,8 +861,14 @@ footer a:hover {
 
 .form-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: 1fr;
   gap: 1rem;
+}
+
+@media (min-width: 640px) {
+  .form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .form-field {
@@ -873,11 +914,18 @@ footer a:hover {
 
 .form-actions {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
+  align-items: stretch;
   gap: 1rem;
   margin-top: 1.5rem;
-  flex-wrap: wrap;
+}
+
+@media (min-width: 640px) {
+  .form-actions {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
 }
 
 .form-actions--stacked {
@@ -900,6 +948,13 @@ footer a:hover {
   background: var(--vert-fougere);
   color: var(--blanc);
   box-shadow: 0 12px 20px rgba(0, 119, 204, 0.25);
+  width: 100%;
+}
+
+@media (min-width: 640px) {
+  .btn-primary {
+    width: auto;
+  }
 }
 
 .btn-primary:hover {
@@ -1018,10 +1073,6 @@ footer a:hover {
 }
 
 @media (max-width: 768px) {
-  .form-grid {
-    grid-template-columns: 1fr;
-  }
-
   .form-field,
   .form-input,
   .form-select,
@@ -1029,12 +1080,8 @@ footer a:hover {
     width: 100%;
   }
 
-  .form-actions {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
   .btn {
+    width: 100%;
     text-align: center;
   }
 
@@ -1687,14 +1734,21 @@ footer a:hover {
 
 .talents-hero {
   max-width: 960px;
-  margin: 2rem auto;
+  margin: 1rem auto;
   text-align: center;
   color: #1d1d1f;
   background: #f6f6f6;
-  padding: 2.2rem 1.8rem;
+  padding: 1.2rem 1rem;
   border-radius: 22px;
   border: 1px solid rgba(11, 132, 87, 0.18);
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+}
+
+@media (min-width: 640px) {
+  .talents-hero {
+    margin: 2rem auto;
+    padding: 2.2rem 1.8rem;
+  }
 }
 
 .talents-hero h1 {
@@ -1710,9 +1764,16 @@ footer a:hover {
 
 .talents-carousel {
   max-width: 960px;
-  margin: 2.2rem auto;
+  margin: 1rem auto;
   position: relative;
-  padding: 0 0.5rem;
+  padding: 0;
+}
+
+@media (min-width: 640px) {
+  .talents-carousel {
+    margin: 2.2rem auto;
+    padding: 0 0.5rem;
+  }
 }
 
 .talents-carousel__header {
@@ -1738,11 +1799,21 @@ footer a:hover {
 
 .talents-carousel__track {
   display: flex;
-  gap: 1rem;
+  gap: 0.75rem;
   overflow-x: auto;
   scroll-snap-type: x proximity;
-  padding: 0.8rem 0 0.9rem;
+  padding: 0.5rem 0.5rem 0.6rem;
   scroll-behavior: smooth;
+}
+
+@media (min-width: 640px) {
+  .talents-carousel__track {
+    padding: 0.8rem 0 0.9rem;
+  }
+}
+
+.home-carousel__track[data-carousel-track] {
+  gap: 0.75rem;
 }
 
 .talents-carousel__track > * {
@@ -1781,6 +1852,12 @@ footer a:hover {
   text-transform: uppercase;
 }
 
+@media (min-width: 576px) {
+  .talent-card__placeholder {
+    font-size: 2.2rem;
+  }
+}
+
 .talent-card h3 {
   margin: 0;
   font-size: 0.95rem;
@@ -1806,13 +1883,20 @@ footer a:hover {
 
 .talents-form {
   max-width: 720px;
-  margin: 2.5rem 1rem 3rem;
-  padding: 1.5rem;
+  margin: 1.5rem 0 2rem;
+  padding: 1rem;
   background: var(--blanc);
   border-radius: 18px;
   border: 1px solid rgba(11, 132, 87, 0.18);
   box-shadow: 0 20px 36px rgba(0, 0, 0, 0.08);
   color: #1d1d1f;
+}
+
+@media (min-width: 640px) {
+  .talents-form {
+    margin: 2.5rem auto 3rem;
+    padding: 1.5rem;
+  }
 }
 
 .talents-form h2 {
@@ -1908,10 +1992,22 @@ footer a:hover {
   .talents-hero h1 {
     font-size: 2.3rem;
   }
+}
 
+@media (min-width: 640px) {
   .talents-form {
     padding: 2rem;
     margin: 3rem auto 4rem;
+  }
+  
+  .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  
+  .py-5 {
+    padding-top: 3rem !important;
+    padding-bottom: 3rem !important;
   }
 }
 
@@ -1982,10 +2078,26 @@ form .button input {
 form .button input:hover {
   background: rgba(11, 132, 87, 0.85);
 }
-@media (max-width: 584px) {
+@media (max-width: 639px) {
   .container {
     max-width: 100%;
+    padding-left: 0;
+    padding-right: 0;
   }
+  
+  .py-5 {
+    padding-top: 1rem !important;
+    padding-bottom: 1rem !important;
+  }
+  
+  .mb-5 {
+    margin-bottom: 1rem !important;
+  }
+  
+  .mb-4 {
+    margin-bottom: 0.75rem !important;
+  }
+  
   form .site-details .input-box {
     margin-bottom: 15px;
     width: 100%;
@@ -2040,6 +2152,214 @@ form .button input:hover {
 .category_page a:focus {
   outline: 0.125rem solid var(--vert-fougere);
   outline-offset: 0.005rem;
+}
+
+/* ===== ONGLETS SITES/TALENTS (Mobile-first) ===== */
+.home-tabs {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  margin: 0 0 2rem;
+  padding: 0 0.5rem;
+}
+
+.home-tab-button {
+  flex: 1;
+  max-width: 200px;
+  padding: 0.9rem 1.5rem;
+  border: 2px solid var(--vert-fougere);
+  border-radius: 2rem;
+  background: var(--blanc);
+  color: var(--vert-fougere);
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.home-tab-button:hover {
+  background: rgba(11, 132, 87, 0.1);
+  transform: translateY(-2px);
+}
+
+.home-tab-button.active {
+  background: var(--vert-fougere);
+  color: var(--blanc);
+  box-shadow: 0 4px 12px rgba(11, 132, 87, 0.3);
+}
+
+.home-tab-button.active:hover {
+  background: #0a7149;
+  transform: translateY(-2px);
+}
+
+.home-tab-content {
+  display: none;
+}
+
+.home-tab-content.active {
+  display: block;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Catégories en vertical (mobile-first) */
+.categories-vertical {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.category-card-vertical {
+  background: var(--blanc);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(11, 132, 87, 0.12);
+  transition: all 0.2s ease;
+}
+
+.category-card-vertical:hover {
+  box-shadow: 0 6px 18px rgba(11, 132, 87, 0.15);
+  transform: translateY(-2px);
+}
+
+/* Header avec fond vert clair */
+.category-card-vertical__header {
+  background: rgba(11, 132, 87, 0.15);
+  padding: 0.9rem 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.category-card-vertical__icon {
+  font-size: 1.4rem;
+  line-height: 1;
+  filter: grayscale(0.3);
+  opacity: 0.8;
+}
+
+.category-card-vertical__icon:empty {
+  display: none;
+}
+
+.category-card-vertical__header h3 {
+  margin: 0;
+  font-size: 1.3rem;
+  text-align: left;
+}
+
+.category-card-vertical__header h3 a {
+  color: var(--vert-fougere);
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.category-card-vertical__header h3 a:hover {
+  color: var(--lava);
+}
+
+/* Contenu blanc */
+.category-card-vertical__content {
+  padding: 1.25rem;
+}
+
+.category-card-vertical__sites {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.category-card-vertical__site-item {
+  text-align: left;
+  line-height: 1.6;
+}
+
+.category-card-vertical__site-link {
+  color: var(--vert-fougere);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.category-card-vertical__site-link strong {
+  font-weight: 700;
+  color: var(--vert-fougere);
+}
+
+.category-card-vertical__site-link:hover strong {
+  color: var(--lava);
+}
+
+.category-card-vertical__arrow {
+  font-size: 0.9rem;
+  color: var(--vert-fougere);
+  display: inline-block;
+  line-height: 1;
+}
+
+.category-card-vertical__site-link:hover .category-card-vertical__arrow {
+  color: var(--lava);
+}
+
+.category-card-vertical__site-description {
+  color: var(--gris-texte);
+  font-size: 0.95rem;
+  display: inline;
+  line-height: 1.6;
+}
+
+.category-card-vertical__cta {
+  display: inline-block;
+  margin-top: 0.5rem;
+  color: var(--vert-fougere);
+  font-weight: 600;
+  text-decoration: underline;
+  font-size: 0.95rem;
+  text-align: left;
+}
+
+.category-card-vertical__cta:hover {
+  color: var(--lava);
+}
+
+/* Desktop: améliorations pour les onglets */
+@media (min-width: 640px) {
+  .home-tabs {
+    gap: 1rem;
+  }
+
+  .home-tab-button {
+    padding: 1rem 2rem;
+    font-size: 1.05rem;
+  }
+
+  .categories-vertical {
+    gap: 2rem;
+  }
+
+  .category-card-vertical {
+    padding: 1.5rem;
+  }
 }
 
 .faq a:focus {

@@ -2,51 +2,100 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://reunionwiki.re/</loc>
-    <lastmod>2025-10-01</lastmod>
+    <lastmod>2025-11-01</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
   </url>
 
   <url>
     <loc>https://reunionwiki.re/categorie/emploi-et-formation</loc>
-    <lastmod>2025-10-01</lastmod>
+    <lastmod>2025-11-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
   </url>
 
   <url>
     <loc>https://reunionwiki.re/categorie/culture-et-loisirs</loc>
-    <lastmod>2025-10-01</lastmod>
+    <lastmod>2025-11-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
   </url>
 
   <url>
     <loc>https://reunionwiki.re/categorie/transport</loc>
-    <lastmod>2025-10-01</lastmod>
+    <lastmod>2025-11-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
   </url>
 
   <url>
     <loc>https://reunionwiki.re/categorie/actualites</loc>
-    <lastmod>2025-10-01</lastmod>
+    <lastmod>2025-11-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
   </url>
 
   <url>
     <loc>https://reunionwiki.re/categorie/meteo-et-alertes</loc>
-    <lastmod>2025-10-01</lastmod>
+    <lastmod>2025-11-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
   </url>
 
   <url>
     <loc>https://reunionwiki.re/categorie/nourriture</loc>
-    <lastmod>2025-10-01</lastmod>
+    <lastmod>2025-11-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
   </url>
 
   <url>
     <loc>https://reunionwiki.re/categorie/achats</loc>
-    <lastmod>2025-10-01</lastmod>
+    <lastmod>2025-11-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
   </url>
 
   <url>
     <loc>https://reunionwiki.re/nouveaux-sites</loc>
-    <lastmod>2025-10-01</lastmod>
+    <lastmod>2025-11-01</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
   </url>
+
   <url>
-  <loc>https://reunionwiki.re/faq</loc>
-  <lastmod>2025-10-02</lastmod>
-</url>
+    <loc>https://reunionwiki.re/talents</loc>
+    <lastmod>2025-11-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <url>
+    <loc>https://reunionwiki.re/blog</loc>
+    <lastmod>2025-11-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
+    <loc>https://reunionwiki.re/faq</loc>
+    <lastmod>2025-11-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://reunionwiki.re/formulaire</loc>
+    <lastmod>2025-11-01</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.5</priority>
+  </url>
+
+  <url>
+    <loc>https://reunionwiki.re/contact</loc>
+    <lastmod>2025-11-01</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.5</priority>
+  </url>
 
 </urlset>

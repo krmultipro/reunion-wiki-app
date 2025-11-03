@@ -56,8 +56,8 @@ if os.getenv('FLASK_ENV') == 'production':
     # En production, on utilise plus de workers
     workers = min(workers, 8)
     
-    # MODIFICATION : Pendant la stabilisation, garder debug
-    loglevel = "debug"  # repasse en "warning" quand tout est ok
+    # PRODUCTION : Logs en mode warning pour éviter la verbosité
+    loglevel = "warning"  # Mode production - seulement warnings et erreurs
     
     # Sécurité renforcée
     limit_request_line = 4094

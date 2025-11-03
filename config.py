@@ -52,6 +52,10 @@ class DevelopmentConfig(Config):
     """Configuration pour le développement"""
     DEBUG = True
     FLASK_ENV = 'development'
+    
+    # DÉVELOPPEMENT : Rate limiting désactivé ou très permissif
+    RATELIMIT_DEFAULT = os.getenv("RATELIMIT_DEFAULT", "1000 per hour")
+    RATELIMIT_ENABLED = os.getenv("RATELIMIT_ENABLED", "false").lower() == 'true'
 
 class ProductionConfig(Config):
     """Configuration pour la production"""

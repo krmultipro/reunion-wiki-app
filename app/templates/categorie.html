@@ -31,9 +31,10 @@ seo_description }}{% endblock %} {% block canonical %}{{ canonical }}{% endblock
     <a href="/">← Retour à l'accueil</a>
   </div>
 </div>
-{% endblock %} {# --- Option SEO bonus : JSON-LD pour liste de sites --- #} {%
+{% endblock %} {# --- Données structurées SEO : ItemList + BreadcrumbList --- #} {%
 block head %}
 <script type="application/ld+json">
+[
   {
     "@context": "https://schema.org",
     "@type": "ItemList",
@@ -51,6 +52,25 @@ block head %}
       }{% if not loop.last %},{% endif %}
       {% endfor %}
     ]
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "Accueil",
+        "item": "https://reunionwiki.re"
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": {{ nom_categorie|tojson }},
+        "item": "{{ canonical }}"
+      }
+    ]
   }
+]
 </script>
 {% endblock %}

@@ -55,9 +55,28 @@ def register_blueprints(app: Flask) -> None:
 def register_context_processors(app: Flask) -> None:
     @app.context_processor
     def inject_categories():
+        # Mapping des catégories vers des icônes
+        category_icons = {
+            "Météo & Alertes": "☁️",
+            "Transport": "🚌",
+            "Emploi": "💼",
+            "Culture & Loisirs": "🎭",
+            "Santé": "🏥",
+            "Éducation": "📚",
+            "Administration": "🏛️",
+            "Commerce": "🛒",
+            "Tourisme": "🌴",
+            "Médias": "📺",
+            "Services": "⚙️",
+        }
+        
+        def get_category_icon(category: str) -> str:
+            return category_icons.get(category, "")
+        
         return {
             "categories": get_categories(),
             "categories_slug": get_categories_slug(),
+            "get_category_icon": get_category_icon,
         }
 
 

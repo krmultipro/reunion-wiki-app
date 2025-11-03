@@ -1,4 +1,4 @@
-const CACHE_NAME = "reunionwiki-cache-v6";
+const CACHE_NAME = "reunionwiki-cache-v7";
 
 // Liste des fichiers à mettre en cache
 const urlsToCache = [
@@ -41,29 +41,74 @@ self.addEventListener("activate", (event) => {
 
 // Interception des requêtes réseau
 self.addEventListener("fetch", (event) => {
+  const url = new URL(event.request.url);
+  
+  // Ignorer les requêtes vers des domaines externes (CDN, APIs, etc.)
+  // Ne gérer que les requêtes vers notre propre origine
+  if (url.origin !== self.location.origin) {
+    // Laisser passer les requêtes externes sans interception
+    return;
+  }
+
+  // Pour les requêtes de navigation (pages HTML)
   if (event.request.mode === "navigate") {
     event.respondWith(
       fetch(event.request)
         .then((response) => {
-          const responseClone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseClone);
-          });
+          // Ne mettre en cache que les réponses valides
+          if (response && response.status === 200) {
+            const responseClone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, responseClone);
+            });
+          }
           return response;
         })
-        .catch(() => caches.match(event.request))
+        .catch(() => {
+          // En cas d'erreur, essayer de récupérer depuis le cache
+          return caches.match(event.request).then((cachedResponse) => {
+            if (cachedResponse) {
+              return cachedResponse;
+            }
+            // Si aucun cache, retourner une réponse d'erreur
+            return new Response("Ressource non disponible hors ligne", {
+              status: 503,
+              statusText: "Service Unavailable",
+              headers: new Headers({ "Content-Type": "text/plain" }),
+            });
+          });
+        })
     );
     return;
   }
 
+  // Pour les autres requêtes (assets statiques)
   event.respondWith(
-    caches.match(event.request).then((response) => {
-      return (
-        response ||
-        fetch(event.request).catch(() => {
-          // Optionnel : fallback si la requête échoue (ex : offline)
+    caches.match(event.request).then((cachedResponse) => {
+      if (cachedResponse) {
+        return cachedResponse;
+      }
+
+      // Si pas en cache, faire une requête réseau
+      return fetch(event.request)
+        .then((response) => {
+          // Ne mettre en cache que les réponses valides
+          if (response && response.status === 200) {
+            const responseClone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, responseClone);
+            });
+          }
+          return response;
         })
-      );
+        .catch(() => {
+          // Si la requête échoue, retourner une réponse d'erreur au lieu de undefined
+          return new Response("Ressource non disponible hors ligne", {
+            status: 503,
+            statusText: "Service Unavailable",
+            headers: new Headers({ "Content-Type": "text/plain" }),
+          });
+        });
     })
   );
 });
