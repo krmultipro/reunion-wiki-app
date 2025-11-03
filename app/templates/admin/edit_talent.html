@@ -12,7 +12,10 @@
       <p>{{ subtitle|safe }}</p>
       {% endif %}
     </div>
-    <a class="btn btn-secondary" href="{{ url_for('admin.talents', status=status_filter, q=search_query) }}">
+    {% set sort_by = sort_by|default('date_updated') %}
+    {% set sort_order = sort_order|default('desc') %}
+    {% set category_filter = category_filter|default('') %}
+    <a class="btn btn-secondary" href="{{ url_for('admin.talents', status=status_filter, category=category_filter, q=search_query, sort_by=sort_by, sort_order=sort_order) }}">
       ← Retour aux talents
     </a>
   </header>

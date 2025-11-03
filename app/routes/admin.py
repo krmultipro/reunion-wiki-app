@@ -41,6 +41,7 @@ from ..services.talents import (
     get_talent_by_id,
     get_talent_category_choices,
     get_talent_status_choices,
+    move_talent_order,
     update_talent_full,
     update_talent_status,
     delete_talent,
@@ -302,11 +303,21 @@ def create_site():
 def talents():
     status_filter = request.args.get("status", "en_attente")
     search_query = request.args.get("q", "").strip()
+    sort_by = request.args.get("sort_by", "date_updated")
+    sort_order = request.args.get("sort_order", "desc")
+    category_filter = request.args.get("category", "").strip() or None
 
     try:
-        data = get_admin_talents(status_filter=status_filter, search_query=search_query)
+        data = get_admin_talents(
+            status_filter=status_filter, 
+            search_query=search_query,
+            sort_by=sort_by,
+            sort_order=sort_order,
+            category_filter=category_filter
+        )
         entries = data["entries"]
         stats = data["stats"]
+        category_stats = data.get("category_stats", {})
     except DatabaseError:
         flash("Impossible de se connecter à la base de données.", "error")
         return redirect(url_for("admin.dashboard"))
@@ -317,12 +328,19 @@ def talents():
         form.talent_id.data = str(talent["id"])
         action_forms[talent["id"]] = form
 
+    from ..services.talents import TALENT_CATEGORIES
+
     return render_template(
         "admin/talents.html",
         entries=entries,
         stats=stats,
+        category_stats=category_stats,
+        categories=TALENT_CATEGORIES,
         status_filter=status_filter,
         search_query=search_query,
+        category_filter=category_filter or "",
+        sort_by=sort_by,
+        sort_order=sort_order,
         action_forms=action_forms,
         admin_username=session.get("admin_username"),
         status_labels=TALENT_STATUS_LABELS,
@@ -381,11 +399,40 @@ def update_talent(talent_id: int):
     return redirect(url_for("admin.talents", status=status_redirect, q=query_redirect))
 
 
+@admin_bp.route("/talents/<int:talent_id>/move/<direction>", methods=["POST"])
+@admin_required
+def move_talent(talent_id: int, direction: str):
+    """Move a talent up or down in display order."""
+    if direction not in ["up", "down"]:
+        flash("Direction invalide.", "error")
+        return redirect(url_for("admin.talents"))
+    
+    status_filter = request.args.get("status", "en_attente")
+    category_filter = request.args.get("category", "").strip() or None
+    search_query = request.args.get("q", "").strip()
+    sort_by = request.args.get("sort_by", "date_updated")
+    sort_order = request.args.get("sort_order", "desc")
+    
+    try:
+        success, message = move_talent_order(talent_id, direction, category=category_filter)
+        if success:
+            flash(message, "success")
+        else:
+            flash(message, "error")
+    except DatabaseError:
+        flash("Erreur lors du déplacement du talent.", "error")
+    
+    return redirect(url_for("admin.talents", status=status_filter, category=category_filter or "", q=search_query, sort_by=sort_by, sort_order=sort_order))
+
+
 @admin_bp.route("/talents/<int:talent_id>/edit", methods=["GET", "POST"])
 @admin_required
 def edit_talent(talent_id: int):
     status_filter = request.args.get("status", "en_attente")
+    category_filter = request.args.get("category", "").strip() or None
     search_query = request.args.get("q", "").strip()
+    sort_by = request.args.get("sort_by", "date_updated")
+    sort_order = request.args.get("sort_order", "desc")
 
     form = TalentAdminForm()
     form.category.choices = get_talent_category_choices()
@@ -395,11 +442,11 @@ def edit_talent(talent_id: int):
         row = get_talent_by_id(talent_id)
     except DatabaseError:
         flash("Erreur lors de la récupération du talent.", "error")
-        return redirect(url_for("admin.talents", status=status_filter, q=search_query))
+        return redirect(url_for("admin.talents", status=status_filter, category=category_filter or "", q=search_query, sort_by=sort_by, sort_order=sort_order))
 
     if not row:
         flash("Talent introuvable.", "error")
-        return redirect(url_for("admin.talents", status=status_filter, q=search_query))
+        return redirect(url_for("admin.talents", status=status_filter, category=category_filter or "", q=search_query, sort_by=sort_by, sort_order=sort_order))
 
     talent = dict(row)
 
@@ -436,7 +483,7 @@ def edit_talent(talent_id: int):
                 )
                 flash(message, "success")
                 return redirect(
-                    url_for("admin.talents", status=status_filter, q=search_query)
+                    url_for("admin.talents", status=status_filter, category=category_filter or "", q=search_query, sort_by=sort_by, sort_order=sort_order)
                 )
             else:
                 flash(message, "warning")
@@ -451,7 +498,10 @@ def edit_talent(talent_id: int):
             "admin.edit_talent",
             talent_id=talent_id,
             status=status_filter,
+            category=category_filter or "",
             q=search_query,
+            sort_by=sort_by,
+            sort_order=sort_order,
         ),
         submit_label="Enregistrer les modifications",
         page_title=f"Modifier le talent #{talent_id}",

@@ -33,15 +33,37 @@
       ] %}
       {% for code, label, count in tabs %}
       <a
-        href="{{ url_for('admin.talents', status=code, q=search_query) }}"
+        href="{{ url_for('admin.talents', status=code, category=category_filter, q=search_query, sort_by=sort_by, sort_order=sort_order) }}"
         class="admin-status-tab {{ 'admin-status-tab--active' if status_filter == code else '' }}"
       >
         {{ label }} <span>{{ count }}</span>
       </a>
       {% endfor %}
     </nav>
+    
+    {% if status_filter == 'valide' and categories %}
+    <nav class="admin-category-tabs" aria-label="Filtrer par catégorie">
+      <a
+        href="{{ url_for('admin.talents', status=status_filter, category='', q=search_query, sort_by=sort_by, sort_order=sort_order) }}"
+        class="admin-category-tab {{ 'admin-category-tab--active' if not category_filter else '' }}"
+      >
+        Toutes les catégories
+      </a>
+      {% for category in categories %}
+      <a
+        href="{{ url_for('admin.talents', status=status_filter, category=category, q=search_query, sort_by=sort_by, sort_order=sort_order) }}"
+        class="admin-category-tab {{ 'admin-category-tab--active' if category_filter == category else '' }}"
+      >
+        {{ category }} <span>{{ category_stats.get(category, 0) }}</span>
+      </a>
+      {% endfor %}
+    </nav>
+    {% endif %}
     <form class="admin-search-form" method="get" action="{{ url_for('admin.talents') }}">
       <input type="hidden" name="status" value="{{ status_filter }}" />
+      <input type="hidden" name="category" value="{{ category_filter }}" />
+      <input type="hidden" name="sort_by" value="{{ sort_by }}" />
+      <input type="hidden" name="sort_order" value="{{ sort_order }}" />
       <input
         type="search"
         name="q"
@@ -51,7 +73,7 @@
       />
       <button type="submit" class="btn btn-primary">Rechercher</button>
       {% if search_query %}
-      <a class="admin-search-reset" href="{{ url_for('admin.talents', status=status_filter) }}">Effacer</a>
+      <a class="admin-search-reset" href="{{ url_for('admin.talents', status=status_filter, category=category_filter, sort_by=sort_by, sort_order=sort_order) }}">Effacer</a>
       {% endif %}
     </form>
   </div>
@@ -77,12 +99,40 @@
       <table class="admin-table">
         <thead>
           <tr>
-            <th>Pseudo</th>
-            <th>Catégorie</th>
+            <th>
+              <a href="{{ url_for('admin.talents', status=status_filter, category=category_filter, q=search_query, sort_by='pseudo', sort_order=('asc' if sort_by == 'pseudo' and sort_order == 'desc' else 'desc')) }}" class="admin-table__sort-link">
+                Pseudo
+                {% if sort_by == 'pseudo' %}
+                  <span class="admin-table__sort-indicator">{{ '↓' if sort_order == 'desc' else '↑' }}</span>
+                {% endif %}
+              </a>
+            </th>
+            <th>
+              <a href="{{ url_for('admin.talents', status=status_filter, category=category_filter, q=search_query, sort_by='category', sort_order=('asc' if sort_by == 'category' and sort_order == 'desc' else 'desc')) }}" class="admin-table__sort-link">
+                Catégorie
+                {% if sort_by == 'category' %}
+                  <span class="admin-table__sort-indicator">{{ '↓' if sort_order == 'desc' else '↑' }}</span>
+                {% endif %}
+              </a>
+            </th>
             <th>Instagram</th>
             <th>Description</th>
-            <th>Statut</th>
-            <th>Mise à jour</th>
+            <th>
+              <a href="{{ url_for('admin.talents', status=status_filter, category=category_filter, q=search_query, sort_by='status', sort_order=('asc' if sort_by == 'status' and sort_order == 'desc' else 'desc')) }}" class="admin-table__sort-link">
+                Statut
+                {% if sort_by == 'status' %}
+                  <span class="admin-table__sort-indicator">{{ '↓' if sort_order == 'desc' else '↑' }}</span>
+                {% endif %}
+              </a>
+            </th>
+            <th>
+              <a href="{{ url_for('admin.talents', status=status_filter, category=category_filter, q=search_query, sort_by='date_updated', sort_order=('asc' if sort_by == 'date_updated' and sort_order == 'desc' else 'desc')) }}" class="admin-table__sort-link">
+                Mise à jour
+                {% if sort_by == 'date_updated' %}
+                  <span class="admin-table__sort-indicator">{{ '↓' if sort_order == 'desc' else '↑' }}</span>
+                {% endif %}
+              </a>
+            </th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -107,9 +157,25 @@
               <small>Maj {{ talent['date_updated']|format_date("%d/%m/%Y %H:%M") }}</small>
             </td>
             <td class="admin-table__cell--actions">
+              {% if talent['status'] == 'valide' %}
+              <form
+                method="post"
+                action="{{ url_for('admin.move_talent', talent_id=talent['id'], direction='up', status=status_filter, category=category_filter, q=search_query, sort_by=sort_by, sort_order=sort_order) }}"
+                class="admin-table__form admin-table__form--inline"
+              >
+                <button type="submit" class="btn btn-small" title="Monter dans l'ordre d'affichage">↑</button>
+              </form>
+              <form
+                method="post"
+                action="{{ url_for('admin.move_talent', talent_id=talent['id'], direction='down', status=status_filter, category=category_filter, q=search_query, sort_by=sort_by, sort_order=sort_order) }}"
+                class="admin-table__form admin-table__form--inline"
+              >
+                <button type="submit" class="btn btn-small" title="Descendre dans l'ordre d'affichage">↓</button>
+              </form>
+              {% endif %}
               <a
                 class="btn btn-edit"
-                href="{{ url_for('admin.edit_talent', talent_id=talent['id'], status=status_filter, q=search_query) }}"
+                href="{{ url_for('admin.edit_talent', talent_id=talent['id'], status=status_filter, category=category_filter, q=search_query, sort_by=sort_by, sort_order=sort_order) }}"
               >
                 Modifier
               </a>

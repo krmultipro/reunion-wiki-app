@@ -306,12 +306,31 @@ def get_talents_data() -> OrderedDict[str, List[Dict[str, str]]]:
     return ordered
 
 
-def get_admin_talents(status_filter: str = "en_attente", search_query: str = "") -> Dict[str, any]:
-    """Get talents for admin dashboard with filters. Returns dict with entries and stats."""
+def get_admin_talents(
+    status_filter: str = "en_attente", 
+    search_query: str = "",
+    sort_by: str = "date_updated",
+    sort_order: str = "desc",
+    category_filter: Optional[str] = None
+) -> Dict[str, any]:
+    """Get talents for admin dashboard with filters and sorting. Returns dict with entries and stats."""
     prepare_talents_storage()
     allowed_statuses = set(TALENT_STATUSES + ["tout"])
     if status_filter not in allowed_statuses:
         status_filter = "en_attente"
+    
+    # Colonnes triables valides
+    allowed_sort_columns = {
+        "pseudo": "pseudo",
+        "category": "category",
+        "status": "status",
+        "date_created": "date_created",
+        "date_updated": "date_updated",
+        "display_order": "display_order"
+    }
+    
+    sort_column = allowed_sort_columns.get(sort_by, "date_updated")
+    sort_direction = "DESC" if sort_order.lower() == "desc" else "ASC"
     
     try:
         with db_query() as conn:
@@ -327,6 +346,10 @@ def get_admin_talents(status_filter: str = "en_attente", search_query: str = "")
                 query += " AND status = ?"
                 params.append(status_filter)
             
+            if category_filter:
+                query += " AND category = ?"
+                params.append(category_filter)
+            
             if search_query and len(search_query) >= 2:
                 like_query = f"%{search_query}%"
                 query += """
@@ -339,14 +362,14 @@ def get_admin_talents(status_filter: str = "en_attente", search_query: str = "")
                 """
                 params.extend([like_query] * 4)
             
-            query += """
+            query += f"""
                 ORDER BY
                     CASE status
                         WHEN 'en_attente' THEN 0
                         WHEN 'valide' THEN 1
                         ELSE 2
                     END,
-                    date_updated DESC,
+                    {sort_column} {sort_direction},
                     id DESC
                 LIMIT 200
             """
@@ -354,13 +377,28 @@ def get_admin_talents(status_filter: str = "en_attente", search_query: str = "")
             cur.execute(query, tuple(params))
             entries = cur.fetchall()
             
-            cur.execute("SELECT status, COUNT(*) AS total FROM talents GROUP BY status")
+            # Stats par statut
+            stats_query = "SELECT status, COUNT(*) AS total FROM talents WHERE 1 = 1"
+            stats_params = []
+            if category_filter:
+                stats_query += " AND category = ?"
+                stats_params.append(category_filter)
+            stats_query += " GROUP BY status"
+            
+            cur.execute(stats_query, tuple(stats_params))
             stats_rows = cur.fetchall()
             
             stats = {row["status"]: row["total"] for row in stats_rows}
             stats["tout"] = sum(stats.values())
             
-            return {"entries": entries, "stats": stats}
+            # Stats par catégorie pour les talents publiés
+            cur.execute(
+                "SELECT category, COUNT(*) AS total FROM talents WHERE status = 'valide' GROUP BY category"
+            )
+            category_stats_rows = cur.fetchall()
+            category_stats = {row["category"] or "": row["total"] for row in category_stats_rows}
+            
+            return {"entries": entries, "stats": stats, "category_stats": category_stats}
     except DatabaseError:
         return {"entries": [], "stats": {"en_attente": 0, "valide": 0, "refuse": 0, "tout": 0}}
 
@@ -487,3 +525,81 @@ def create_talent_admin(
     except DatabaseError as exc:
         current_app.logger.error(f"Erreur lors de l'ajout d'un talent depuis l'admin: {exc}")
         return False, "Erreur lors de l'ajout du talent."
+
+
+def move_talent_order(talent_id: int, direction: str, category: Optional[str] = None) -> Tuple[bool, str]:
+    """Move a talent up or down in display order. Returns (success, message)."""
+    prepare_talents_storage()
+    if direction not in ["up", "down"]:
+        return False, "Direction invalide."
+    
+    try:
+        with db_transaction() as conn:
+            cur = conn.cursor()
+            # Récupérer le talent actuel
+            cur.execute(
+                "SELECT id, display_order, category FROM talents WHERE id = ?",
+                (talent_id,)
+            )
+            talent = cur.fetchone()
+            if not talent:
+                return False, "Talent introuvable."
+            
+            current_order = talent["display_order"] or 0
+            talent_category = talent["category"] or ""
+            
+            # Filtrer par catégorie et statut valide pour l'ordre d'affichage public
+            category_filter = ""
+            params = []
+            if category:
+                category_filter = "AND category = ? AND status = 'valide'"
+                params.append(category)
+            elif talent_category:
+                category_filter = "AND category = ? AND status = 'valide'"
+                params.append(talent_category)
+            else:
+                category_filter = "AND status = 'valide'"
+            
+            if direction == "up":
+                # Trouver le talent avec display_order immédiatement inférieur dans la même catégorie
+                cur.execute(
+                    f"""
+                    SELECT id, display_order FROM talents 
+                    WHERE display_order < ? {category_filter}
+                    ORDER BY display_order DESC LIMIT 1
+                    """,
+                    (current_order,) + tuple(params)
+                )
+            else:  # down
+                # Trouver le talent avec display_order immédiatement supérieur dans la même catégorie
+                cur.execute(
+                    f"""
+                    SELECT id, display_order FROM talents 
+                    WHERE display_order > ? {category_filter}
+                    ORDER BY display_order ASC LIMIT 1
+                    """,
+                    (current_order,) + tuple(params)
+                )
+            
+            swap_talent = cur.fetchone()
+            if not swap_talent:
+                return False, "Impossible de déplacer (déjà en première/dernière position)."
+            
+            swap_order = swap_talent["display_order"] or 0
+            swap_id = swap_talent["id"]
+            
+            # Échanger les display_order
+            cur.execute(
+                "UPDATE talents SET display_order = ?, date_updated = DATETIME('now') WHERE id = ?",
+                (swap_order, talent_id)
+            )
+            cur.execute(
+                "UPDATE talents SET display_order = ?, date_updated = DATETIME('now') WHERE id = ?",
+                (current_order, swap_id)
+            )
+            
+            return True, f"Talent déplacé vers le {'haut' if direction == 'up' else 'bas'}."
+    
+    except DatabaseError as exc:
+        current_app.logger.error(f"Erreur lors du déplacement du talent {talent_id}: {exc}")
+        return False, "Erreur lors du déplacement du talent."
