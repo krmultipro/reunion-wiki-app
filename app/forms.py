@@ -5,7 +5,7 @@ SÉCURITÉ : Validation côté serveur pour éviter les injections
 """
 
 from flask_wtf import FlaskForm
-from wtforms import HiddenField, PasswordField, SelectField, StringField, SubmitField, TextAreaField
+from wtforms import HiddenField, IntegerField, PasswordField, SelectField, StringField, SubmitField, TextAreaField
 from wtforms.validators import DataRequired, Length, URL, ValidationError, Optional
 import re
 
@@ -213,6 +213,15 @@ class TalentAdminForm(FlaskForm):
             ("refuse", "Refusé"),
         ],
         filters=[_strip_filter],
+    )
+
+    display_order = IntegerField(
+        "Ordre d'affichage",
+        [
+            Optional(),
+        ],
+        default=0,
+        render_kw={"type": "number", "min": "0", "step": "1"},
     )
 
     def validate_instagram(self, field):

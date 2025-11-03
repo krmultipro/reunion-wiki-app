@@ -70,6 +70,15 @@
       {% endfor %}
     </div>
 
+    <div class="admin-form__field">
+      {{ form.display_order.label(class_="admin-form__label") }}
+      {{ form.display_order(class_="admin-form__input") }}
+      <small class="admin-form__hint">Ordre d'affichage dans la catégorie (0 par défaut, plus petit = affiché en premier).</small>
+      {% for error in form.display_order.errors %}
+      <span class="admin-form__error">{{ error }}</span>
+      {% endfor %}
+    </div>
+
     <div class="admin-form__actions">
       <button type="submit" class="btn btn-primary">{{ submit_label }}</button>
     </div>

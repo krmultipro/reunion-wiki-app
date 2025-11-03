@@ -69,12 +69,13 @@ DEFAULT_TALENTS: List[Dict[str, str]] = [
         "image": "talents/adriana.ftn_.jpg",
     },
     {
-        "pseudo": "kafmalbarofficiel",
-        "instagram": "https://www.instagram.com/kafmalbarofficiel/",
-        "description": "Chanteur réunionnais",
+        "pseudo": "segaelofficiel",
+        "instagram": "https://www.instagram.com/segaelofficiel/",
+        "description": "Chanteuse réunionnaise",
         "category": "Chanteurs",
-        "image": "talents/kafmalbarofficiel.jpg",
+        "image": "talents/segaelofficiel.jpg",
     },
+
     {
         "pseudo": "pll_off",
         "instagram": "https://www.instagram.com/pll_off/",
@@ -82,12 +83,13 @@ DEFAULT_TALENTS: List[Dict[str, str]] = [
         "category": "Chanteurs",
         "image": "talents/pll_off.jpg",
     },
+
     {
-        "pseudo": "segaelofficiel",
-        "instagram": "https://www.instagram.com/segaelofficiel/",
-        "description": "Chanteuse réunionnaise",
+        "pseudo": "kafmalbarofficiel",
+        "instagram": "https://www.instagram.com/kafmalbarofficiel/",
+        "description": "Chanteur réunionnais",
         "category": "Chanteurs",
-        "image": "talents/segaelofficiel.jpg",
+        "image": "talents/kafmalbarofficiel.jpg",
     },
     {
         "pseudo": "jennie.leonie",
@@ -142,11 +144,20 @@ def ensure_talents_table() -> None:
                 category TEXT DEFAULT '',
                 image TEXT DEFAULT '',
                 status TEXT NOT NULL DEFAULT 'en_attente',
+                display_order INTEGER DEFAULT 0,
                 date_created TEXT NOT NULL DEFAULT (DATETIME('now')),
                 date_updated TEXT NOT NULL DEFAULT (DATETIME('now'))
             )
             """
         )
+        # Migration: ajouter display_order si la colonne n'existe pas
+        try:
+            conn.execute("ALTER TABLE talents ADD COLUMN display_order INTEGER DEFAULT 0")
+            conn.commit()
+        except sqlite3.OperationalError:
+            # La colonne existe déjà, c'est normal
+            pass
+        
         conn.execute("CREATE INDEX IF NOT EXISTS idx_talents_status ON talents(status)")
         conn.execute(
             "CREATE INDEX IF NOT EXISTS idx_talents_category ON talents(category)"
@@ -261,7 +272,7 @@ def get_talents_data() -> OrderedDict[str, List[Dict[str, str]]]:
             SELECT pseudo, instagram, description, category, image
             FROM talents
             WHERE status = 'valide'
-            ORDER BY category ASC, pseudo ASC
+            ORDER BY category ASC, display_order ASC, pseudo ASC
             """
         )
         rows = cur.fetchall()
@@ -307,7 +318,7 @@ def get_admin_talents(status_filter: str = "en_attente", search_query: str = "")
             cur = conn.cursor()
             params: List[str] = []
             query = """
-                SELECT id, pseudo, instagram, description, category, image, status, date_created, date_updated
+                SELECT id, pseudo, instagram, description, category, image, status, display_order, date_created, date_updated
                 FROM talents
                 WHERE 1 = 1
             """
@@ -362,7 +373,7 @@ def get_talent_by_id(talent_id: int) -> Optional[sqlite3.Row]:
             cur = conn.cursor()
             cur.execute(
                 """
-                SELECT id, pseudo, instagram, description, category, image, status
+                SELECT id, pseudo, instagram, description, category, image, status, display_order
                 FROM talents
                 WHERE id = ?
                 """,
@@ -428,6 +439,7 @@ def update_talent_full(
     category: str,
     image: str,
     status: str,
+    display_order: int = 0,
 ) -> Tuple[bool, str]:
     """Update all fields of a talent. Returns (success, message)."""
     prepare_talents_storage()
@@ -437,10 +449,10 @@ def update_talent_full(
             cur.execute(
                 """
                 UPDATE talents
-                SET pseudo = ?, instagram = ?, description = ?, category = ?, image = ?, status = ?, date_updated = DATETIME('now')
+                SET pseudo = ?, instagram = ?, description = ?, category = ?, image = ?, status = ?, display_order = ?, date_updated = DATETIME('now')
                 WHERE id = ?
                 """,
-                (pseudo, instagram, description, category or "", image or "", status, talent_id),
+                (pseudo, instagram, description, category or "", image or "", status, display_order or 0, talent_id),
             )
             if cur.rowcount == 0:
                 return False, "Aucune mise à jour n'a été effectuée."
@@ -457,6 +469,7 @@ def create_talent_admin(
     category: str,
     image: str,
     status: str,
+    display_order: int = 0,
 ) -> Tuple[bool, str]:
     """Create a new talent (admin only). Returns (success, message)."""
     prepare_talents_storage()
@@ -465,10 +478,10 @@ def create_talent_admin(
             cur = conn.cursor()
             cur.execute(
                 """
-                INSERT INTO talents (pseudo, instagram, description, category, image, status)
-                VALUES (?, ?, ?, ?, ?, ?)
+                INSERT INTO talents (pseudo, instagram, description, category, image, status, display_order)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
                 """,
-                (pseudo, instagram, description, category or "", image or "", status),
+                (pseudo, instagram, description, category or "", image or "", status, display_order or 0),
             )
         return True, "Talent ajouté."
     except DatabaseError as exc:

@@ -413,6 +413,7 @@ def edit_talent(talent_id: int):
         form.category.data = talent["category"] or ""
         form.image.data = talent["image"] or ""
         form.status.data = talent["status"]
+        form.display_order.data = talent.get("display_order", 0) or 0
 
     if form.validate_on_submit():
         try:
@@ -424,6 +425,7 @@ def edit_talent(talent_id: int):
                 category=form.category.data or "",
                 image=form.image.data or "",
                 status=form.status.data,
+                display_order=form.display_order.data or 0,
             )
             if success:
                 current_app.logger.info(
@@ -475,6 +477,7 @@ def create_talent():
                 category=form.category.data or "",
                 image=form.image.data or "",
                 status=form.status.data,
+                display_order=form.display_order.data or 0,
             )
             if success:
                 current_app.logger.info(
