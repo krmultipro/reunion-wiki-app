@@ -68,20 +68,10 @@
       href="{{ url_for('static', filename='style.css') }}?v=8"
     />
 
-    <!-- Fonts (perf) -->
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <!-- Fonts locales -->
     <link
-      href="https://fonts.googleapis.com/css2?family=Montserrat:wght@900&display=swap"
       rel="stylesheet"
-    />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap"
-      rel="stylesheet"
-    />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap"
-      rel="stylesheet"
+      href="{{ url_for('static', filename='fonts.css') }}"
     />
 
     {% block head %}{% endblock %}
