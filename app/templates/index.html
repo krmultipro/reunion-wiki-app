@@ -223,6 +223,16 @@ internet utiles de La Réunion.{% endblock %} {% block header_content %}
                 <p class="talent-card__tagline">{{ talent.tagline }}</p>
               </article>
               {% endfor %}
+              <article class="talent-card talent-card--add" data-carousel-add-btn data-category="{{ category }}">
+                <a
+                  href="{{ url_for('public.proposer_talent', category=category) }}"
+                  class="talent-card__add-link"
+                  aria-label="Proposer un talent dans la catégorie {{ category }}"
+                >
+                  <div class="talent-card__add-icon">+</div>
+                  <p class="talent-card__add-text">Proposer un talent</p>
+                </a>
+              </article>
             </div>
           </div>
           {% endif %}

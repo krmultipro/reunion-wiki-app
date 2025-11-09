@@ -1996,6 +1996,82 @@ footer a:hover {
   font-size: 0.85rem;
 }
 
+/* Bouton d'ajout de talent à la fin du carrousel */
+.talent-card--add {
+  display: flex; /* Toujours dans le flux pour que scrollWidth soit correct */
+  align-items: center;
+  justify-content: center;
+  min-height: 100%;
+  border-style: dashed;
+  border-color: rgba(11, 132, 87, 0.3);
+  background: linear-gradient(135deg, rgba(11, 132, 87, 0.03) 0%, rgba(11, 132, 87, 0.08) 100%);
+  transition: all 0.3s ease;
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+}
+
+.talent-card--add.is-visible {
+  opacity: 1;
+  pointer-events: auto;
+  visibility: visible;
+}
+
+.talent-card--add:hover {
+  border-color: rgba(207, 16, 32, 0.5);
+  background: linear-gradient(135deg, rgba(207, 16, 32, 0.05) 0%, rgba(207, 16, 32, 0.12) 100%);
+  transform: translateY(-4px);
+  box-shadow: 0 22px 42px rgba(207, 16, 32, 0.18),
+              0 0 30px rgba(207, 16, 32, 0.25);
+}
+
+.talent-card__add-link {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  text-decoration: none;
+  color: var(--vert-fougere);
+  width: 100%;
+  height: 100%;
+  padding: 1rem;
+}
+
+.talent-card--add:hover .talent-card__add-link {
+  color: var(--lava);
+}
+
+.talent-card__add-icon {
+  font-size: 3rem;
+  font-weight: 300;
+  line-height: 1;
+  color: inherit;
+  transition: transform 0.2s ease;
+}
+
+.talent-card--add:hover .talent-card__add-icon {
+  transform: scale(1.15);
+}
+
+.talent-card__add-text {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-align: center;
+  color: inherit;
+}
+
+@media (min-width: 640px) {
+  .talent-card__add-icon {
+    font-size: 3.5rem;
+  }
+  
+  .talent-card__add-text {
+    font-size: 1rem;
+  }
+}
+
 .talents-empty {
   max-width: 960px;
   margin: 2.5rem auto;
@@ -2077,6 +2153,19 @@ footer a:hover {
 .talents-form__error {
   color: #cf1020;
   font-size: 0.9rem;
+}
+
+.talents-form__hint {
+  color: #4c5558;
+  font-size: 0.85rem;
+  font-style: italic;
+  margin-top: 0.25rem;
+}
+
+.talents-form__actions {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
 }
 
 .talents-form__submit {

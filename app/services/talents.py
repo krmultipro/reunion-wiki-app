@@ -216,7 +216,7 @@ def prepare_talents_storage() -> None:
     seed_default_talents()
 
 
-def create_talent_proposal(pseudo: str, instagram: str, description: str) -> bool:
+def create_talent_proposal(pseudo: str, instagram: str, description: str, category: str | None = None) -> bool:
     """Add a new talent proposal."""
     ensure_talents_table()
     conn = get_db_connection()
@@ -224,12 +224,15 @@ def create_talent_proposal(pseudo: str, instagram: str, description: str) -> boo
         return False
     try:
         cur = conn.cursor()
+        # Valider la catégorie si fournie
+        if category and category not in TALENT_CATEGORIES:
+            category = None
         cur.execute(
             """
-            INSERT INTO talents (pseudo, instagram, description, status)
-            VALUES (?, ?, ?, 'en_attente')
+            INSERT INTO talents (pseudo, instagram, description, category, status)
+            VALUES (?, ?, ?, ?, 'en_attente')
             """,
-            (pseudo, instagram, description),
+            (pseudo, instagram, description, category),
         )
         conn.commit()
         return True

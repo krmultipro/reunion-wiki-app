@@ -351,16 +351,40 @@
 
           const prev = carousel.querySelector(".carousel-btn--prev");
           const next = carousel.querySelector(".carousel-btn--next");
+          const addBtn = track.querySelector("[data-carousel-add-btn]");
+          
+          // Debug: vérifier si le bouton existe
+          if (!addBtn) {
+            console.warn("Bouton '+' non trouvé dans le carrousel", carousel);
+          }
 
           const updateButtons = () => {
-            if (!prev || !next) return;
-            const maxScroll = track.scrollWidth - track.clientWidth;
-            const atStart = track.scrollLeft <= 0;
-            const atEnd = track.scrollLeft >= maxScroll - 1;
-            prev.classList.toggle("is-visible", !atStart && maxScroll > 0);
-            next.classList.toggle("is-visible", !atEnd && maxScroll > 0);
-            prev.disabled = atStart;
-            next.disabled = atEnd;
+            const scrollLeft = track.scrollLeft;
+            const scrollWidth = track.scrollWidth;
+            const clientWidth = track.clientWidth;
+            const maxScroll = scrollWidth - clientWidth;
+            
+            const atStart = scrollLeft <= 1;
+            // Vérifier si on est proche de la fin (marge de 10px pour gérer les arrondis et padding)
+            const atEnd = scrollLeft + clientWidth >= scrollWidth - 10;
+            
+            // Mettre à jour les boutons prev/next seulement s'ils existent
+            if (prev && next) {
+              prev.classList.toggle("is-visible", !atStart && maxScroll > 0);
+              next.classList.toggle("is-visible", !atEnd && maxScroll > 0);
+              prev.disabled = atStart;
+              next.disabled = atEnd;
+            }
+            
+            // Afficher le bouton "+" seulement quand on est à la fin du carrousel
+            if (addBtn) {
+              // Afficher si on est à la fin OU si le contenu ne dépasse pas (pas besoin de scroll)
+              if (atEnd || maxScroll <= 0) {
+                addBtn.classList.add("is-visible");
+              } else {
+                addBtn.classList.remove("is-visible");
+              }
+            }
           };
 
           const scrollByAmount = () => {
@@ -379,12 +403,70 @@
             });
           }
           if (next) {
-            next.addEventListener("click", scrollByAmount);
+            next.addEventListener("click", () => {
+              scrollByAmount();
+              // Réévaluer après un court délai pour gérer le scroll smooth
+              setTimeout(() => {
+                updateButtons();
+                checkAddButtonVisibility();
+              }, 300);
+            });
           }
 
-          track.addEventListener("scroll", updateButtons, { passive: true });
-          window.addEventListener("resize", updateButtons);
+          // Fonction pour vérifier si le bouton "+" doit être visible
+          const checkAddButtonVisibility = () => {
+            if (!addBtn) return;
+            
+            const scrollLeft = track.scrollLeft;
+            const scrollWidth = track.scrollWidth;
+            const clientWidth = track.clientWidth;
+            const maxScroll = scrollWidth - clientWidth;
+            
+            // Si le contenu ne dépasse pas, toujours afficher
+            if (maxScroll <= 0) {
+              addBtn.classList.add("is-visible");
+              return;
+            }
+            
+            // Calculer le pourcentage de scroll (0 = début, 100 = fin)
+            const scrollPercent = maxScroll > 0 ? (scrollLeft / maxScroll) * 100 : 0;
+            
+            // Vérifier aussi avec une marge plus large pour être sûr
+            const remainingScroll = scrollWidth - (scrollLeft + clientWidth);
+            const atEnd = remainingScroll <= 30 || scrollLeft + clientWidth >= scrollWidth - 5;
+            
+            // Afficher le bouton si on a scrollé à 80% ou plus, OU si on est vraiment à la fin
+            if (scrollPercent >= 80 || atEnd) {
+              addBtn.classList.add("is-visible");
+            } else {
+              addBtn.classList.remove("is-visible");
+            }
+          };
+          
+          // Réévaluer après chaque scroll (avec debounce pour gérer les animations smooth)
+          let scrollTimeout;
+          track.addEventListener("scroll", () => {
+            updateButtons(); // Mise à jour immédiate
+            checkAddButtonVisibility(); // Vérifier la visibilité du bouton
+            clearTimeout(scrollTimeout);
+            scrollTimeout = setTimeout(() => {
+              updateButtons();
+              checkAddButtonVisibility();
+            }, 150); // Réévaluation après animation
+          }, { passive: true });
+          
+          window.addEventListener("resize", () => {
+            updateButtons();
+            checkAddButtonVisibility();
+          });
+          
+          // Attendre un peu que le DOM soit complètement rendu avant la première vérification
+          setTimeout(() => {
+            updateButtons();
+            checkAddButtonVisibility();
+          }, 100);
           updateButtons();
+          checkAddButtonVisibility();
         });
       });
     </script>

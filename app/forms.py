@@ -141,6 +141,12 @@ class TalentProposalForm(FlaskForm):
         filters=[_sanitize_multiline],
     )
 
+    category = StringField(
+        "Catégorie",
+        [Optional()],
+        filters=[_strip_filter],
+    )
+
     honeypot = StringField("Ne pas remplir ce champ", render_kw={"autocomplete": "off"}, filters=[_strip_filter])
 
     def validate_instagram(self, field):

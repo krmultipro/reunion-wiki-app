@@ -55,6 +55,7 @@ def accueil():
             form_talent.pseudo.data,
             form_talent.instagram.data,
             form_talent.description.data,
+            form_talent.category.data or None,
         )
         if success:
             flash(
@@ -173,6 +174,7 @@ def talents():
             form.pseudo.data,
             form.instagram.data,
             form.description.data,
+            form.category.data or None,
         )
         if success:
             flash(
@@ -186,6 +188,38 @@ def talents():
         )
     talents_by_category = get_talents_data()
     return render_template("talents.html", talents=talents_by_category, form=form)
+
+
+@public_bp.route("/proposer-talent", methods=["GET", "POST"])
+@limiter.limit(lambda: "1000 per hour" if current_app.config.get("DEBUG") else "5 per hour")
+def proposer_talent():
+    """Page dédiée pour proposer un talent avec catégorie pré-remplie."""
+    form = TalentProposalForm()
+    
+    # Récupérer la catégorie depuis la query string
+    category_param = request.args.get("category", "").strip()
+    if category_param:
+        form.category.data = category_param
+    
+    if form.validate_on_submit():
+        success = create_talent_proposal(
+            form.pseudo.data,
+            form.instagram.data,
+            form.description.data,
+            form.category.data or None,
+        )
+        if success:
+            flash(
+                "Merci ! Ta proposition de talent est en attente de validation.",
+                "success",
+            )
+            return redirect(url_for("public.talents"))
+        flash(
+            "Erreur lors de l'enregistrement de ta proposition. Réessaie plus tard.",
+            "error",
+        )
+    
+    return render_template("proposer_talent.html", form=form, category=category_param)
 
 
 @public_bp.route("/mentions-legales")
