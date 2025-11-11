@@ -24,6 +24,11 @@ Le projet est développé et maintenu par Kery dans le cadre d’un déploiement
 - Page blog avec sélections thématiques et conseils SEO-friendly.
 
 **Documentation complète** :
+
+**🎯 NOUVEAU :** 📖 **[GUIDE COMPLET](docs/GUIDE_COMPLET.md)** ⭐ **COMMENCE ICI !**  
+Guide de référence complet pour comprendre et maîtriser tout le projet.
+
+Documentation complémentaire :
 - 📝 [Guide de développement](docs/GUIDE_DEVELOPPEMENT.md) : Conventions, workflow, bonnes pratiques
 - 📚 [API des Services](docs/API_SERVICES.md) : Documentation complète des fonctions de service
 - 📊 [Analyse de modularité](docs/ANALYSE_MODULARITE.md) : Analyse détaillée de l'architecture
@@ -110,6 +115,14 @@ Voir [`docs/ANALYSE_MODULARITE.md`](docs/ANALYSE_MODULARITE.md) pour l'analyse d
 
 ---
 
+## 🚀 DÉMARRAGE RAPIDE
+
+**👉 [GETTING_STARTED.md](GETTING_STARTED.md) - Installation en 5 minutes !**
+
+Guide ultra-simple pour lancer l'application rapidement.
+
+---
+
 ## ✅ Prérequis
 
 - Python 3.10+
@@ -119,7 +132,7 @@ Voir [`docs/ANALYSE_MODULARITE.md`](docs/ANALYSE_MODULARITE.md) pour l'analyse d
 
 ---
 
-## 🚀 Installation locale
+## 🚀 Installation locale (détaillée)
 
 ```bash
 # 1. Cloner le projet

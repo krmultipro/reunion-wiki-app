@@ -29,6 +29,7 @@ from ..services.sites import (
     get_admin_sites,
     get_categories,
     get_site_by_id,
+    move_site_order,
     update_site_full,
     update_site_status,
     delete_site,
@@ -98,13 +99,23 @@ def logout():
 @admin_bp.route("", methods=["GET"])
 @admin_required
 def dashboard():
-    status_filter = request.args.get("status", "en_attente")
-    search_query = request.args.get("q", "").strip()
+    status_filter = request.args.get("status", "en_attente")[:50]
+    search_query = request.args.get("q", "").strip()[:100]
+    sort_by = request.args.get("sort_by", "date_ajout")[:50]
+    sort_order = request.args.get("sort_order", "desc")[:10]
+    category_filter = request.args.get("category", "").strip()[:100] or None
 
     try:
-        data = get_admin_sites(status_filter=status_filter, search_query=search_query)
+        data = get_admin_sites(
+            status_filter=status_filter, 
+            search_query=search_query,
+            sort_by=sort_by,
+            sort_order=sort_order,
+            category_filter=category_filter
+        )
         entries = data["entries"]
         stats = data["stats"]
+        category_stats = data.get("category_stats", {})
     except DatabaseError:
         flash("Impossible de se connecter à la base de données.", "error")
         return redirect(url_for("public.accueil"))
@@ -115,16 +126,25 @@ def dashboard():
         form.site_id.data = str(site["id"])
         action_forms[site["id"]] = form
 
+    try:
+        categories_list = get_categories()
+    except Exception:
+        categories_list = []
+
     return render_template(
         "admin/dashboard.html",
         entries=entries,
         stats=stats,
+        category_stats=category_stats or {},
+        categories=categories_list or [],
         status_filter=status_filter,
-        search_query=search_query,
+        search_query=search_query or "",
+        category_filter=category_filter or "",
+        sort_by=sort_by or "date_ajout",
+        sort_order=sort_order or "desc",
         action_forms=action_forms,
         admin_username=session.get("admin_username"),
     )
-
 
 @admin_bp.route("/propositions/<int:site_id>", methods=["POST"])
 @admin_required
@@ -172,14 +192,52 @@ def update_site(site_id: int):
     except DatabaseError:
         flash("Erreur lors de la mise à jour.", "error")
 
+    category_redirect = request.form.get("category_filter", "")
+    sort_by_redirect = request.form.get("sort_by", "date_ajout")
+    sort_order_redirect = request.form.get("sort_order", "desc")
+
     return redirect(
-        url_for("admin.dashboard", status=status_redirect, q=query_redirect)
+        url_for("admin.dashboard", status=status_redirect, category=category_redirect, q=query_redirect, sort_by=sort_by_redirect, sort_order=sort_order_redirect)
     )
+
+
+@admin_bp.route("/sites/<int:site_id>/move/<direction>", methods=["POST"])
+@admin_required
+def move_site(site_id: int, direction: str):
+    """Move a site up or down in display order."""
+    # Limite de longueur du paramètre direction (sécurité)
+    direction = direction[:10]
+    if direction not in ["up", "down"]:
+        flash("Direction invalide.", "error")
+        return redirect(url_for("admin.dashboard"))
+    
+    status_filter = request.args.get("status", "en_attente")[:50]
+    category_filter = request.args.get("category", "").strip()[:100] or None
+    search_query = request.args.get("q", "").strip()[:100]
+    sort_by = request.args.get("sort_by", "date_ajout")[:50]
+    sort_order = request.args.get("sort_order", "desc")[:10]
+    
+    try:
+        success, message = move_site_order(site_id, direction, category=category_filter)
+        if success:
+            flash(message, "success")
+        else:
+            flash(message, "error")
+    except DatabaseError:
+        flash("Erreur lors du déplacement du site.", "error")
+    
+    return redirect(url_for("admin.dashboard", status=status_filter, category=category_filter or "", q=search_query, sort_by=sort_by, sort_order=sort_order))
 
 
 @admin_bp.route("/propositions/<int:site_id>/edit", methods=["GET", "POST"])
 @admin_required
 def edit_site(site_id: int):
+    status_filter = request.args.get("status", "en_attente")[:50]
+    category_filter = request.args.get("category", "").strip()[:100] or None
+    search_query = request.args.get("q", "").strip()[:100]
+    sort_by = request.args.get("sort_by", "date_ajout")[:50]
+    sort_order = request.args.get("sort_order", "desc")[:10]
+    
     form = SiteForm()
     form.honeypot.data = ""
     categories_list = get_categories()
@@ -190,11 +248,11 @@ def edit_site(site_id: int):
         site = get_site_by_id(site_id)
     except DatabaseError:
         flash("Erreur lors de la récupération.", "error")
-        return redirect(url_for("admin.dashboard"))
+        return redirect(url_for("admin.dashboard", status=status_filter, category=category_filter or "", q=search_query, sort_by=sort_by, sort_order=sort_order))
 
     if not site:
         flash("Proposition introuvable.", "error")
-        return redirect(url_for("admin.dashboard"))
+        return redirect(url_for("admin.dashboard", status=status_filter, category=category_filter or "", q=search_query, sort_by=sort_by, sort_order=sort_order))
 
     if request.method == "GET":
         form.nom.data = site["nom"]
@@ -206,6 +264,7 @@ def edit_site(site_id: int):
     if form.validate_on_submit():
         try:
             status = request.form.get("status") or site["status"]
+            display_order = site.get("display_order", 0) or 0
             success, message = update_site_full(
                 site_id=site_id,
                 nom=form.nom.data,
@@ -214,6 +273,7 @@ def edit_site(site_id: int):
                 description=form.description.data,
                 categorie=form.categorie.data,
                 status=status,
+                display_order=display_order,
             )
             if success:
                 current_app.logger.info(
@@ -223,7 +283,7 @@ def edit_site(site_id: int):
                     request.remote_addr or "IP inconnue",
                 )
                 flash(message, "success")
-                return redirect(url_for("admin.dashboard"))
+                return redirect(url_for("admin.dashboard", status=status_filter, category=category_filter or "", q=search_query, sort_by=sort_by, sort_order=sort_order))
             else:
                 flash(message, "error")
         except DatabaseError:
@@ -237,14 +297,20 @@ def edit_site(site_id: int):
         form_action=url_for(
             "admin.edit_site",
             site_id=site_id,
-            status=request.args.get("status"),
-            q=request.args.get("q"),
+            status=status_filter,
+            category=category_filter or "",
+            q=search_query,
+            sort_by=sort_by,
+            sort_order=sort_order,
         ),
         submit_label="Enregistrer les modifications",
         page_title=f"Modifier la proposition #{site_id}",
         subtitle=f"Statut actuel : <strong>{site['status']}</strong>",
-        status_filter=request.args.get("status", "en_attente"),
-        search_query=request.args.get("q", ""),
+        status_filter=status_filter,
+        category_filter=category_filter or "",
+        search_query=search_query,
+        sort_by=sort_by,
+        sort_order=sort_order,
     )
 
 
@@ -269,6 +335,7 @@ def create_site():
                 lien=form.lien.data,
                 description=form.description.data,
                 categorie=form.categorie.data,
+                display_order=0,
             )
             if success:
                 current_app.logger.info(
@@ -301,11 +368,11 @@ def create_site():
 @admin_bp.route("/talents", methods=["GET"])
 @admin_required
 def talents():
-    status_filter = request.args.get("status", "en_attente")
-    search_query = request.args.get("q", "").strip()
-    sort_by = request.args.get("sort_by", "date_updated")
-    sort_order = request.args.get("sort_order", "desc")
-    category_filter = request.args.get("category", "").strip() or None
+    status_filter = request.args.get("status", "en_attente")[:50]
+    search_query = request.args.get("q", "").strip()[:100]
+    sort_by = request.args.get("sort_by", "date_updated")[:50]
+    sort_order = request.args.get("sort_order", "desc")[:10]
+    category_filter = request.args.get("category", "").strip()[:100] or None
 
     try:
         data = get_admin_talents(
@@ -403,15 +470,17 @@ def update_talent(talent_id: int):
 @admin_required
 def move_talent(talent_id: int, direction: str):
     """Move a talent up or down in display order."""
+    # Limite de longueur du paramètre direction (sécurité)
+    direction = direction[:10]
     if direction not in ["up", "down"]:
         flash("Direction invalide.", "error")
         return redirect(url_for("admin.talents"))
     
-    status_filter = request.args.get("status", "en_attente")
-    category_filter = request.args.get("category", "").strip() or None
-    search_query = request.args.get("q", "").strip()
-    sort_by = request.args.get("sort_by", "date_updated")
-    sort_order = request.args.get("sort_order", "desc")
+    status_filter = request.args.get("status", "en_attente")[:50]
+    category_filter = request.args.get("category", "").strip()[:100] or None
+    search_query = request.args.get("q", "").strip()[:100]
+    sort_by = request.args.get("sort_by", "date_updated")[:50]
+    sort_order = request.args.get("sort_order", "desc")[:10]
     
     try:
         success, message = move_talent_order(talent_id, direction, category=category_filter)
@@ -428,11 +497,11 @@ def move_talent(talent_id: int, direction: str):
 @admin_bp.route("/talents/<int:talent_id>/edit", methods=["GET", "POST"])
 @admin_required
 def edit_talent(talent_id: int):
-    status_filter = request.args.get("status", "en_attente")
-    category_filter = request.args.get("category", "").strip() or None
-    search_query = request.args.get("q", "").strip()
-    sort_by = request.args.get("sort_by", "date_updated")
-    sort_order = request.args.get("sort_order", "desc")
+    status_filter = request.args.get("status", "en_attente")[:50]
+    category_filter = request.args.get("category", "").strip()[:100] or None
+    search_query = request.args.get("q", "").strip()[:100]
+    sort_by = request.args.get("sort_by", "date_updated")[:50]
+    sort_order = request.args.get("sort_order", "desc")[:10]
 
     form = TalentAdminForm()
     form.category.choices = get_talent_category_choices()

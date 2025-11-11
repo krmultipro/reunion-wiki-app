@@ -51,6 +51,11 @@ def accueil():
     # Formulaire pour les talents
     form_talent = TalentProposalForm()
     if form_talent.validate_on_submit():
+        # Log pour détection d'abus et monitoring
+        current_app.logger.info(
+            f"Proposition talent (accueil): '{form_talent.pseudo.data}' depuis IP: {request.remote_addr or 'inconnue'}"
+        )
+        
         success = create_talent_proposal(
             form_talent.pseudo.data,
             form_talent.instagram.data,
@@ -80,6 +85,8 @@ def accueil():
 
 @public_bp.route("/categorie/<slug>")
 def voir_categorie(slug: str):
+    # Limite de longueur du slug pour éviter les abus
+    slug = slug[:100]
     nom_categorie = get_nom_categorie_depuis_slug(slug)
     if not nom_categorie:
         return render_template("404.html"), 404
@@ -119,6 +126,7 @@ def voir_categorie(slug: str):
 
 
 @public_bp.route("/nouveaux-sites")
+@limiter.limit(lambda: "1000 per hour" if current_app.config.get("DEBUG") else "60 per minute")
 def nouveaux_sites():
     try:
         sites = get_all_validated_sites()
@@ -129,14 +137,22 @@ def nouveaux_sites():
 
 
 @public_bp.route("/recherche")
+@limiter.limit(lambda: "1000 per hour" if current_app.config.get("DEBUG") else "30 per minute")
 def search():
-    query = request.args.get("q", "").strip()
+    # Limite de longueur pour éviter les abus (max 100 caractères)
+    query = request.args.get("q", "").strip()[:100]
     results = []
     total = 0
 
     if query and len(query) >= 2:
+        # Log pour détecter les patterns d'abus et améliorer la sécurité
+        current_app.logger.info(
+            f"Recherche: '{query[:50]}' depuis IP: {request.remote_addr or 'inconnue'}"
+        )
+        
         try:
-            results = search_sites(query, limit=100)
+            # Limite réduite à 30 résultats pour optimiser les performances
+            results = search_sites(query, limit=30)
             total = len(results)
         except DatabaseError:
             flash(
@@ -170,6 +186,11 @@ def blog():
 def talents():
     form = TalentProposalForm()
     if form.validate_on_submit():
+        # Log pour détection d'abus et monitoring
+        current_app.logger.info(
+            f"Proposition talent (page talents): '{form.pseudo.data}' depuis IP: {request.remote_addr or 'inconnue'}"
+        )
+        
         success = create_talent_proposal(
             form.pseudo.data,
             form.instagram.data,
@@ -196,12 +217,17 @@ def proposer_talent():
     """Page dédiée pour proposer un talent avec catégorie pré-remplie."""
     form = TalentProposalForm()
     
-    # Récupérer la catégorie depuis la query string
-    category_param = request.args.get("category", "").strip()
+    # Récupérer la catégorie depuis la query string avec limite de longueur
+    category_param = request.args.get("category", "").strip()[:50]
     if category_param:
         form.category.data = category_param
     
     if form.validate_on_submit():
+        # Log pour détection d'abus et monitoring
+        current_app.logger.info(
+            f"Proposition talent: '{form.pseudo.data}' depuis IP: {request.remote_addr or 'inconnue'}"
+        )
+        
         success = create_talent_proposal(
             form.pseudo.data,
             form.instagram.data,
@@ -292,6 +318,12 @@ def formulaire():
     form.categorie.choices.insert(0, ("", "Sélectionnez une catégorie"))
 
     if form.validate_on_submit():
+        # Log pour détection d'abus et monitoring
+        current_app.logger.info(
+            f"Proposition site: '{form.nom.data}' ({form.lien.data}) "
+            f"depuis IP: {request.remote_addr or 'inconnue'}"
+        )
+        
         success, message = submit_site_proposal(
             nom=form.nom.data,
             lien=form.lien.data,
@@ -301,17 +333,23 @@ def formulaire():
         )
         
         if success:
-            send_submission_notification(
-                {
-                    "nom": form.nom.data,
-                    "ville": form.ville.data,
-                    "lien": form.lien.data,
-                    "description": form.description.data,
-                    "categorie": form.categorie.data,
-                    "date_submission": datetime.utcnow().strftime("%d/%m/%Y %H:%M"),
-                    "remote_addr": request.remote_addr or "IP inconnue",
-                }
-            )
+            # Envoi notification email (non bloquant)
+            try:
+                send_submission_notification(
+                    {
+                        "nom": form.nom.data,
+                        "ville": form.ville.data,
+                        "lien": form.lien.data,
+                        "description": form.description.data,
+                        "categorie": form.categorie.data,
+                        "date_submission": datetime.utcnow().strftime("%d/%m/%Y %H:%M"),
+                        "remote_addr": request.remote_addr or "IP inconnue",
+                    }
+                )
+            except Exception as e:
+                # Log l'erreur mais ne bloque pas l'utilisateur
+                current_app.logger.error(f"Erreur envoi notification email: {e}")
+            
             flash(message, "success")
             return redirect(url_for("public.accueil"))
         else:

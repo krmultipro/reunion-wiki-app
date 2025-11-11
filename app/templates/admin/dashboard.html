@@ -23,6 +23,13 @@
     </div>
   </header>
   <div class="admin-dashboard__filters">
+    {% set category_filter = category_filter|default('') %}
+    {% set sort_by = sort_by|default('date_ajout') %}
+    {% set sort_order = sort_order|default('desc') %}
+    {% set search_query = search_query|default('') %}
+    {% set category_stats = category_stats|default({}) %}
+    {% set categories = categories|default([]) %}
+    
     <nav class="admin-status-tabs" aria-label="Filtrer par statut">
       {% set tabs = [
         ('en_attente', 'En attente', stats.get('en_attente', 0)),
@@ -32,15 +39,38 @@
       ] %}
       {% for code, label, count in tabs %}
       <a
-        href="{{ url_for('admin.dashboard', status=code, q=search_query) }}"
+        href="{{ url_for('admin.dashboard', status=code, category=category_filter, q=search_query, sort_by=sort_by, sort_order=sort_order) }}"
         class="admin-status-tab {{ 'admin-status-tab--active' if status_filter == code else '' }}"
       >
         {{ label }} <span>{{ count }}</span>
       </a>
       {% endfor %}
     </nav>
+    
+    {% if status_filter == 'valide' and categories %}
+    <nav class="admin-category-tabs" aria-label="Filtrer par catégorie">
+      <a
+        href="{{ url_for('admin.dashboard', status=status_filter, category='', q=search_query, sort_by=sort_by, sort_order=sort_order) }}"
+        class="admin-category-tab {{ 'admin-category-tab--active' if not category_filter else '' }}"
+      >
+        Toutes les catégories
+      </a>
+      {% for category in categories %}
+      <a
+        href="{{ url_for('admin.dashboard', status=status_filter, category=category, q=search_query, sort_by=sort_by, sort_order=sort_order) }}"
+        class="admin-category-tab {{ 'admin-category-tab--active' if category_filter == category else '' }}"
+      >
+        {{ category }} <span>{{ category_stats.get(category, 0) }}</span>
+      </a>
+      {% endfor %}
+    </nav>
+    {% endif %}
+    
     <form class="admin-search-form" method="get" action="{{ url_for('admin.dashboard') }}">
       <input type="hidden" name="status" value="{{ status_filter }}" />
+      <input type="hidden" name="category" value="{{ category_filter }}" />
+      <input type="hidden" name="sort_by" value="{{ sort_by }}" />
+      <input type="hidden" name="sort_order" value="{{ sort_order }}" />
       <input
         type="search"
         name="q"
@@ -50,7 +80,7 @@
       />
       <button type="submit" class="btn btn-primary">Rechercher</button>
       {% if search_query %}
-      <a class="admin-search-reset" href="{{ url_for('admin.dashboard', status=status_filter) }}">Effacer</a>
+      <a class="admin-search-reset" href="{{ url_for('admin.dashboard', status=status_filter, category=category_filter, sort_by=sort_by, sort_order=sort_order) }}">Effacer</a>
       {% endif %}
     </form>
   </div>
@@ -76,12 +106,33 @@
       <table class="admin-table">
         <thead>
           <tr>
-            <th>Nom</th>
-            <th>Catégorie</th>
+            <th>
+              <a href="{{ url_for('admin.dashboard', status=status_filter, category=category_filter, q=search_query, sort_by='nom', sort_order=('asc' if sort_by == 'nom' and sort_order == 'desc' else 'desc')) }}" class="admin-table__sort-link">
+                Nom
+                {% if sort_by == 'nom' %}
+                  <span class="admin-table__sort-indicator">{{ '↓' if sort_order == 'desc' else '↑' }}</span>
+                {% endif %}
+              </a>
+            </th>
+            <th>
+              <a href="{{ url_for('admin.dashboard', status=status_filter, category=category_filter, q=search_query, sort_by='categorie', sort_order=('asc' if sort_by == 'categorie' and sort_order == 'desc' else 'desc')) }}" class="admin-table__sort-link">
+                Catégorie
+                {% if sort_by == 'categorie' %}
+                  <span class="admin-table__sort-indicator">{{ '↓' if sort_order == 'desc' else '↑' }}</span>
+                {% endif %}
+              </a>
+            </th>
             <th>Ville</th>
             <th>Lien</th>
             <th>Description</th>
-            <th>Mise à jour</th>
+            <th>
+              <a href="{{ url_for('admin.dashboard', status=status_filter, category=category_filter, q=search_query, sort_by='date_ajout', sort_order=('asc' if sort_by == 'date_ajout' and sort_order == 'desc' else 'desc')) }}" class="admin-table__sort-link">
+                Mise à jour
+                {% if sort_by == 'date_ajout' %}
+                  <span class="admin-table__sort-indicator">{{ '↓' if sort_order == 'desc' else '↑' }}</span>
+                {% endif %}
+              </a>
+            </th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -104,9 +155,25 @@
               </span>
             </td>
             <td class="admin-table__cell--actions">
+              {% if site['status'] == 'valide' %}
+              <form
+                method="post"
+                action="{{ url_for('admin.move_site', site_id=site['id'], direction='up', status=status_filter, category=category_filter, q=search_query, sort_by=sort_by, sort_order=sort_order) }}"
+                class="admin-table__form admin-table__form--inline"
+              >
+                <button type="submit" class="btn btn-small" title="Monter dans l'ordre d'affichage">↑</button>
+              </form>
+              <form
+                method="post"
+                action="{{ url_for('admin.move_site', site_id=site['id'], direction='down', status=status_filter, category=category_filter, q=search_query, sort_by=sort_by, sort_order=sort_order) }}"
+                class="admin-table__form admin-table__form--inline"
+              >
+                <button type="submit" class="btn btn-small" title="Descendre dans l'ordre d'affichage">↓</button>
+              </form>
+              {% endif %}
               <a
                 class="btn btn-edit"
-                href="{{ url_for('admin.edit_site', site_id=site['id'], status=status_filter, q=search_query) }}"
+                href="{{ url_for('admin.edit_site', site_id=site['id'], status=status_filter, category=category_filter, q=search_query, sort_by=sort_by, sort_order=sort_order) }}"
               >
                 Modifier
               </a>
@@ -119,7 +186,10 @@
                 {{ action_forms[site['id']].site_id(value=site['id']) }}
                 <input type="hidden" name="action" value="approve" />
                 <input type="hidden" name="status_filter" value="{{ status_filter }}" />
+                <input type="hidden" name="category_filter" value="{{ category_filter }}" />
                 <input type="hidden" name="search_query" value="{{ search_query }}" />
+                <input type="hidden" name="sort_by" value="{{ sort_by }}" />
+                <input type="hidden" name="sort_order" value="{{ sort_order }}" />
                 <button type="submit" class="btn btn-approve">Valider</button>
               </form>
               <form
@@ -131,7 +201,10 @@
                 {{ action_forms[site['id']].site_id(value=site['id']) }}
                 <input type="hidden" name="action" value="reject" />
                 <input type="hidden" name="status_filter" value="{{ status_filter }}" />
+                <input type="hidden" name="category_filter" value="{{ category_filter }}" />
                 <input type="hidden" name="search_query" value="{{ search_query }}" />
+                <input type="hidden" name="sort_by" value="{{ sort_by }}" />
+                <input type="hidden" name="sort_order" value="{{ sort_order }}" />
                 <button type="submit" class="btn btn-reject">Refuser</button>
               </form>
               <form
@@ -144,7 +217,10 @@
                 {{ action_forms[site['id']].site_id(value=site['id']) }}
                 <input type="hidden" name="action" value="delete" />
                 <input type="hidden" name="status_filter" value="{{ status_filter }}" />
+                <input type="hidden" name="category_filter" value="{{ category_filter }}" />
                 <input type="hidden" name="search_query" value="{{ search_query }}" />
+                <input type="hidden" name="sort_by" value="{{ sort_by }}" />
+                <input type="hidden" name="sort_order" value="{{ sort_order }}" />
                 <button type="submit" class="btn btn-delete">Supprimer</button>
               </form>
             </td>

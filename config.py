@@ -17,7 +17,11 @@ load_dotenv()
 
 class Config:
     """Configuration de base"""
-    SECRET_KEY = os.getenv('SECRET_KEY', 'dev-key-change-in-production')
+    # SECRET_KEY : DOIT être défini en production
+    _secret_key = os.getenv('SECRET_KEY')
+    if not _secret_key and os.getenv('FLASK_ENV') == 'production':
+        raise ValueError("⚠️ ERREUR CRITIQUE : SECRET_KEY doit être défini en production !")
+    SECRET_KEY = _secret_key or 'dev-key-INSECURE-change-this'
     DATABASE_PATH = os.getenv('DATABASE_PATH', str(DEFAULT_DB_PATH))
     
     # NOTIFICATIONS : configuration email (désactivée par défaut)
