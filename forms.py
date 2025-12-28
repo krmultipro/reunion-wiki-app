@@ -5,7 +5,7 @@ SÉCURITÉ : Validation côté serveur pour éviter les injections
 """
 
 from flask_wtf import FlaskForm
-from wtforms import HiddenField, PasswordField, SelectField, StringField, SubmitField, TextAreaField
+from wtforms import BooleanField, HiddenField, PasswordField, SelectField, StringField, SubmitField, TextAreaField
 from wtforms.validators import DataRequired, Length, URL, ValidationError
 import re
 
@@ -108,3 +108,38 @@ class ModerationActionForm(FlaskForm):
     """Actions de modération sur une proposition"""
 
     site_id = HiddenField(validators=[DataRequired()])
+
+
+class AdminSiteForm(SiteForm):
+    """Formulaire complet pour la création/édition d'un site côté admin"""
+
+    status = SelectField(
+        "Statut",
+        choices=[
+            ("valide", "Publié"),
+            ("en_attente", "En attente"),
+            ("refuse", "Refusé"),
+        ],
+        default="valide",
+    )
+    en_vedette = BooleanField("Mettre en vedette", default=False)
+
+
+class CategoryForm(FlaskForm):
+    """CRUD catégories côté admin"""
+
+    nom = StringField(
+        "Nom de la catégorie",
+        validators=[
+            DataRequired(message="Le nom de la catégorie est obligatoire"),
+            Length(min=2, max=80, message="La catégorie doit faire entre 2 et 80 caractères"),
+        ],
+        filters=[_sanitize_basic],
+    )
+    submit = SubmitField("Enregistrer")
+
+
+class DeleteCategoryForm(FlaskForm):
+    """Suppression d'une catégorie"""
+
+    category_id = HiddenField(validators=[DataRequired()])

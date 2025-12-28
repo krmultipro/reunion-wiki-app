@@ -16,7 +16,14 @@ from flask import (
 from datetime import datetime
 import sqlite3
 import os
-from forms import AdminLoginForm, ModerationActionForm, SiteForm
+from forms import (
+    AdminLoginForm,
+    ModerationActionForm,
+    SiteForm,
+    AdminSiteForm,
+    CategoryForm,
+    DeleteCategoryForm,
+)
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from config import config
@@ -39,6 +46,7 @@ app.config.from_object(config.get(env, config['default']))
 
 # Configuration de la base de données
 DATABASE_PATH = app.config['DATABASE_PATH']
+_HAS_CATEGORIES_TABLE = False
 
 # SÉCURITÉ : Rate limiting pour éviter le spam avec Redis
 limiter = Limiter(
@@ -55,6 +63,7 @@ def get_db_connection():
     try:
         conn = sqlite3.connect(DATABASE_PATH)
         conn.row_factory = sqlite3.Row
+        init_db_schema(conn)
         return conn
     except sqlite3.Error as e:
         app.logger.error(f"Erreur de connexion à la base de données: {e}")
@@ -142,6 +151,53 @@ def admin_required(func):
         return func(*args, **kwargs)
 
     return wrapper
+
+
+def init_db_schema(conn):
+    """Crée la table categories si nécessaire et la pré-remplit depuis sites."""
+    global _HAS_CATEGORIES_TABLE
+    if _HAS_CATEGORIES_TABLE:
+        return
+
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS categories (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                nom TEXT NOT NULL UNIQUE,
+                slug TEXT NOT NULL UNIQUE,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+        )
+        conn.commit()
+        _HAS_CATEGORIES_TABLE = True
+
+        # Pré-remplit avec les catégories existantes si la table est vide
+        cur.execute("SELECT COUNT(*) FROM categories")
+        existing_count = cur.fetchone()[0]
+        if existing_count == 0:
+            cur.execute(
+                "SELECT DISTINCT categorie FROM sites WHERE categorie IS NOT NULL AND TRIM(categorie) != ''"
+            )
+            rows = cur.fetchall()
+            for row in rows:
+                nom_cat = row[0]
+                if not nom_cat:
+                    continue
+                slug = slugify(nom_cat)
+                try:
+                    cur.execute(
+                        "INSERT OR IGNORE INTO categories (nom, slug) VALUES (?, ?)",
+                        (nom_cat, slug),
+                    )
+                except sqlite3.IntegrityError:
+                    continue
+            conn.commit()
+    except sqlite3.Error as e:
+        app.logger.warning(f"Impossible d'initialiser la table categories: {e}")
+        _HAS_CATEGORIES_TABLE = False
 
 # GESTION D'ERREURS : Pages d'erreur personnalisées
 @app.errorhandler(404)
@@ -279,7 +335,7 @@ def get_derniers_sites_global(limit=3):
 
 # SÉCURITÉ : Récupère les catégories avec gestion d'erreurs
 def get_categories():
-    """Récupère les différentes catégories ayant au moins un site valide"""
+    """Récupère les catégories depuis la table dédiée si disponible."""
     if has_request_context() and hasattr(g, "_categories_cache"):
         return g._categories_cache
 
@@ -289,10 +345,42 @@ def get_categories():
     
     try:
         cur = conn.cursor()
-        cur.execute("SELECT DISTINCT categorie FROM sites WHERE status = 'valide'")
-        results = cur.fetchall()
-        # Pour chaque row dans results prends la première colonne (row[0]) si row[0] n'est pas vide
-        categories = [row[0] for row in results if row[0]]
+        # Utilise la table categories si elle existe, sinon fallback sur les sites valides
+        cur.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='categories'"
+        )
+        has_table = cur.fetchone() is not None
+
+        if has_table:
+            cur.execute("SELECT nom FROM categories ORDER BY nom COLLATE NOCASE ASC")
+            results = cur.fetchall()
+            categories = [row[0] for row in results if row[0]]
+
+            # Synchronise les catégories manquantes depuis la table sites
+            cur.execute("SELECT DISTINCT categorie FROM sites WHERE categorie IS NOT NULL AND TRIM(categorie) != ''")
+            site_categories = [row[0] for row in cur.fetchall() if row[0]]
+            missing = [cat for cat in site_categories if cat not in categories]
+            for cat in missing:
+                slug = generate_unique_category_slug(cur, cat)
+                cur.execute(
+                    "INSERT OR IGNORE INTO categories (nom, slug) VALUES (?, ?)",
+                    (cat, slug),
+                )
+            if missing:
+                conn.commit()
+                categories.extend(missing)
+
+            # Si aucune catégorie n'est encore enregistrée, fallback pour éviter de casser le front
+            if not categories:
+                cur.execute("SELECT DISTINCT categorie FROM sites WHERE status = 'valide'")
+                results = cur.fetchall()
+                categories = [row[0] for row in results if row[0]]
+        else:
+            cur.execute("SELECT DISTINCT categorie FROM sites WHERE status = 'valide'")
+            results = cur.fetchall()
+            categories = [row[0] for row in results if row[0]]
+
+        categories = sorted(set(categories), key=lambda x: x.lower())
         if has_request_context():
             g._categories_cache = categories
         return categories
@@ -317,6 +405,29 @@ def slugify(nom):
     nom = re.sub(r'[^a-z0-9-]', '', nom)   # supprime le reste
     nom = re.sub(r'-{2,}', '-', nom).strip('-')  # normalise tirets
     return nom
+
+
+def generate_unique_category_slug(cursor, nom, exclude_id=None):
+    """Génère un slug unique pour la table categories."""
+    base_slug = slugify(nom) or "categorie"
+    candidate = base_slug
+    suffix = 1
+    while True:
+        if exclude_id:
+            cursor.execute(
+                "SELECT id FROM categories WHERE slug = ? AND id != ?",
+                (candidate, exclude_id),
+            )
+        else:
+            cursor.execute(
+                "SELECT id FROM categories WHERE slug = ?",
+                (candidate,),
+            )
+        row = cursor.fetchone()
+        if not row:
+            return candidate
+        candidate = f"{base_slug}-{suffix}"
+        suffix += 1
 
 #obtenir le nom de la categorie depuis le slug 
 def get_nom_categorie_depuis_slug(slug):
@@ -404,6 +515,247 @@ def admin_dashboard():
     )
 
 
+@app.route("/admin/sites", methods=["GET"])
+@admin_required
+def admin_sites():
+    conn = get_db_connection()
+    if not conn:
+        flash("Impossible de se connecter à la base de données.", "error")
+        return redirect(url_for("admin_dashboard"))
+
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            """
+            SELECT id, nom, categorie, ville, lien, description, status, date_ajout, en_vedette
+            FROM sites
+            ORDER BY date_ajout DESC, id DESC
+            """
+        )
+        all_sites = cur.fetchall()
+    except sqlite3.Error as e:
+        app.logger.error(f"Erreur lors de la récupération des sites: {e}")
+        flash("Erreur lors du chargement des sites.", "error")
+        all_sites = []
+    finally:
+        conn.close()
+
+    action_forms = {}
+    for site in all_sites:
+        form = ModerationActionForm()
+        form.site_id.data = str(site["id"])
+        action_forms[site["id"]] = form
+
+    return render_template(
+        "admin/sites.html",
+        sites=all_sites,
+        action_forms=action_forms,
+        admin_username=session.get("admin_username"),
+    )
+
+
+@app.route("/admin/categories", methods=["GET"])
+@admin_required
+def admin_categories():
+    conn = get_db_connection()
+    if not conn:
+        flash("Impossible de se connecter à la base de données.", "error")
+        return redirect(url_for("admin_dashboard"))
+
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            """
+            SELECT id, nom, slug, created_at
+            FROM categories
+            ORDER BY nom COLLATE NOCASE ASC
+            """
+        )
+        categories = cur.fetchall()
+    except sqlite3.Error as e:
+        app.logger.error(f"Erreur lors de la récupération des catégories: {e}")
+        flash("Erreur lors du chargement des catégories.", "error")
+        categories = []
+    finally:
+        conn.close()
+
+    delete_forms = {cat["id"]: DeleteCategoryForm(category_id=str(cat["id"])) for cat in categories}
+
+    return render_template(
+        "admin/categories.html",
+        categories=categories,
+        delete_forms=delete_forms,
+        admin_username=session.get("admin_username"),
+    )
+
+
+@app.route("/admin/categories/new", methods=["GET", "POST"])
+@admin_required
+def admin_create_category():
+    form = CategoryForm()
+    if form.validate_on_submit():
+        conn = get_db_connection()
+        if not conn:
+            flash("Impossible de se connecter à la base de données.", "error")
+            return redirect(url_for("admin_categories"))
+        try:
+            cur = conn.cursor()
+            # Vérifie unicité du nom
+            cur.execute("SELECT id FROM categories WHERE nom = ?", (form.nom.data,))
+            if cur.fetchone():
+                flash("Cette catégorie existe déjà.", "error")
+                conn.close()
+                return redirect(url_for("admin_categories"))
+
+            slug = generate_unique_category_slug(cur, form.nom.data)
+            cur.execute(
+                "INSERT INTO categories (nom, slug) VALUES (?, ?)",
+                (form.nom.data, slug),
+            )
+            conn.commit()
+            flash("Catégorie créée.", "success")
+            return redirect(url_for("admin_categories"))
+        except sqlite3.Error as e:
+            conn.rollback()
+            app.logger.error(f"Erreur lors de la création d'une catégorie: {e}")
+            flash("Erreur lors de la création de la catégorie.", "error")
+        finally:
+            conn.close()
+
+    return render_template(
+        "admin/edit_category.html",
+        form=form,
+        admin_username=session.get("admin_username"),
+        page_title="Créer une catégorie",
+        submit_label="Créer la catégorie",
+    )
+
+
+@app.route("/admin/categories/<int:category_id>/edit", methods=["GET", "POST"])
+@admin_required
+def admin_edit_category(category_id):
+    form = CategoryForm()
+    conn = get_db_connection()
+    if not conn:
+        flash("Impossible de se connecter à la base de données.", "error")
+        return redirect(url_for("admin_categories"))
+
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT id, nom, slug FROM categories WHERE id = ?",
+            (category_id,),
+        )
+        category = cur.fetchone()
+    except sqlite3.Error as e:
+        conn.close()
+        app.logger.error(f"Erreur lors du chargement de la catégorie {category_id}: {e}")
+        flash("Impossible de charger la catégorie.", "error")
+        return redirect(url_for("admin_categories"))
+
+    if not category:
+        conn.close()
+        flash("Catégorie introuvable.", "error")
+        return redirect(url_for("admin_categories"))
+
+    if request.method == "GET":
+        form.nom.data = category["nom"]
+    elif form.validate_on_submit():
+        try:
+            cur.execute(
+                "SELECT id FROM categories WHERE nom = ? AND id != ?",
+                (form.nom.data, category_id),
+            )
+            if cur.fetchone():
+                flash("Une autre catégorie porte déjà ce nom.", "error")
+                conn.close()
+                return redirect(url_for("admin_categories"))
+
+            slug = generate_unique_category_slug(cur, form.nom.data, exclude_id=category_id)
+            old_nom = category["nom"]
+            cur.execute(
+                "UPDATE categories SET nom = ?, slug = ? WHERE id = ?",
+                (form.nom.data, slug, category_id),
+            )
+            # Mets à jour les sites qui pointaient vers l'ancien nom
+            cur.execute(
+                "UPDATE sites SET categorie = ? WHERE categorie = ?",
+                (form.nom.data, old_nom),
+            )
+            conn.commit()
+            flash("Catégorie mise à jour.", "success")
+            conn.close()
+            return redirect(url_for("admin_categories"))
+        except sqlite3.Error as e:
+            conn.rollback()
+            conn.close()
+            app.logger.error(f"Erreur lors de la mise à jour de la catégorie {category_id}: {e}")
+            flash("Erreur lors de la mise à jour.", "error")
+            return redirect(url_for("admin_categories"))
+
+    conn.close()
+    return render_template(
+        "admin/edit_category.html",
+        form=form,
+        admin_username=session.get("admin_username"),
+        page_title=f"Éditer la catégorie « {category['nom']} »",
+        submit_label="Enregistrer",
+    )
+
+
+@app.route("/admin/categories/<int:category_id>/delete", methods=["POST"])
+@admin_required
+def admin_delete_category(category_id):
+    form = DeleteCategoryForm()
+    if not form.validate_on_submit():
+        flash("Formulaire invalide.", "error")
+        return redirect(url_for("admin_categories"))
+
+    try:
+        category_id_form = int(form.category_id.data)
+    except (TypeError, ValueError):
+        abort(400)
+
+    if category_id != category_id_form:
+        abort(400)
+
+    conn = get_db_connection()
+    if not conn:
+        flash("Impossible de se connecter à la base de données.", "error")
+        return redirect(url_for("admin_categories"))
+
+    try:
+        cur = conn.cursor()
+        cur.execute("SELECT nom FROM categories WHERE id = ?", (category_id,))
+        row = cur.fetchone()
+        if not row:
+            flash("Catégorie introuvable.", "error")
+            conn.close()
+            return redirect(url_for("admin_categories"))
+
+        cur.execute(
+            "SELECT COUNT(*) as total FROM sites WHERE categorie = ?",
+            (row["nom"],),
+        )
+        usage = cur.fetchone()["total"]
+        if usage > 0:
+            flash("Impossible de supprimer : des sites utilisent encore cette catégorie.", "error")
+            conn.close()
+            return redirect(url_for("admin_categories"))
+
+        cur.execute("DELETE FROM categories WHERE id = ?", (category_id,))
+        conn.commit()
+        flash("Catégorie supprimée.", "success")
+    except sqlite3.Error as e:
+        conn.rollback()
+        app.logger.error(f"Erreur lors de la suppression de la catégorie {category_id}: {e}")
+        flash("Erreur lors de la suppression.", "error")
+    finally:
+        conn.close()
+
+    return redirect(url_for("admin_categories"))
+
+
 @app.route("/admin/propositions/<int:site_id>", methods=["POST"])
 @admin_required
 def admin_update_site(site_id):
@@ -422,7 +774,7 @@ def admin_update_site(site_id):
         abort(400)
 
     action = request.form.get("action")
-    if action not in {"approve", "reject", "delete"}:
+    if action not in {"approve", "reject", "delete", "pending"}:
         flash("Action inconnue.", "error")
         return redirect(url_for("admin_dashboard"))
 
@@ -446,6 +798,12 @@ def admin_update_site(site_id):
                 (site_id,),
             )
             message = "Proposition refusée."
+        elif action == "pending":
+            cur.execute(
+                "UPDATE sites SET status = 'en_attente' WHERE id = ?",
+                (site_id,),
+            )
+            message = "Statut remis en attente."
         else:
             cur.execute("DELETE FROM sites WHERE id = ?", (site_id,))
             message = "Proposition supprimée."
@@ -478,7 +836,7 @@ def admin_edit_site(site_id):
         cur = conn.cursor()
         cur.execute(
             """
-            SELECT id, nom, categorie, ville, lien, description, status
+            SELECT id, nom, categorie, ville, lien, description, status, en_vedette
             FROM sites
             WHERE id = ?
             """,
@@ -496,7 +854,7 @@ def admin_edit_site(site_id):
         flash("Proposition introuvable.", "error")
         return redirect(url_for("admin_dashboard"))
 
-    form = SiteForm()
+    form = AdminSiteForm()
     form.honeypot.data = ""
     categories_list = get_categories()
     form.categorie.choices = [(cat, cat) for cat in categories_list]
@@ -510,6 +868,8 @@ def admin_edit_site(site_id):
         form.ville.data = site["ville"]
         form.lien.data = site["lien"]
         form.description.data = site["description"]
+        form.status.data = site["status"]
+        form.en_vedette.data = bool(site["en_vedette"])
         if site["categorie"] not in categories_list:
             form.categorie.choices.append((site["categorie"], site["categorie"]))
         form.categorie.data = site["categorie"]
@@ -519,12 +879,18 @@ def admin_edit_site(site_id):
             flash("Impossible de se connecter à la base de données.", "error")
             conn.close()
             return redirect(url_for("admin_dashboard"))
+        # Sécurise la catégorie envoyée (doit exister)
+        if form.categorie.data not in [choice[0] for choice in form.categorie.choices if choice[0]]:
+            flash("Catégorie non valide.", "error")
+            conn.close()
+            conn_to_update.close()
+            return redirect(url_for("admin_dashboard"))
         try:
             cur_update = conn_to_update.cursor()
             cur_update.execute(
                 """
                 UPDATE sites
-                SET nom = ?, ville = ?, lien = ?, description = ?, categorie = ?
+                SET nom = ?, ville = ?, lien = ?, description = ?, categorie = ?, status = ?, en_vedette = ?
                 WHERE id = ?
                 """,
                 (
@@ -533,6 +899,8 @@ def admin_edit_site(site_id):
                     form.lien.data,
                     form.description.data,
                     form.categorie.data,
+                    form.status.data,
+                    1 if form.en_vedette.data else 0,
                     site_id,
                 ),
             )
@@ -571,7 +939,7 @@ def admin_edit_site(site_id):
 @app.route("/admin/propositions/new", methods=["GET", "POST"])
 @admin_required
 def admin_create_site():
-    form = SiteForm()
+    form = AdminSiteForm()
     form.honeypot.data = ""
     categories_list = get_categories()
     form.categorie.choices = [(cat, cat) for cat in categories_list]
@@ -581,6 +949,9 @@ def admin_create_site():
         form.categorie.choices.append((posted_category, posted_category))
 
     if form.validate_on_submit():
+        if form.categorie.data not in [choice[0] for choice in form.categorie.choices if choice[0]]:
+            flash("Catégorie non valide.", "error")
+            return redirect(url_for("admin_create_site"))
         conn = get_db_connection()
         if not conn:
             flash("Impossible de se connecter à la base de données.", "error")
@@ -590,7 +961,7 @@ def admin_create_site():
             cur.execute(
                 """
                 INSERT INTO sites (nom, ville, lien, description, categorie, status, date_ajout, en_vedette)
-                VALUES (?, ?, ?, ?, ?, 'valide', DATETIME('now'), 0)
+                VALUES (?, ?, ?, ?, ?, ?, DATETIME('now'), ?)
                 """,
                 (
                     form.nom.data,
@@ -598,10 +969,12 @@ def admin_create_site():
                     form.lien.data,
                     form.description.data,
                     form.categorie.data,
+                    form.status.data or "valide",
+                    1 if form.en_vedette.data else 0,
                 ),
             )
             conn.commit()
-            flash("Nouveau site ajouté et publié.", "success")
+            flash(f"Nouveau site ajouté (statut : {form.status.data}).", "success")
             return redirect(url_for("admin_dashboard"))
         except sqlite3.Error as e:
             conn.rollback()
@@ -808,8 +1181,28 @@ def get_categories_slug():
         return g._categories_slug_cache
 
     categories = get_categories()
-    # >>> AJOUT : garantit que les slugs affichés dans les menus/lien sont bien en ASCII canonique
-    categories_slug = {cat: slugify(cat) for cat in categories}
+    conn = get_db_connection()
+    categories_slug = {}
+
+    if conn:
+        try:
+            cur = conn.cursor()
+            cur.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='categories'"
+            )
+            has_table = cur.fetchone() is not None
+            if has_table:
+                cur.execute("SELECT nom, slug FROM categories")
+                rows = cur.fetchall()
+                categories_slug = {row["nom"]: row["slug"] for row in rows}
+        except sqlite3.Error as e:
+            app.logger.error(f"Erreur lors de la récupération des slugs de catégories: {e}")
+        finally:
+            conn.close()
+
+    # Si la table n'existe pas ou est vide, on calcule les slugs à la volée
+    if not categories_slug:
+        categories_slug = {cat: slugify(cat) for cat in categories}
 
     if has_request_context():
         g._categories_slug_cache = categories_slug

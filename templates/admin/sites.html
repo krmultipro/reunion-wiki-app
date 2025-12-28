@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block seo_title %}Gestion des sites - Réunion Wiki{% endblock %}
+{% block seo_description %}Liste complète des sites avec actions de publication et suppression.{% endblock %}
+
+{% block content %}
+<section class="admin-dashboard">
+  <header class="admin-dashboard__header">
+    <div class="admin-dashboard__intro">
+      <h1>Gestion des sites</h1>
+      <p>Bonjour {{ admin_username or "admin" }}.</p>
+    </div>
+    <div class="admin-dashboard__actions">
+      <a class="btn btn-primary" href="{{ url_for('admin_create_site') }}">+ Ajouter un site</a>
+      <a class="btn btn-secondary" href="{{ url_for('admin_categories') }}">Catégories</a>
+      <a class="btn btn-secondary" href="{{ url_for('admin_dashboard') }}">Tableau de bord</a>
+    </div>
+  </header>
+
+  {% if sites %}
+  <div class="admin-table-wrapper">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Nom</th>
+          <th>Catégorie</th>
+          <th>Ville</th>
+          <th>Lien</th>
+          <th>Statut</th>
+          <th>En vedette</th>
+          <th>Ajouté le</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for site in sites %}
+        <tr>
+          <td class="admin-table__cell--title">{{ site['nom'] }}</td>
+          <td>{{ site['categorie'] }}</td>
+          <td>{{ site['ville'] or "—" }}</td>
+          <td>
+            <a href="{{ site['lien'] }}" target="_blank" rel="noopener noreferrer">Ouvrir ↗</a>
+          </td>
+          <td>
+            <form method="post" action="{{ url_for('admin_update_site', site_id=site['id']) }}" class="admin-table__form">
+              {{ action_forms[site['id']].csrf_token }}
+              {{ action_forms[site['id']].site_id(value=site['id']) }}
+              <select name="action" class="admin-form__input">
+                <option value="approve" {% if site['status'] == 'valide' %}selected{% endif %}>Publié</option>
+                <option value="pending" {% if site['status'] == 'en_attente' %}selected{% endif %}>En attente</option>
+                <option value="reject" {% if site['status'] == 'refuse' %}selected{% endif %}>Refusé</option>
+              </select>
+              <button type="submit" class="btn btn-secondary">Mettre à jour</button>
+            </form>
+          </td>
+          <td>
+            {{ "Oui" if site['en_vedette'] else "Non" }}
+          </td>
+          <td>{{ site['date_ajout']|format_date("%d/%m/%Y %H:%M") }}</td>
+          <td class="admin-table__cell--actions">
+            <a class="btn btn-edit" href="{{ url_for('admin_edit_site', site_id=site['id']) }}">Modifier</a>
+            <form method="post" action="{{ url_for('admin_update_site', site_id=site['id']) }}" class="admin-table__form" onsubmit="return confirm('Supprimer définitivement ce site ?');">
+              {{ action_forms[site['id']].csrf_token }}
+              {{ action_forms[site['id']].site_id(value=site['id']) }}
+              <input type="hidden" name="action" value="delete" />
+              <button type="submit" class="btn btn-delete">Supprimer</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="admin-empty">Aucun site enregistré pour le moment.</p>
+  {% endif %}
+</section>
+{% endblock %}
