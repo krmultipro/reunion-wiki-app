@@ -17,7 +17,7 @@
     </div>
   </header>
 
-  {% if categories %}
+  {% if categories_ %}
   <div class="admin-table-wrapper">
     <table class="admin-table">
       <thead>
@@ -29,7 +29,7 @@
         </tr>
       </thead>
       <tbody>
-        {% for cat in categories %}
+        {% for cat in categories_ %}
         <tr>
           <td class="admin-table__cell--title">{{ cat['nom'] }}</td>
           <td>{{ cat['slug'] }}</td>

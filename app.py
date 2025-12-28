@@ -583,7 +583,7 @@ def admin_categories():
 
     return render_template(
         "admin/categories.html",
-        categories=categories,
+        categories_=categories,
         delete_forms=delete_forms,
         admin_username=session.get("admin_username"),
     )
