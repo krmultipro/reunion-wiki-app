@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block seo_title %}Catégories - Réunion Wiki{% endblock %}
+{% block seo_description %}Gestion des catégories utilisées par les sites.{% endblock %}
+
+{% block content %}
+<section class="admin-dashboard">
+  <header class="admin-dashboard__header">
+    <div class="admin-dashboard__intro">
+      <h1>Catégories</h1>
+      <p>Bonjour {{ admin_username or "admin" }}.</p>
+    </div>
+    <div class="admin-dashboard__actions">
+      <a class="btn btn-primary" href="{{ url_for('admin_create_category') }}">+ Ajouter une catégorie</a>
+      <a class="btn btn-secondary" href="{{ url_for('admin_sites') }}">Sites</a>
+      <a class="btn btn-secondary" href="{{ url_for('admin_dashboard') }}">Tableau de bord</a>
+    </div>
+  </header>
+
+  {% if categories_ %}
+  <div class="admin-table-wrapper">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Nom</th>
+          <th>Slug</th>
+          <th>Créée le</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for cat in categories_ %}
+        <tr>
+          <td class="admin-table__cell--title">{{ cat['nom'] }}</td>
+          <td>{{ cat['slug'] }}</td>
+          <td>{{ cat['created_at']|format_date("%d/%m/%Y %H:%M") }}</td>
+          <td class="admin-table__cell--actions">
+            <a class="btn btn-edit" href="{{ url_for('admin_edit_category', category_id=cat['id']) }}">Modifier</a>
+            <form method="post" action="{{ url_for('admin_delete_category', category_id=cat['id']) }}" class="admin-table__form" onsubmit="return confirm('Supprimer cette catégorie ?');">
+              {{ delete_forms[cat['id']].csrf_token }}
+              {{ delete_forms[cat['id']].category_id(value=cat['id']) }}
+              <button type="submit" class="btn btn-delete">Supprimer</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="admin-empty">Aucune catégorie enregistrée.</p>
+  {% endif %}
+</section>
+{% endblock %}

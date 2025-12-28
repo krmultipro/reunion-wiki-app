@@ -61,6 +61,24 @@
       {% endfor %}
     </div>
 
+    {% if form.status %}
+    <div class="admin-form__group">
+      <div class="admin-form__field">
+        {{ form.status.label(class_="admin-form__label") }}
+        {{ form.status(class_="admin-form__input") }}
+        {% for error in form.status.errors %}
+        <span class="admin-form__error">{{ error }}</span>
+        {% endfor %}
+      </div>
+      <div class="admin-form__field admin-form__field--checkbox">
+        <label class="admin-form__label">
+          {{ form.en_vedette() }}
+          Mettre en vedette
+        </label>
+      </div>
+    </div>
+    {% endif %}
+
     <div class="admin-form__actions">
       <button type="submit" class="btn btn-primary">{{ submit_label }}</button>
     </div>
