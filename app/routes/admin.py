@@ -14,7 +14,7 @@ from flask import (
     url_for,
 )
 
-from ..database import DatabaseError
+from ..database import DatabaseError, db_transaction
 from ..extensions import limiter
 from ..forms import (
     AdminLoginForm,
@@ -51,6 +51,28 @@ from ..services.talents import (
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 
 
+def log_admin_login_attempt(username: str, success: bool) -> None:
+    """Persist admin login attempts for audit purposes."""
+    ip_address = request.remote_addr or "IP inconnue"
+    user_agent = request.user_agent.string if request.user_agent else ""
+    user_agent = user_agent[:255]
+    try:
+        with db_transaction() as conn:
+            conn.execute(
+                """
+                INSERT INTO login_attempts (username, ip, success, user_agent)
+                VALUES (?, ?, ?, ?)
+                """,
+                (username, ip_address, 1 if success else 0, user_agent),
+            )
+    except DatabaseError:
+        current_app.logger.warning(
+            "Impossible d'enregistrer la tentative de connexion admin pour '%s' (%s).",
+            username,
+            ip_address,
+        )
+
+
 @admin_bp.route("/login", methods=["GET", "POST"])
 @limiter.limit("5 per minute")
 def login():
@@ -61,6 +83,7 @@ def login():
 
     if form.validate_on_submit():
         if verify_admin_credentials(form.username.data, form.password.data):
+            log_admin_login_attempt(form.username.data, True)
             session.permanent = True
             session["admin_authenticated"] = True
             session["admin_username"] = form.username.data
@@ -71,6 +94,7 @@ def login():
             )
             flash("Connexion réussie.", "success")
             return redirect(next_url)
+        log_admin_login_attempt(form.username.data, False)
         current_app.logger.warning(
             "Échec connexion admin pour '%s' depuis %s",
             form.username.data,

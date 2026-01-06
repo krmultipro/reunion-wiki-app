@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 """Application factory for Réunion Wiki."""
 
+
+
 from __future__ import annotations
 
 import os
@@ -16,6 +18,8 @@ from .hooks import register_hooks
 from .routes.admin import admin_bp
 from .routes.public import public_bp
 from .services.sites import get_categories, get_categories_slug
+from werkzeug.middleware.proxy_fix import ProxyFix
+
 
 
 def apply_security_settings(app: Flask, env: str) -> None:
@@ -32,6 +36,8 @@ def apply_security_settings(app: Flask, env: str) -> None:
 def create_app() -> Flask:
     """Create and configure the Flask application."""
     app = Flask(__name__)
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1)
+
 
     env = os.getenv("FLASK_ENV", "development")
     app.config.from_object(config.get(env, config["default"]))
