@@ -147,4 +147,5 @@ dmypy.json
 backups/
 base.db
 base.db
-base.db
+
+logs/nginx/*.log
