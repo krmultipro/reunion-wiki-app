@@ -1,20 +1,18 @@
 services:
   redis:
     image: redis:7-alpine
-    ports:
-      - "6379:6379"
+    restart: unless-stopped
 
   web:
     build: .
     ports:
       - "8000:8000"
     environment:
-      FLASK_ENV: development
-      FLASK_DEBUG: "1"
+      FLASK_ENV: production
       RATELIMIT_STORAGE_URL: redis://redis:6379/0
       DATABASE_PATH: /app/data/base.db
     depends_on:
       - redis
     volumes:
-      - .:/app 
       - ./data:/app/data
+    restart: unless-stopped
