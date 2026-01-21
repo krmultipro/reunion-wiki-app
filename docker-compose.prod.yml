@@ -1,0 +1,23 @@
+version: "3.8"
+
+services:
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+
+  web:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8000:8000"
+    environment:
+      - FLASK_ENV=production
+      - RATELIMIT_STORAGE_URL=redis://redis:6379/0
+      - DATABASE_PATH=/data/base.db
+    depends_on:
+      - redis
+    volumes:
+      - ./data:/data
+
+volumes:
+  db-data:
