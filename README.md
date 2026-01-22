@@ -93,7 +93,7 @@ MAIL_DEFAULT_SENDER=reunionwiki974@gmail.com
 MAIL_RECIPIENTS=reunionwiki974@gmail.com
 
 # Rate limiting (flask-limiter)
-RATELIMIT_DEFAULT=200 per day, 50 per hour
+RATELIMIT_DEFAULT=None
 # RATELIMIT_STORAGE_URL=redis://localhost:6379/0  # optionnel
 
 # Compte de modération (/admin)
@@ -108,6 +108,7 @@ Les variables sont chargées automatiquement par `config.py`. Ne jamais commiter
 ---
 
 ## 🛡️ Interface admin & modération
+
 - URL : `/admin` (formulaire de connexion `/admin/login`, déconnexion `/admin/logout`).
 - Les identifiants sont lus dans l’environnement (`ADMIN_USERNAME` + `ADMIN_PASSWORD` **ou** `ADMIN_PASSWORD_HASH`).
 - Pour générer un hash sécurisé :

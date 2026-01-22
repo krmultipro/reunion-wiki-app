@@ -38,7 +38,7 @@ class Config:
     
     # SÉCURITÉ : Rate limiting
     RATELIMIT_STORAGE_URL = os.getenv("RATELIMIT_STORAGE_URL", "memory://")
-    RATELIMIT_DEFAULT = os.getenv("RATELIMIT_DEFAULT", "200 per day, 50 per hour")
+    RATELIMIT_DEFAULT = os.getenv("RATELIMIT_DEFAULT", None)
     
     # LOGGING
     LOG_LEVEL = os.getenv('LOG_LEVEL', 'INFO')
