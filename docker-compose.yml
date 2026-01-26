@@ -9,10 +9,10 @@ services:
     ports:
       - "8000:8000"
     environment:
-      FLASK_ENV: development
-      FLASK_DEBUG: "1"
-      RATELIMIT_STORAGE_URL: redis://redis:6379/0
-      DATABASE_PATH: /app/data/base.db
+      FLASK_ENV: ${FLASK_ENV}
+      FLASK_DEBUG: ${FLASK_DEBUG}
+      RATELIMIT_STORAGE_URL: ${RATELIMIT_STORAGE_URL}
+      DATABASE_PATH: ${DATABASE_PATH}
     depends_on:
       - redis
     volumes:

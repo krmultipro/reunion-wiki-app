@@ -16,13 +16,16 @@ class DatabaseError(Exception):
 
 def get_db_path() -> str:
     """Return the absolute path to the configured SQLite database."""
-    path = current_app.config["DATABASE_PATH"]
-    return os.path.abspath(path)
+    return current_app.config["DATABASE_PATH"]
 
 
 def get_db_connection() -> Optional[sqlite3.Connection]:
     """Create a SQLite connection with row factory enabled."""
     try:
+        db_path = get_db_path()
+        print(">>> DB PATH UTILISE PAR FLASK =", db_path)
+        print(">>> EXISTS =", os.path.exists(db_path))
+        print(">>> CWD =", os.getcwd())
         conn = sqlite3.connect(get_db_path())
         conn.row_factory = sqlite3.Row
         return conn
