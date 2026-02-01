@@ -10,10 +10,11 @@ services:
     build: .
     ports:
       - "8000:8000"
+    env_file:
+      - .env # Charge automatiquement vos variables SECRET_KEY, DATABASE_PATH, etc.
     environment:
-      - FLASK_ENV=production
+      - FLASK_ENV=development
       - RATELIMIT_STORAGE_URL=redis://redis:6379/0
-      - DATABASE_PATH=/app/base.db
     depends_on:
       - redis
     volumes:

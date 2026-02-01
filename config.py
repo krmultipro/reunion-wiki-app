@@ -13,7 +13,10 @@ load_dotenv()
 class Config:
     """Configuration de base"""
     SECRET_KEY = os.getenv('SECRET_KEY', 'dev-key-change-in-production')
-    DATABASE_PATH = os.getenv('DATABASE_PATH', 'base.db')
+    DATABASE_PATH = os.getenv('DATABASE_PATH', '/app/data/base.db')
+    
+    if not DATABASE_PATH.startswith('/'):
+        DATABASE_PATH = os.path.join('/app', DATABASE_PATH)
     
     # NOTIFICATIONS : configuration email (désactivée par défaut)
     MAIL_ENABLED = os.getenv('MAIL_ENABLED', 'false').lower() == 'true'
