@@ -153,6 +153,9 @@ def admin_required(func):
 
     return wrapper
 
+# Cache en memoire pour eviter de recreer la table categories a chaque requete
+_HAS_CATEGORIES_TABLE = False
+
 
 def init_db_schema(conn):
     """Crée la table categories si nécessaire et la pré-remplit depuis sites."""
