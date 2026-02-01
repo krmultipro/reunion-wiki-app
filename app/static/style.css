@@ -236,7 +236,9 @@ footer a:hover {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .nav-search-toggle:hover {
@@ -257,7 +259,9 @@ footer a:hover {
   white-space: nowrap;
   box-shadow: 0.2rem 0.2rem 0.5rem rgba(0, 0, 0, 0.08);
   font-size: 0.95rem;
-  transition: transform 0.15s ease, box-shadow 0.15s ease,
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
     background-color 0.15s ease;
 }
 
@@ -510,8 +514,9 @@ footer a:hover {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 .recent-site-card:hover {
-  box-shadow: 0 6px 20px rgba(207, 16, 32, 0.3),
-              0 0 25px rgba(207, 16, 32, 0.2);
+  box-shadow:
+    0 6px 20px rgba(207, 16, 32, 0.3),
+    0 0 25px rgba(207, 16, 32, 0.2);
   border-color: rgba(207, 16, 32, 0.3);
 }
 
@@ -561,7 +566,6 @@ footer a:hover {
   margin: 0.4rem 0 0;
   line-height: 1.3;
   color: var(--gris-texte);
-  
 }
 
 .section-footer {
@@ -670,7 +674,9 @@ footer a:hover {
   display: none;
   align-items: center;
   justify-content: center;
-  transition: background 0.2s ease, transform 0.2s ease;
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease;
 }
 
 .carousel-btn:hover {
@@ -710,7 +716,10 @@ footer a:hover {
   background: var(--blanc);
   box-shadow: 0 16px 32px rgba(0, 0, 0, 0.06);
   width: min(250px, 75vw);
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .talent-card {
@@ -726,7 +735,10 @@ footer a:hover {
   flex-direction: column;
   align-items: center;
   gap: 0.3rem;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .category-card:hover,
@@ -734,8 +746,9 @@ footer a:hover {
 .talent-card:hover {
   transform: translateY(-4px);
   border-color: rgba(207, 16, 32, 0.45);
-  box-shadow: 0 22px 42px rgba(207, 16, 32, 0.18),
-              0 0 30px rgba(207, 16, 32, 0.25);
+  box-shadow:
+    0 22px 42px rgba(207, 16, 32, 0.18),
+    0 0 30px rgba(207, 16, 32, 0.25);
 }
 
 .category-card h3 {
@@ -942,7 +955,9 @@ footer a:hover {
   font-size: 1rem;
   font-family: inherit;
   background: var(--blanc);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .form-textarea {
@@ -987,7 +1002,9 @@ footer a:hover {
   font-size: 1rem;
   padding: 0.85rem 1.6rem;
   text-decoration: none;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .btn-primary {
@@ -2005,7 +2022,11 @@ footer a:hover {
   min-height: 100%;
   border-style: dashed;
   border-color: rgba(11, 132, 87, 0.3);
-  background: linear-gradient(135deg, rgba(11, 132, 87, 0.03) 0%, rgba(11, 132, 87, 0.08) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(11, 132, 87, 0.03) 0%,
+    rgba(11, 132, 87, 0.08) 100%
+  );
   transition: all 0.3s ease;
   opacity: 0;
   pointer-events: none;
@@ -2020,10 +2041,15 @@ footer a:hover {
 
 .talent-card--add:hover {
   border-color: rgba(207, 16, 32, 0.5);
-  background: linear-gradient(135deg, rgba(207, 16, 32, 0.05) 0%, rgba(207, 16, 32, 0.12) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(207, 16, 32, 0.05) 0%,
+    rgba(207, 16, 32, 0.12) 100%
+  );
   transform: translateY(-4px);
-  box-shadow: 0 22px 42px rgba(207, 16, 32, 0.18),
-              0 0 30px rgba(207, 16, 32, 0.25);
+  box-shadow:
+    0 22px 42px rgba(207, 16, 32, 0.18),
+    0 0 30px rgba(207, 16, 32, 0.25);
 }
 
 .talent-card__add-link {
@@ -2067,7 +2093,7 @@ footer a:hover {
   .talent-card__add-icon {
     font-size: 3.5rem;
   }
-  
+
   .talent-card__add-text {
     font-size: 1rem;
   }
@@ -2136,7 +2162,9 @@ footer a:hover {
   font-size: 1rem;
   font-family: inherit;
   background: #fff;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .talents-form__input:focus,
@@ -2211,12 +2239,12 @@ footer a:hover {
     padding: 2rem;
     margin: 3rem auto 4rem;
   }
-  
+
   .container {
     padding-left: 1rem;
     padding-right: 1rem;
   }
-  
+
   .py-5 {
     padding-top: 3rem !important;
     padding-bottom: 3rem !important;
@@ -2296,20 +2324,20 @@ form .button input:hover {
     padding-left: 0;
     padding-right: 0;
   }
-  
+
   .py-5 {
     padding-top: 1rem !important;
     padding-bottom: 1rem !important;
   }
-  
+
   .mb-5 {
     margin-bottom: 1rem !important;
   }
-  
+
   .mb-4 {
     margin-bottom: 0.75rem !important;
   }
-  
+
   form .site-details .input-box {
     margin-bottom: 15px;
     width: 100%;
@@ -2414,30 +2442,37 @@ form .button input:hover {
   border: 2px solid #cf1020;
   color: var(--blanc);
   font-weight: 700;
-  box-shadow: 0 4px 20px rgba(207, 16, 32, 0.5),
-              0 0 30px rgba(207, 16, 32, 0.3),
-              0 0 50px rgba(207, 16, 32, 0.2),
-              inset 0 1px 0 rgba(255, 255, 255, 0.3);
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3),
-               0 0 10px rgba(255, 255, 255, 0.5);
+  box-shadow:
+    0 4px 20px rgba(207, 16, 32, 0.5),
+    0 0 30px rgba(207, 16, 32, 0.3),
+    0 0 50px rgba(207, 16, 32, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  text-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.3),
+    0 0 10px rgba(255, 255, 255, 0.5);
   position: relative;
   overflow: hidden;
 }
 
 .home-tab-button[data-tab="talents"]::before {
-  content: '';
+  content: "";
   position: absolute;
   top: -50%;
   left: -50%;
   width: 200%;
   height: 200%;
-  background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  background: linear-gradient(
+    45deg,
+    transparent,
+    rgba(255, 255, 255, 0.4),
+    transparent
+  );
   transform: rotate(45deg);
   transition: all 0.5s;
 }
 
 .home-tab-button[data-tab="talents"]::after {
-  content: '';
+  content: "";
   position: absolute;
   top: 50%;
   left: 50%;
@@ -2446,7 +2481,9 @@ form .button input:hover {
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.2);
   transform: translate(-50%, -50%);
-  transition: width 0.6s, height 0.6s;
+  transition:
+    width 0.6s,
+    height 0.6s;
 }
 
 .home-tab-button[data-tab="talents"]:hover::before {
@@ -2469,42 +2506,54 @@ form .button input:hover {
 
 .home-tab-button[data-tab="talents"]:hover {
   background: linear-gradient(135deg, #ff1a2e 0%, #cf1020 50%, #ff1a2e 100%);
-  box-shadow: 0 6px 30px rgba(207, 16, 32, 0.7),
-              0 0 50px rgba(207, 16, 32, 0.5),
-              0 0 70px rgba(207, 16, 32, 0.3),
-              inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  box-shadow:
+    0 6px 30px rgba(207, 16, 32, 0.7),
+    0 0 50px rgba(207, 16, 32, 0.5),
+    0 0 70px rgba(207, 16, 32, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
   transform: translateY(-3px) scale(1.03);
   border-color: #ff4757;
 }
 
 .home-tab-button[data-tab="talents"].active {
-  background: linear-gradient(135deg, #cf1020 0%, #ff1a2e 30%, #cf1020 70%, #ff1a2e 100%);
+  background: linear-gradient(
+    135deg,
+    #cf1020 0%,
+    #ff1a2e 30%,
+    #cf1020 70%,
+    #ff1a2e 100%
+  );
   border: 2px solid #ff4757;
   color: var(--blanc);
-  box-shadow: 0 8px 35px rgba(207, 16, 32, 0.8),
-              0 0 60px rgba(207, 16, 32, 0.6),
-              0 0 90px rgba(207, 16, 32, 0.4),
-              inset 0 2px 4px rgba(255, 255, 255, 0.4),
-              inset 0 -2px 4px rgba(139, 0, 10, 0.5);
-  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.4),
-               0 0 15px rgba(255, 255, 255, 0.6);
+  box-shadow:
+    0 8px 35px rgba(207, 16, 32, 0.8),
+    0 0 60px rgba(207, 16, 32, 0.6),
+    0 0 90px rgba(207, 16, 32, 0.4),
+    inset 0 2px 4px rgba(255, 255, 255, 0.4),
+    inset 0 -2px 4px rgba(139, 0, 10, 0.5);
+  text-shadow:
+    0 2px 6px rgba(0, 0, 0, 0.4),
+    0 0 15px rgba(255, 255, 255, 0.6);
   animation: pulse-lava 2s ease-in-out infinite;
 }
 
 @keyframes pulse-lava {
-  0%, 100% {
-    box-shadow: 0 8px 35px rgba(207, 16, 32, 0.8),
-                0 0 60px rgba(207, 16, 32, 0.6),
-                0 0 90px rgba(207, 16, 32, 0.4),
-                inset 0 2px 4px rgba(255, 255, 255, 0.4),
-                inset 0 -2px 4px rgba(139, 0, 10, 0.5);
+  0%,
+  100% {
+    box-shadow:
+      0 8px 35px rgba(207, 16, 32, 0.8),
+      0 0 60px rgba(207, 16, 32, 0.6),
+      0 0 90px rgba(207, 16, 32, 0.4),
+      inset 0 2px 4px rgba(255, 255, 255, 0.4),
+      inset 0 -2px 4px rgba(139, 0, 10, 0.5);
   }
   50% {
-    box-shadow: 0 10px 45px rgba(207, 16, 32, 1),
-                0 0 80px rgba(207, 16, 32, 0.8),
-                0 0 120px rgba(207, 16, 32, 0.6),
-                inset 0 2px 4px rgba(255, 255, 255, 0.6),
-                inset 0 -2px 4px rgba(139, 0, 10, 0.7);
+    box-shadow:
+      0 10px 45px rgba(207, 16, 32, 1),
+      0 0 80px rgba(207, 16, 32, 0.8),
+      0 0 120px rgba(207, 16, 32, 0.6),
+      inset 0 2px 4px rgba(255, 255, 255, 0.6),
+      inset 0 -2px 4px rgba(139, 0, 10, 0.7);
   }
 }
 
@@ -2556,8 +2605,9 @@ form .button input:hover {
 }
 
 .category-card-vertical:hover {
-  box-shadow: 0 6px 18px rgba(207, 16, 32, 0.25),
-              0 0 25px rgba(207, 16, 32, 0.2);
+  box-shadow:
+    0 6px 18px rgba(207, 16, 32, 0.25),
+    0 0 25px rgba(207, 16, 32, 0.2);
   transform: translateY(-2px);
   border-color: rgba(207, 16, 32, 0.3);
 }
@@ -2654,7 +2704,6 @@ form .button input:hover {
   font-size: 0.95rem;
   display: inline;
   line-height: 1.6;
-
 }
 
 .category-card-vertical__cta {
@@ -2684,11 +2733,16 @@ form .button input:hover {
   }
 
   .categories-vertical {
-    gap: 2rem;
+    flex-direction: row;
+    display: flex;
   }
 
   .category-card-vertical {
     padding: 1.5rem;
+    min-width: 30%;
+  }
+  .main-container {
+    max-width: 1700px;
   }
 }
 

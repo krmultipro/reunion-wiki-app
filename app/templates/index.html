@@ -7,7 +7,7 @@ internet utiles de La Réunion.{% endblock %} {% block header_content %}
   sites essentiels et découvrir les talents de La Réunion.
 </p>
 {% endblock %} {% block content %}
-<div class="container py-5">
+<div class="container main-container py-5">
   <!-- Bulles d'onglets -->
   <div class="home-tabs">
     <button
@@ -42,9 +42,14 @@ internet utiles de La Réunion.{% endblock %} {% block header_content %}
     <!-- Catégories de sites en vertical -->
     <div class="categories-vertical">
       {% for categorie, sites in data.items() %}
-      <article class="category-card-vertical" aria-label="Catégorie {{ categorie }}">
+      <article
+        class="category-card-vertical"
+        aria-label="Catégorie {{ categorie }}"
+      >
         <div class="category-card-vertical__header">
-          <span class="category-card-vertical__icon">{{ get_category_icon(categorie) }}</span>
+          <span class="category-card-vertical__icon"
+            >{{ get_category_icon(categorie) }}</span
+          >
           <h3>
             <a href="/categorie/{{ categories_slug[categorie] }}"
               >{{ categorie }}</a
@@ -61,12 +66,15 @@ internet utiles de La Réunion.{% endblock %} {% block header_content %}
                 rel="noopener noreferrer"
                 class="category-card-vertical__site-link"
               >
-                <strong>{{ site['nom'] }}{% if site['ville'] %} - {{ site['ville'] }}{% endif %}</strong>
+                <strong
+                  >{{ site['nom'] }}{% if site['ville'] %} - {{ site['ville']
+                  }}{% endif %}</strong
+                >
                 <span class="category-card-vertical__arrow">↗</span>
               </a>
               {% if site['description'] %}
-              <span class="category-card-vertical__site-description"
-                > {{ site['description'] }}</span
+              <span class="category-card-vertical__site-description">
+                {{ site['description'] }}</span
               >
               {% endif %}
             </li>
@@ -95,12 +103,15 @@ internet utiles de La Réunion.{% endblock %} {% block header_content %}
       <div class="text-center mb-4">
         <h2 class="display-6 text-success">Derniers sites ajoutés</h2>
         <p class="lead text-muted mb-0">
-          Les dernières découvertes de la communauté, publiées et vérifiées par mes soins.
+          Les dernières découvertes de la communauté, publiées et vérifiées par
+          mes soins.
         </p>
       </div>
       <div class="home-carousel home-carousel--secondary" data-carousel>
         <div class="home-carousel__top">
-          <p class="home-carousel__hint">Glisser pour parcourir les nouveautés</p>
+          <p class="home-carousel__hint">
+            Glisser pour parcourir les nouveautés
+          </p>
           <div class="carousel-controls" aria-hidden="true">
             <button
               type="button"
@@ -172,74 +183,76 @@ internet utiles de La Réunion.{% endblock %} {% block header_content %}
           Influenceurs, comédiens & chanteurs péi à suivre sur Instagram.
         </p>
       </div>
-      {% if talents %}
-        {% for category, people in talents.items() %}
-          {% if people %}
-          <div class="home-carousel mb-4" data-carousel>
-            <div class="home-carousel__top">
-              <p class="home-carousel__hint">
-                Glisser pour parcourir {{ category|lower }}
-              </p>
-              <div class="carousel-controls" aria-hidden="true">
-                <button
-                  type="button"
-                  class="carousel-btn carousel-btn--prev"
-                  aria-label="Profil précédent"
-                >
-                  ‹
-                </button>
-                <button
-                  type="button"
-                  class="carousel-btn carousel-btn--next"
-                  aria-label="Profil suivant"
-                >
-                  ›
-                </button>
-              </div>
-            </div>
-            <div class="home-carousel__track" data-carousel-track>
-              {% for talent in people %}
-              <article class="talent-card">
-                <div class="talent-card__image">
-                  {% if talent.image %}
-                  <img
-                    src="{{ url_for('static', filename=talent.image) }}"
-                    alt="Portrait de {{ talent.name }}"
-                  />
-                  {% else %}
-                  <div class="talent-card__placeholder" aria-hidden="true">
-                    {{ talent.name[:1]|upper }}
-                  </div>
-                  {% endif %}
-                </div>
-                <h3>
-                  <a
-                    href="{{ talent.instagram }}"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    >{{ talent.name }}</a
-                  >
-                </h3>
-                <p class="talent-card__tagline">{{ talent.tagline }}</p>
-              </article>
-              {% endfor %}
-              <article class="talent-card talent-card--add" data-carousel-add-btn data-category="{{ category }}">
-                <a
-                  href="{{ url_for('public.proposer_talent', category=category) }}"
-                  class="talent-card__add-link"
-                  aria-label="Proposer un talent dans la catégorie {{ category }}"
-                >
-                  <div class="talent-card__add-icon">+</div>
-                  <p class="talent-card__add-text">Proposer un talent</p>
-                </a>
-              </article>
-            </div>
+      {% if talents %} {% for category, people in talents.items() %} {% if
+      people %}
+      <div class="home-carousel mb-4" data-carousel>
+        <div class="home-carousel__top">
+          <p class="home-carousel__hint">
+            Glisser pour parcourir {{ category|lower }}
+          </p>
+          <div class="carousel-controls" aria-hidden="true">
+            <button
+              type="button"
+              class="carousel-btn carousel-btn--prev"
+              aria-label="Profil précédent"
+            >
+              ‹
+            </button>
+            <button
+              type="button"
+              class="carousel-btn carousel-btn--next"
+              aria-label="Profil suivant"
+            >
+              ›
+            </button>
           </div>
-          {% endif %}
-        {% endfor %}
-      {% else %}
+        </div>
+        <div class="home-carousel__track" data-carousel-track>
+          {% for talent in people %}
+          <article class="talent-card">
+            <div class="talent-card__image">
+              {% if talent.image %}
+              <img
+                src="{{ url_for('static', filename=talent.image) }}"
+                alt="Portrait de {{ talent.name }}"
+              />
+              {% else %}
+              <div class="talent-card__placeholder" aria-hidden="true">
+                {{ talent.name[:1]|upper }}
+              </div>
+              {% endif %}
+            </div>
+            <h3>
+              <a
+                href="{{ talent.instagram }}"
+                target="_blank"
+                rel="noopener noreferrer"
+                >{{ talent.name }}</a
+              >
+            </h3>
+            <p class="talent-card__tagline">{{ talent.tagline }}</p>
+          </article>
+          {% endfor %}
+          <article
+            class="talent-card talent-card--add"
+            data-carousel-add-btn
+            data-category="{{ category }}"
+          >
+            <a
+              href="{{ url_for('public.proposer_talent', category=category) }}"
+              class="talent-card__add-link"
+              aria-label="Proposer un talent dans la catégorie {{ category }}"
+            >
+              <div class="talent-card__add-icon">+</div>
+              <p class="talent-card__add-text">Proposer un talent</p>
+            </a>
+          </article>
+        </div>
+      </div>
+      {% endif %} {% endfor %} {% else %}
       <p class="talents-empty">
-        Aucun talent publié pour le moment. Propose ton profil préféré via le formulaire ci-dessous.
+        Aucun talent publié pour le moment. Propose ton profil préféré via le
+        formulaire ci-dessous.
       </p>
       {% endif %}
     </section>
@@ -249,31 +262,37 @@ internet utiles de La Réunion.{% endblock %} {% block header_content %}
     <section class="talents-form" id="proposer-talent">
       <h2>Proposer un talent</h2>
       <p>
-        Tu connais un influenceur, un comédien ou un chanteur à mettre en avant ?
-        Renseigne son pseudo Instagram, le lien vers son compte et une courte description.
+        Tu connais un influenceur, un comédien ou un chanteur à mettre en avant
+        ? Renseigne son pseudo Instagram, le lien vers son compte et une courte
+        description.
       </p>
-      <form method="post" action="{{ url_for('public.accueil') }}" class="talents-form__form" novalidate>
+      <form
+        method="post"
+        action="{{ url_for('public.accueil') }}"
+        class="talents-form__form"
+        novalidate
+      >
         {{ form_talent.hidden_tag() }}
         <div class="form-honeypot">
           {{ form_talent.honeypot.label }} {{ form_talent.honeypot() }}
         </div>
         <div class="talents-form__field">
-          {{ form_talent.pseudo.label(class_="talents-form__label") }}
-          {{ form_talent.pseudo(class_="talents-form__input") }}
-          {% for error in form_talent.pseudo.errors %}
+          {{ form_talent.pseudo.label(class_="talents-form__label") }} {{
+          form_talent.pseudo(class_="talents-form__input") }} {% for error in
+          form_talent.pseudo.errors %}
           <span class="talents-form__error">{{ error }}</span>
           {% endfor %}
         </div>
         <div class="talents-form__field">
-          {{ form_talent.instagram.label(class_="talents-form__label") }}
-          {{ form_talent.instagram(class_="talents-form__input") }}
-          {% for error in form_talent.instagram.errors %}
+          {{ form_talent.instagram.label(class_="talents-form__label") }} {{
+          form_talent.instagram(class_="talents-form__input") }} {% for error in
+          form_talent.instagram.errors %}
           <span class="talents-form__error">{{ error }}</span>
           {% endfor %}
         </div>
         <div class="talents-form__field">
-          {{ form_talent.description.label(class_="talents-form__label") }}
-          {{ form_talent.description(class_="talents-form__textarea", rows="4") }}
+          {{ form_talent.description.label(class_="talents-form__label") }} {{
+          form_talent.description(class_="talents-form__textarea", rows="4") }}
           {% for error in form_talent.description.errors %}
           <span class="talents-form__error">{{ error }}</span>
           {% endfor %}
@@ -343,27 +362,25 @@ internet utiles de La Réunion.{% endblock %} {% block header_content %}
     });
   });
 </script>
-{% endblock %}
-
-{# Données structurées Schema.org pour la page d'accueil #}
-{% block head %}
+{% endblock %} {# Données structurées Schema.org pour la page d'accueil #} {%
+block head %}
 <script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "WebSite",
-  "name": "Réunion Wiki",
-  "alternateName": "RéunionWiki",
-  "url": "https://reunionwiki.re",
-  "description": "Portail local pour accéder facilement aux sites essentiels et découvrir les talents de La Réunion",
-  "inLanguage": "fr-FR",
-  "potentialAction": {
-    "@type": "SearchAction",
-    "target": {
-      "@type": "EntryPoint",
-      "urlTemplate": "https://reunionwiki.re/recherche?q={search_term_string}"
-    },
-    "query-input": "required name=search_term_string"
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "Réunion Wiki",
+    "alternateName": "RéunionWiki",
+    "url": "https://reunionwiki.re",
+    "description": "Portail local pour accéder facilement aux sites essentiels et découvrir les talents de La Réunion",
+    "inLanguage": "fr-FR",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": {
+        "@type": "EntryPoint",
+        "urlTemplate": "https://reunionwiki.re/recherche?q={search_term_string}"
+      },
+      "query-input": "required name=search_term_string"
+    }
   }
-}
 </script>
 {% endblock %}

@@ -46,66 +46,60 @@ def ensure_sites_table() -> None:
 
 
 def get_sites_en_vedette(limit: int = 3) -> Dict[str, List[sqlite3.Row]]:
-    """Return the latest validated sites per category."""
+    """Return the latest validated sites per category (optimized)."""
     conn = get_db_connection()
     if not conn:
         return {}
 
     try:
         cur = conn.cursor()
-        cur.execute(
-            """
-            SELECT DISTINCT categorie
-            FROM sites
-            WHERE status = 'valide'
-            """
-        )
-        categories = [row["categorie"] for row in cur.fetchall() if row["categorie"]]
-        if has_request_context():
-            g._categories_cache = categories
-
-        data: Dict[str, List[sqlite3.Row]] = {cat: [] for cat in categories}
-
-        # Vérifier si display_order existe
+        
+        # 1. Vérifier dynamiquement la présence de display_order
         try:
             cur.execute("SELECT display_order FROM sites LIMIT 1")
-            has_display_order = True
+            order_col = "display_order ASC,"
         except sqlite3.OperationalError:
-            has_display_order = False
-        
-        if has_display_order:
-            cur.execute(
-                """
-                SELECT *
-                FROM sites
-                WHERE status = 'valide'
-                ORDER BY categorie ASC, display_order ASC, date_ajout DESC
-                """
-            )
-        else:
-            cur.execute(
-                """
-                SELECT *
-                FROM sites
-                WHERE status = 'valide'
-                ORDER BY categorie ASC, date_ajout DESC
-                """
-            )
+            order_col = ""
 
-        for site in cur.fetchall():
-            category = site["categorie"]
-            if category in data and len(data[category]) < limit:
-                data[category].append(site)
+        # 2. Requête unique avec limitation par catégorie
+        query = f"""
+            WITH RankedSites AS (
+                SELECT *,
+                       ROW_NUMBER() OVER (
+                           PARTITION BY categorie 
+                           ORDER BY {order_col} date_ajout DESC
+                       ) as rank
+                FROM sites
+                WHERE status = 'valide' AND categorie IS NOT NULL
+            )
+            SELECT *
+            FROM RankedSites
+            WHERE rank <= ?
+            ORDER BY categorie ASC, rank ASC
+        """
+        
+        cur.execute(query, (limit,))
+        rows = cur.fetchall()
+
+        # 3. Construction du dictionnaire final
+        data: Dict[str, List[sqlite3.Row]] = {}
+        for row in rows:
+            cat = row["categorie"]
+            if cat not in data:
+                data[cat] = []
+            data[cat].append(row)
+
+        # Cache optionnel pour les catégories
+        if has_request_context():
+            g._categories_cache = list(data.keys())
 
         return data
+
     except sqlite3.Error as exc:
-        current_app.logger.error(
-            f"Erreur lors de la récupération des sites en vedette: {exc}"
-        )
+        current_app.logger.error(f"Erreur SQL: {exc}")
         return {}
     finally:
         conn.close()
-
 
 def get_derniers_sites_global(limit: int = 3) -> Sequence[sqlite3.Row]:
     """Return the latest validated sites regardless of category."""

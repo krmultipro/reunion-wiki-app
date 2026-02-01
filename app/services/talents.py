@@ -262,7 +262,7 @@ def get_talent_status_choices() -> List[Tuple[str, str]]:
 
 
 def get_talents_data() -> OrderedDict[str, List[Dict[str, str]]]:
-    """Return validated talents grouped by category for public pages."""
+    """Return validated talents grouped by category (max 2 per cat) for public pages."""
     prepare_talents_storage()
     conn = get_db_connection()
     if not conn:
@@ -270,12 +270,23 @@ def get_talents_data() -> OrderedDict[str, List[Dict[str, str]]]:
 
     try:
         cur = conn.cursor()
+        # Utilisation de ROW_NUMBER() pour segmenter par catégorie
         cur.execute(
             """
+            WITH RankedTalents AS (
+                SELECT 
+                    pseudo, instagram, description, category, image,
+                    ROW_NUMBER() OVER (
+                        PARTITION BY category 
+                        ORDER BY display_order ASC, pseudo ASC
+                    ) as rank
+                FROM talents
+                WHERE status = 'valide'
+            )
             SELECT pseudo, instagram, description, category, image
-            FROM talents
-            WHERE status = 'valide'
-            ORDER BY category ASC, display_order ASC, pseudo ASC
+            FROM RankedTalents
+            WHERE rank <= 8
+            ORDER BY category ASC, rank ASC
             """
         )
         rows = cur.fetchall()
@@ -287,6 +298,7 @@ def get_talents_data() -> OrderedDict[str, List[Dict[str, str]]]:
     finally:
         conn.close()
 
+    # Le reste du traitement reste identique mais traitera max 2 items par catégorie
     grouped: MutableMapping[str, List[Dict[str, str]]] = defaultdict(list)
     for row in rows:
         grouped[row["category"] or ""].append(
@@ -300,7 +312,7 @@ def get_talents_data() -> OrderedDict[str, List[Dict[str, str]]]:
 
     ordered: OrderedDict[str, List[Dict[str, str]]] = OrderedDict()
     for category in TALENT_CATEGORIES:
-        if grouped.get(category):
+        if category in grouped:
             ordered[category] = grouped.pop(category)
 
     for category in sorted(grouped.keys()):
