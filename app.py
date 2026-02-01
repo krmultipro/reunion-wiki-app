@@ -45,8 +45,9 @@ env = os.getenv('FLASK_ENV', 'development')
 app.config.from_object(config.get(env, config['default']))
 
 # Configuration de la base de données
-DATABASE_PATH = app.config['DATABASE_PATH']
-_HAS_CATEGORIES_TABLE = False
+DATABASE_PATH = os.getenv('DATABASE_PATH')
+if not DATABASE_PATH or not DATABASE_PATH.startswith('/'):
+    DATABASE_PATH = '/app/data/base.db'
 
 # SÉCURITÉ : Rate limiting pour éviter le spam avec Redis
 limiter = Limiter(
