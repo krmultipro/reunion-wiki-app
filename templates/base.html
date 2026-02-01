@@ -1,5 +1,5 @@
 <!-- templates/base.html -->
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fr">
   <head>
     <meta charset="UTF-8" />
@@ -61,23 +61,7 @@
     <!-- CSS -->
     <link
       rel="stylesheet"
-      href="{{ url_for('static', filename='style.css') }}?v=8"
-    />
-
-    <!-- Fonts (perf) -->
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Montserrat:wght@900&display=swap"
-      rel="stylesheet"
-    />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap"
-      rel="stylesheet"
-    />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap"
-      rel="stylesheet"
+      href="{{ url_for('static', filename='css/style.css') }}?v=9"
     />
 
     {% block head %}{% endblock %}
@@ -94,54 +78,54 @@
       <div class="nav-scroll" data-scrollable>
         <!-- Liste des liens -->
         <ul class="nav-links" id="main-nav-links">
-        <li>
-          <a
-            href="{{ url_for('accueil') }}"
-            class="{{ 'active' if request.path == url_for('accueil') else '' }}"
-            aria-current="{{ 'page' if request.path == url_for('accueil') else '' }}"
-          >
-            Accueil
-          </a>
-        </li>
+          <li>
+            <a
+              href="{{ url_for('accueil') }}"
+              class="{{ 'active' if request.path == url_for('accueil') else '' }}"
+              aria-current="{{ 'page' if request.path == url_for('accueil') else '' }}"
+            >
+              Accueil
+            </a>
+          </li>
 
-        {% for cat in categories %} {% set slug = categories_slug[cat] %} {% set
-        cat_url = url_for('voir_categorie', slug=slug) %}
-        <li>
-          <a
-            href="{{ cat_url }}"
-            class="{{ 'active' if request.path.startswith(cat_url) else '' }}"
-            aria-current="{{ 'page' if request.path.startswith(cat_url) else '' }}"
-          >
-            {{ cat }}
-          </a>
-        </li>
-        {% endfor %}
+          {% for cat in categories %} {% set slug = categories_slug[cat] %} {%
+          set cat_url = url_for('voir_categorie', slug=slug) %}
+          <li>
+            <a
+              href="{{ cat_url }}"
+              class="{{ 'active' if request.path.startswith(cat_url) else '' }}"
+              aria-current="{{ 'page' if request.path.startswith(cat_url) else '' }}"
+            >
+              {{ cat }}
+            </a>
+          </li>
+          {% endfor %}
 
-        <li>
-          <a
-            href="{{ url_for('nouveaux_sites') }}"
-            class="{{ 'active' if request.path == url_for('nouveaux_sites') else '' }}"
-            aria-current="{{ 'page' if request.path == url_for('nouveaux_sites') else '' }}"
-          >
-            Derniers sites ajoutés
-          </a>
-        </li>
-        <li><a href="{{ url_for('faq') }}">FAQ</a></li>
-        <li>
-          <a
-            href="{{ url_for('formulaire') }}"
-            class="{{ 'active' if request.path == url_for('formulaire') else '' }}"
-            aria-current="{{ 'page' if request.path == url_for('formulaire') else '' }}"
-          >
-            Proposer un site
-          </a>
-        </li>
-        <li>
-          <a href="https://forms.gle/GScJkMiEZXVSted78" target="_blank"
-            >Contact</a
-          >
-        </li>
-      </ul>
+          <li>
+            <a
+              href="{{ url_for('nouveaux_sites') }}"
+              class="{{ 'active' if request.path == url_for('nouveaux_sites') else '' }}"
+              aria-current="{{ 'page' if request.path == url_for('nouveaux_sites') else '' }}"
+            >
+              Derniers sites ajoutés
+            </a>
+          </li>
+          <li><a href="{{ url_for('faq') }}">FAQ</a></li>
+          <li>
+            <a
+              href="{{ url_for('formulaire') }}"
+              class="{{ 'active' if request.path == url_for('formulaire') else '' }}"
+              aria-current="{{ 'page' if request.path == url_for('formulaire') else '' }}"
+            >
+              Proposer un site
+            </a>
+          </li>
+          <li>
+            <a href="https://forms.gle/GScJkMiEZXVSted78" target="_blank"
+              >Contact</a
+            >
+          </li>
+        </ul>
       </div>
     </nav>
 

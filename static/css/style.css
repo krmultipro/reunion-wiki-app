@@ -6,6 +6,40 @@
   --blanc: #fff;
   --lava: #cf1020;
 }
+/* 1. Déclare la police */
+@font-face {
+  font-display: swap;
+  font-family: "Pacifico";
+  font-style: normal;
+  font-weight: 400;
+  /* Vérifie bien que ce chemin pointe vers ton fichier .woff2 */
+  src: url("../fonts/pacifico-v23-latin-regular.woff2") format("woff2");
+}
+@font-face {
+  font-display: swap;
+  font-family: "Montserrat";
+  font-style: normal;
+  font-weight: 900;
+  src: url("../fonts/montserrat-v31-latin-900.woff2") format("woff2");
+}
+/* Inter Regular */
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("../fonts/inter-v18-latin-regular.woff2") format("woff2");
+}
+
+/* Inter Bold */
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("../fonts/inter-v18-latin-700.woff2") format("woff2");
+}
+
 html {
   font-size: 16px;
 }
@@ -222,7 +256,10 @@ footer a:hover {
   white-space: nowrap;
   box-shadow: 0.2rem 0.2rem 0.5rem rgba(0, 0, 0, 0.08);
   font-size: 0.95rem;
-  transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    background-color 0.15s ease;
 }
 
 .main-nav a:hover {
@@ -514,7 +551,9 @@ footer a:hover {
   font-size: 1rem;
   font-family: inherit;
   background: var(--blanc);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .form-textarea {
@@ -551,7 +590,9 @@ footer a:hover {
   font-weight: 600;
   font-size: 1rem;
   padding: 0.85rem 1.6rem;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .btn-primary {
