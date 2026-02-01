@@ -88,7 +88,9 @@ h3 {
 .site_title {
   text-align: center;
   width: 100%;
-  font-family: "Pacifico", cursive;
+  /* On ajoute des polices système qui sont un peu moins "clinquantes" que le cursive de base */
+  font-family:
+    "Pacifico", "Apple Chancery", "Segoe Script", "Comic Sans MS", cursive;
   font-size: 2.5rem;
   margin: 0;
 }
