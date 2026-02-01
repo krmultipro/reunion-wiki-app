@@ -149,3 +149,17 @@ base.db
 base.db
 
 logs/nginx/*.log
+
+# --- Spécifique au déploiement Docker ---
+
+# Certificats SSL (VITAL : contient tes clés privées)
+certbot/
+
+# Données de l'application (Ta base de données SQLite montée en volume)
+data/
+
+# Logs Docker et Nginx
+logs/
+
+# Images téléchargées par les utilisateurs (si stockées hors du dossier static)
+images/
