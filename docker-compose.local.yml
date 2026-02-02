@@ -1,0 +1,26 @@
+version: "3.8"
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: reunionwiki_dev_redis
+    restart: unless-stopped
+    expose:
+      - "6379"
+
+  web:
+    build: .
+    container_name: reunionwiki_dev_web
+    restart: unless-stopped
+    environment:
+      FLASK_ENV: development
+      FLASK_DEBUG: "1"
+      RATELIMIT_STORAGE_URL: redis://redis:6379/0
+      DATABASE_PATH: /app/data/base.db
+    depends_on:
+      - redis
+    volumes:
+      - .:/app
+      - ./data:/app/data
+    ports:
+      - "8000:8000"
