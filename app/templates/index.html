@@ -268,7 +268,7 @@ internet utiles de La Réunion.{% endblock %} {% block header_content %}
       </p>
       <form
         method="post"
-        action="{{ url_for('public.accueil') }}"
+        action="{{ url_for('public.accueil') }}#talents-tab"
         class="talents-form__form"
         novalidate
       >
@@ -305,6 +305,30 @@ internet utiles de La Réunion.{% endblock %} {% block header_content %}
     {% endif %}
   </div>
 </div>
+{% if scroll_to_form %}
+<script>
+  window.addEventListener("load", () => {
+    // 1. forcer l'ouverture de l'onglet Talents
+    const talentsButton = document.querySelector(
+      '.home-tab-button[data-tab="talents"]',
+    );
+    if (talentsButton) {
+      talentsButton.click();
+    }
+
+    // 2. attendre que l'onglet soit visible, puis scroller
+    setTimeout(() => {
+      const form = document.getElementById("proposer-talent");
+      if (form) {
+        form.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      }
+    }, 200);
+  });
+</script>
+{% endif %}
 
 <script>
   // Gestion des onglets
@@ -342,16 +366,6 @@ internet utiles de La Réunion.{% endblock %} {% block header_content %}
 
     // Initialiser avec l'onglet actif
     switchTab(activeTab);
-
-    // Si on arrive avec le hash #talents-tab, scroller vers l'onglet
-    if (hash === "#talents-tab") {
-      setTimeout(() => {
-        const talentsTab = document.getElementById("talents-tab");
-        if (talentsTab) {
-          talentsTab.scrollIntoView({ behavior: "smooth", block: "start" });
-        }
-      }, 100);
-    }
 
     // Ajouter les event listeners
     tabs.forEach((tab) => {

@@ -36,6 +36,7 @@ from ..utils.text import slugify
 
 public_bp = Blueprint("public", __name__)
 
+scroll_to_form = False
 
 @public_bp.route("/", methods=["GET", "POST"])
 @limiter.limit(lambda: "1000 per hour" if current_app.config.get("DEBUG") else "5 per hour")
@@ -48,30 +49,40 @@ def accueil():
     form_inline.categorie.choices = [(cat, cat) for cat in get_categories()]
     form_inline.categorie.choices.insert(0, ("", "Sélectionnez une catégorie"))
 
-    # Formulaire pour les talents
     form_talent = TalentProposalForm()
+    scroll_to_form = False  # 
+
     if form_talent.validate_on_submit():
-        # Log pour détection d'abus et monitoring
         current_app.logger.info(
             f"Proposition talent (accueil): '{form_talent.pseudo.data}' depuis IP: {request.remote_addr or 'inconnue'}"
         )
-        
+
         success = create_talent_proposal(
             form_talent.pseudo.data,
             form_talent.instagram.data,
             form_talent.description.data,
             form_talent.category.data or None,
         )
+
         if success:
             flash(
                 "Merci ! Ta proposition de talent est en attente de validation.",
                 "success",
             )
             return redirect(url_for("public.accueil") + "#talents-tab")
+
         flash(
             "Erreur lors de l'enregistrement de ta proposition. Réessaie plus tard.",
             "error",
         )
+        scroll_to_form = True  
+
+    elif form_talent.is_submitted():
+        flash(
+            "Certains champs sont incorrects. Merci de corriger le formulaire.",
+            "error",
+        )
+        scroll_to_form = True  
 
     return render_template(
         "index.html",
@@ -80,7 +91,9 @@ def accueil():
         talents=talents_home,
         form_inline=form_inline,
         form_talent=form_talent,
+        scroll_to_form=scroll_to_form,  
     )
+
 
 
 @public_bp.route("/categorie/<slug>")
@@ -185,30 +198,48 @@ def blog():
 @limiter.limit(lambda: "1000 per hour" if current_app.config.get("DEBUG") else "5 per hour")
 def talents():
     form = TalentProposalForm()
+    scroll_to_form = False  # 👈 ajout
+
     if form.validate_on_submit():
-        # Log pour détection d'abus et monitoring
         current_app.logger.info(
             f"Proposition talent (page talents): '{form.pseudo.data}' depuis IP: {request.remote_addr or 'inconnue'}"
         )
-        
+
         success = create_talent_proposal(
             form.pseudo.data,
             form.instagram.data,
             form.description.data,
             form.category.data or None,
         )
+
         if success:
             flash(
                 "Merci ! Ta proposition de talent est en attente de validation.",
                 "success",
             )
-            return redirect(url_for("public.talents"))
+            return redirect(url_for("public.talents") + "#talents-tab")
+
         flash(
             "Erreur lors de l'enregistrement de ta proposition. Réessaie plus tard.",
             "error",
         )
+        scroll_to_form = True 
+
+    elif form.is_submitted():
+        flash(
+            "Certains champs sont incorrects. Merci de corriger le formulaire.",
+            "error",
+        )
+        scroll_to_form = True  
+
     talents_by_category = get_talents_data()
-    return render_template("talents.html", talents=talents_by_category, form=form)
+
+    return render_template(
+        "talents.html",
+        talents=talents_by_category,
+        form=form,
+        scroll_to_form=scroll_to_form,  
+    )
 
 
 @public_bp.route("/proposer-talent", methods=["GET", "POST"])

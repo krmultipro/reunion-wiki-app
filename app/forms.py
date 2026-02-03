@@ -112,6 +112,7 @@ class ModerationActionForm(FlaskForm):
 
 class TalentProposalForm(FlaskForm):
     """Formulaire public pour proposer un talent Instagram"""
+    
 
     pseudo = StringField(
         "Pseudo Instagram",

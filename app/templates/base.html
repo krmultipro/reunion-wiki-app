@@ -1,5 +1,5 @@
 <!-- templates/base.html -->
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fr">
   <head>
     <meta charset="UTF-8" />
@@ -220,14 +220,15 @@
       <p><strong>Réunion Wiki</strong> - Simplifions l'information locale.</p>
       <nav>
         <a href="{{ url_for('public.faq') }}">FAQ</a> |
-        <a href="{{ url_for('public.mentions_legales') }}" target="">Mentions légales</a> |
+        <a href="{{ url_for('public.mentions_legales') }}" target=""
+          >Mentions légales</a
+        >
+        |
         <a href="{{ url_for('public.contact') }}">Contact</a>
       </nav>
     </footer>
 
-    <script
-      src="{{ url_for('static', filename='bootstrap/js/bootstrap.bundle.min.js') }}"
-    ></script>
+    <script src="{{ url_for('static', filename='bootstrap/js/bootstrap.bundle.min.js') }}"></script>
     <script>
       // Enregistrement du Service Worker
       if ("serviceWorker" in navigator) {
@@ -255,8 +256,8 @@
           installBtn.textContent = "Installer l'application 📲";
           installBtn.style = `
         position: fixed;
-        bottom: 20px;
-        right: 20px;
+        bottom: calc(20px + 64px); /* hauteur navbar mobile */
+        right: 16px;
         padding: 10px 15px;
         font-weight: bold;
         font-family: 'Inter', sans-serif;
@@ -352,7 +353,7 @@
           const prev = carousel.querySelector(".carousel-btn--prev");
           const next = carousel.querySelector(".carousel-btn--next");
           const addBtn = track.querySelector("[data-carousel-add-btn]");
-          
+
           // Debug: vérifier si le bouton existe
           if (!addBtn) {
             console.warn("Bouton '+' non trouvé dans le carrousel", carousel);
@@ -363,11 +364,11 @@
             const scrollWidth = track.scrollWidth;
             const clientWidth = track.clientWidth;
             const maxScroll = scrollWidth - clientWidth;
-            
+
             const atStart = scrollLeft <= 1;
             // Vérifier si on est proche de la fin (marge de 10px pour gérer les arrondis et padding)
             const atEnd = scrollLeft + clientWidth >= scrollWidth - 10;
-            
+
             // Mettre à jour les boutons prev/next seulement s'ils existent
             if (prev && next) {
               prev.classList.toggle("is-visible", !atStart && maxScroll > 0);
@@ -375,7 +376,7 @@
               prev.disabled = atStart;
               next.disabled = atEnd;
             }
-            
+
             // Afficher le bouton "+" seulement quand on est à la fin du carrousel
             if (addBtn) {
               // Afficher si on est à la fin OU si le contenu ne dépasse pas (pas besoin de scroll)
@@ -416,25 +417,28 @@
           // Fonction pour vérifier si le bouton "+" doit être visible
           const checkAddButtonVisibility = () => {
             if (!addBtn) return;
-            
+
             const scrollLeft = track.scrollLeft;
             const scrollWidth = track.scrollWidth;
             const clientWidth = track.clientWidth;
             const maxScroll = scrollWidth - clientWidth;
-            
+
             // Si le contenu ne dépasse pas, toujours afficher
             if (maxScroll <= 0) {
               addBtn.classList.add("is-visible");
               return;
             }
-            
+
             // Calculer le pourcentage de scroll (0 = début, 100 = fin)
-            const scrollPercent = maxScroll > 0 ? (scrollLeft / maxScroll) * 100 : 0;
-            
+            const scrollPercent =
+              maxScroll > 0 ? (scrollLeft / maxScroll) * 100 : 0;
+
             // Vérifier aussi avec une marge plus large pour être sûr
             const remainingScroll = scrollWidth - (scrollLeft + clientWidth);
-            const atEnd = remainingScroll <= 30 || scrollLeft + clientWidth >= scrollWidth - 5;
-            
+            const atEnd =
+              remainingScroll <= 30 ||
+              scrollLeft + clientWidth >= scrollWidth - 5;
+
             // Afficher le bouton si on a scrollé à 80% ou plus, OU si on est vraiment à la fin
             if (scrollPercent >= 80 || atEnd) {
               addBtn.classList.add("is-visible");
@@ -442,24 +446,28 @@
               addBtn.classList.remove("is-visible");
             }
           };
-          
+
           // Réévaluer après chaque scroll (avec debounce pour gérer les animations smooth)
           let scrollTimeout;
-          track.addEventListener("scroll", () => {
-            updateButtons(); // Mise à jour immédiate
-            checkAddButtonVisibility(); // Vérifier la visibilité du bouton
-            clearTimeout(scrollTimeout);
-            scrollTimeout = setTimeout(() => {
-              updateButtons();
-              checkAddButtonVisibility();
-            }, 150); // Réévaluation après animation
-          }, { passive: true });
-          
+          track.addEventListener(
+            "scroll",
+            () => {
+              updateButtons(); // Mise à jour immédiate
+              checkAddButtonVisibility(); // Vérifier la visibilité du bouton
+              clearTimeout(scrollTimeout);
+              scrollTimeout = setTimeout(() => {
+                updateButtons();
+                checkAddButtonVisibility();
+              }, 150); // Réévaluation après animation
+            },
+            { passive: true },
+          );
+
           window.addEventListener("resize", () => {
             updateButtons();
             checkAddButtonVisibility();
           });
-          
+
           // Attendre un peu que le DOM soit complètement rendu avant la première vérification
           setTimeout(() => {
             updateButtons();
