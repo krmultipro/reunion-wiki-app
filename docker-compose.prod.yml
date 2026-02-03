@@ -10,8 +10,8 @@ services:
   web:
     build: .
     restart: unless-stopped
-    ports:
-      - "8000:8000"
+    expose:
+      - "8000"
     environment:
       - FLASK_ENV=production
       - RATELIMIT_STORAGE_URL=redis://redis:6379/0
