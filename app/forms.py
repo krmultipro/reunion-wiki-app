@@ -5,7 +5,8 @@ SÉCURITÉ : Validation côté serveur pour éviter les injections
 """
 
 from flask_wtf import FlaskForm
-from wtforms import HiddenField, IntegerField, PasswordField, SelectField, StringField, SubmitField, TextAreaField
+from flask_wtf.file import FileField, FileAllowed
+from wtforms import FileField, HiddenField, IntegerField, PasswordField, SelectField, StringField, SubmitField, TextAreaField
 from wtforms.validators import DataRequired, Length, URL, ValidationError, Optional
 import re
 
@@ -199,15 +200,23 @@ class TalentAdminForm(FlaskForm):
         choices=[],
         filters=[_strip_filter],
     )
+    image_slug = StringField(
+    "Nom du fichier image",
+    [
+        Optional(),
+        Length(max=80, message="Nom trop long"),
+    ],
+    filters=[_strip_filter],
+)
 
-    image = StringField(
-        "Image (optionnelle)",
-        [
-            Optional(),
-            Length(max=255, message="Le chemin de l'image est trop long"),
-        ],
-        filters=[_sanitize_basic],
-    )
+
+    image = FileField(
+    "Image du talent",
+    [
+        FileAllowed(["jpg", "jpeg", "png", "webp"], "Images uniquement"),
+    ],
+)
+
 
     status = SelectField(
         "Statut",

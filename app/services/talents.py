@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from posixpath import basename
 import sqlite3
 from collections import OrderedDict, defaultdict
 from typing import Dict, Iterable, List, Mapping, MutableMapping, Optional, Sequence, Tuple
@@ -526,19 +527,33 @@ def create_talent_admin(
 ) -> Tuple[bool, str]:
     """Create a new talent (admin only). Returns (success, message)."""
     prepare_talents_storage()
+
+    image = basename(image.strip()) if image else ""
+
     try:
         with db_transaction() as conn:
             cur = conn.cursor()
             cur.execute(
                 """
-                INSERT INTO talents (pseudo, instagram, description, category, image, status, display_order)
+                INSERT INTO talents
+                (pseudo, instagram, description, category, image, status, display_order)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
                 """,
-                (pseudo, instagram, description, category or "", image or "", status, display_order or 0),
+                (
+                    pseudo,
+                    instagram,
+                    description,
+                    category or "",
+                    image,
+                    status,
+                    display_order or 0,
+                ),
             )
         return True, "Talent ajouté."
     except DatabaseError as exc:
-        current_app.logger.error(f"Erreur lors de l'ajout d'un talent depuis l'admin: {exc}")
+        current_app.logger.error(
+            f"Erreur lors de l'ajout d'un talent depuis l'admin: {exc}"
+        )
         return False, "Erreur lors de l'ajout du talent."
 
 

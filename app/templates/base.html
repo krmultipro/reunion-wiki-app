@@ -104,6 +104,7 @@
               Accueil
             </a>
           </li>
+          <!--
 
           {% for cat in categories %} {% set slug = categories_slug[cat] %} {%
           set cat_url = url_for('public.voir_categorie', slug=slug) %}
@@ -117,6 +118,7 @@
             </a>
           </li>
           {% endfor %}
+    
 
           <li>
             <a
@@ -136,6 +138,7 @@
               Proposer un site
             </a>
           </li>
+         
           <li>
             <a
               href="{{ url_for('public.talents') }}"
@@ -145,6 +148,7 @@
               Talents
             </a>
           </li>
+                 -->
           <li><a href="{{ url_for('public.faq') }}">FAQ</a></li>
 
           <li>

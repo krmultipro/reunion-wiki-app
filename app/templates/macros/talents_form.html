@@ -1,0 +1,44 @@
+{% macro talents_form(form, action_url) %}
+<section class="talents-form" id="proposer-talent">
+  <h2>Proposer un talent</h2>
+  <p>
+    Tu connais un influenceur, un comédien ou un chanteur à mettre en avant ?
+    Renseigne son pseudo Instagram, le lien vers son compte et une courte
+    description.
+  </p>
+
+  <form
+    method="post"
+    action="{{ action_url }}"
+    class="talents-form__form"
+    novalidate
+  >
+    {{ form.hidden_tag() }}
+
+    <div class="form-honeypot">
+      {{ form.honeypot.label }} {{ form.honeypot() }}
+    </div>
+
+    {% for field in [form.pseudo, form.instagram] %}
+    <div class="talents-form__field">
+      {{ field.label(class_="talents-form__label") }} {{
+      field(class_="talents-form__input") }} {% for error in field.errors %}
+      <span class="talents-form__error">{{ error }}</span>
+      {% endfor %}
+    </div>
+    {% endfor %}
+
+    <div class="talents-form__field">
+      {{ form.description.label(class_="talents-form__label") }} {{
+      form.description(class_="talents-form__textarea", rows="4") }} {% for
+      error in form.description.errors %}
+      <span class="talents-form__error">{{ error }}</span>
+      {% endfor %}
+    </div>
+
+    <button type="submit" class="btn btn-primary talents-form__submit">
+      Envoyer la proposition
+    </button>
+  </form>
+</section>
+{% endmacro %}

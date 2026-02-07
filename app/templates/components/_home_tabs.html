@@ -1,0 +1,21 @@
+<div class="home-tabs" role="tablist">
+  <a
+    href="{{ url_for('public.accueil') }}"
+    class="home-tab-button {% if active_tab == 'sites' %}active{% endif %}"
+    data-tab="sites"
+    aria-selected="{{ active_tab == 'sites' }}"
+    role="tab"
+  >
+    Sites
+  </a>
+
+  <a
+    href="{{ url_for('public.talents') }}"
+    class="home-tab-button {% if active_tab == 'talents' %}active{% endif %}"
+    data-tab="talents"
+    aria-selected="{{ active_tab == 'talents' }}"
+    role="tab"
+  >
+    Talents
+  </a>
+</div>

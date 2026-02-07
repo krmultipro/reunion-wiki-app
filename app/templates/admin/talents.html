@@ -1,9 +1,6 @@
-{% extends "base.html" %}
-
-{% block seo_title %}Talents – Modération Réunion Wiki{% endblock %}
-{% block seo_description %}Interface de gestion des talents Instagram proposés sur Réunion Wiki.{% endblock %}
-
-{% block content %}
+{% extends "base.html" %} {% block seo_title %}Talents – Modération Réunion
+Wiki{% endblock %} {% block seo_description %}Interface de gestion des talents
+Instagram proposés sur Réunion Wiki.{% endblock %} {% block content %}
 <section class="admin-dashboard">
   <header class="admin-dashboard__header">
     <div class="admin-dashboard__intro">
@@ -25,13 +22,10 @@
 
   <div class="admin-dashboard__filters">
     <nav class="admin-status-tabs" aria-label="Filtrer par statut">
-      {% set tabs = [
-        ('en_attente', 'En attente', stats.get('en_attente', 0)),
-        ('valide', 'Publié', stats.get('valide', 0)),
-        ('refuse', 'Refusé', stats.get('refuse', 0)),
-        ('tout', 'Tous', stats.get('tout', 0))
-      ] %}
-      {% for code, label, count in tabs %}
+      {% set tabs = [ ('en_attente', 'En attente', stats.get('en_attente', 0)),
+      ('valide', 'Publié', stats.get('valide', 0)), ('refuse', 'Refusé',
+      stats.get('refuse', 0)), ('tout', 'Tous', stats.get('tout', 0)) ] %} {%
+      for code, label, count in tabs %}
       <a
         href="{{ url_for('admin.talents', status=code, category=category_filter, q=search_query, sort_by=sort_by, sort_order=sort_order) }}"
         class="admin-status-tab {{ 'admin-status-tab--active' if status_filter == code else '' }}"
@@ -40,7 +34,7 @@
       </a>
       {% endfor %}
     </nav>
-    
+
     {% if status_filter == 'valide' and categories %}
     <nav class="admin-category-tabs" aria-label="Filtrer par catégorie">
       <a
@@ -59,7 +53,11 @@
       {% endfor %}
     </nav>
     {% endif %}
-    <form class="admin-search-form" method="get" action="{{ url_for('admin.talents') }}">
+    <form
+      class="admin-search-form"
+      method="get"
+      action="{{ url_for('admin.talents') }}"
+    >
       <input type="hidden" name="status" value="{{ status_filter }}" />
       <input type="hidden" name="category" value="{{ category_filter }}" />
       <input type="hidden" name="sort_by" value="{{ sort_by }}" />
@@ -73,7 +71,11 @@
       />
       <button type="submit" class="btn btn-primary">Rechercher</button>
       {% if search_query %}
-      <a class="admin-search-reset" href="{{ url_for('admin.talents', status=status_filter, category=category_filter, sort_by=sort_by, sort_order=sort_order) }}">Effacer</a>
+      <a
+        class="admin-search-reset"
+        href="{{ url_for('admin.talents', status=status_filter, category=category_filter, sort_by=sort_by, sort_order=sort_order) }}"
+        >Effacer</a
+      >
       {% endif %}
     </form>
   </div>
@@ -88,9 +90,11 @@
       <h2>Talents refusés</h2>
       {% else %}
       <h2>Tous les talents</h2>
-      {% endif %}
-      {% if search_query %}
-      <p>{{ entries|length }} résultat{{ 's' if entries|length != 1 else '' }} pour « {{ search_query }} ».</p>
+      {% endif %} {% if search_query %}
+      <p>
+        {{ entries|length }} résultat{{ 's' if entries|length != 1 else '' }}
+        pour « {{ search_query }} ».
+      </p>
       {% endif %}
     </header>
 
@@ -100,36 +104,54 @@
         <thead>
           <tr>
             <th>
-              <a href="{{ url_for('admin.talents', status=status_filter, category=category_filter, q=search_query, sort_by='pseudo', sort_order=('asc' if sort_by == 'pseudo' and sort_order == 'desc' else 'desc')) }}" class="admin-table__sort-link">
-                Pseudo
-                {% if sort_by == 'pseudo' %}
-                  <span class="admin-table__sort-indicator">{{ '↓' if sort_order == 'desc' else '↑' }}</span>
+              <a
+                href="{{ url_for('admin.talents', status=status_filter, category=category_filter, q=search_query, sort_by='pseudo', sort_order=('asc' if sort_by == 'pseudo' and sort_order == 'desc' else 'desc')) }}"
+                class="admin-table__sort-link"
+              >
+                Pseudo {% if sort_by == 'pseudo' %}
+                <span class="admin-table__sort-indicator"
+                  >{{ '↓' if sort_order == 'desc' else '↑' }}</span
+                >
                 {% endif %}
               </a>
             </th>
+            <th>Image</th>
+
             <th>
-              <a href="{{ url_for('admin.talents', status=status_filter, category=category_filter, q=search_query, sort_by='category', sort_order=('asc' if sort_by == 'category' and sort_order == 'desc' else 'desc')) }}" class="admin-table__sort-link">
-                Catégorie
-                {% if sort_by == 'category' %}
-                  <span class="admin-table__sort-indicator">{{ '↓' if sort_order == 'desc' else '↑' }}</span>
+              <a
+                href="{{ url_for('admin.talents', status=status_filter, category=category_filter, q=search_query, sort_by='category', sort_order=('asc' if sort_by == 'category' and sort_order == 'desc' else 'desc')) }}"
+                class="admin-table__sort-link"
+              >
+                Catégorie {% if sort_by == 'category' %}
+                <span class="admin-table__sort-indicator"
+                  >{{ '↓' if sort_order == 'desc' else '↑' }}</span
+                >
                 {% endif %}
               </a>
             </th>
             <th>Instagram</th>
             <th>Description</th>
             <th>
-              <a href="{{ url_for('admin.talents', status=status_filter, category=category_filter, q=search_query, sort_by='status', sort_order=('asc' if sort_by == 'status' and sort_order == 'desc' else 'desc')) }}" class="admin-table__sort-link">
-                Statut
-                {% if sort_by == 'status' %}
-                  <span class="admin-table__sort-indicator">{{ '↓' if sort_order == 'desc' else '↑' }}</span>
+              <a
+                href="{{ url_for('admin.talents', status=status_filter, category=category_filter, q=search_query, sort_by='status', sort_order=('asc' if sort_by == 'status' and sort_order == 'desc' else 'desc')) }}"
+                class="admin-table__sort-link"
+              >
+                Statut {% if sort_by == 'status' %}
+                <span class="admin-table__sort-indicator"
+                  >{{ '↓' if sort_order == 'desc' else '↑' }}</span
+                >
                 {% endif %}
               </a>
             </th>
             <th>
-              <a href="{{ url_for('admin.talents', status=status_filter, category=category_filter, q=search_query, sort_by='date_updated', sort_order=('asc' if sort_by == 'date_updated' and sort_order == 'desc' else 'desc')) }}" class="admin-table__sort-link">
-                Mise à jour
-                {% if sort_by == 'date_updated' %}
-                  <span class="admin-table__sort-indicator">{{ '↓' if sort_order == 'desc' else '↑' }}</span>
+              <a
+                href="{{ url_for('admin.talents', status=status_filter, category=category_filter, q=search_query, sort_by='date_updated', sort_order=('asc' if sort_by == 'date_updated' and sort_order == 'desc' else 'desc')) }}"
+                class="admin-table__sort-link"
+              >
+                Mise à jour {% if sort_by == 'date_updated' %}
+                <span class="admin-table__sort-indicator"
+                  >{{ '↓' if sort_order == 'desc' else '↑' }}</span
+                >
                 {% endif %}
               </a>
             </th>
@@ -140,21 +162,55 @@
           {% for talent in entries %}
           <tr>
             <td class="admin-table__cell--title">{{ talent['pseudo'] }}</td>
+            <td>
+              {% if talent['image'] %}
+              <a
+                href="{{ url_for('static', filename='talents/' ~ talent['image']) }}"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <img
+                  src="{{ url_for('static', filename='talents/' ~ talent['image']) }}"
+                  alt="Image {{ talent['pseudo'] }}"
+                  style="
+                    width: 40px;
+                    height: 40px;
+                    object-fit: cover;
+                    border-radius: 4px;
+                  "
+                  loading="lazy"
+                />
+              </a>
+              {% else %} — {% endif %}
+            </td>
+
             <td>{{ talent['category'] or '—' }}</td>
             <td>
-              <a href="{{ talent['instagram'] }}" target="_blank" rel="noopener noreferrer">
+              <a
+                href="{{ talent['instagram'] }}"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 Ouvrir ↗
               </a>
             </td>
-            <td class="admin-table__cell--description">{{ talent['description'] }}</td>
+            <td class="admin-table__cell--description">
+              {{ talent['description'] }}
+            </td>
             <td>
-              <span class="admin-status-badge admin-status-badge--{{ talent['status'] }}">
+              <span
+                class="admin-status-badge admin-status-badge--{{ talent['status'] }}"
+              >
                 {{ status_labels.get(talent['status'], talent['status']) }}
               </span>
             </td>
             <td class="admin-table__cell--meta">
-              Créé le {{ talent['date_created']|format_date("%d/%m/%Y %H:%M") }}<br />
-              <small>Maj {{ talent['date_updated']|format_date("%d/%m/%Y %H:%M") }}</small>
+              Créé le {{ talent['date_created']|format_date("%d/%m/%Y %H:%M")
+              }}<br />
+              <small
+                >Maj {{ talent['date_updated']|format_date("%d/%m/%Y %H:%M")
+                }}</small
+              >
             </td>
             <td class="admin-table__cell--actions">
               {% if talent['status'] == 'valide' %}
@@ -163,14 +219,26 @@
                 action="{{ url_for('admin.move_talent', talent_id=talent['id'], direction='up', status=status_filter, category=category_filter, q=search_query, sort_by=sort_by, sort_order=sort_order) }}"
                 class="admin-table__form admin-table__form--inline"
               >
-                <button type="submit" class="btn btn-small" title="Monter dans l'ordre d'affichage">↑</button>
+                <button
+                  type="submit"
+                  class="btn btn-small"
+                  title="Monter dans l'ordre d'affichage"
+                >
+                  ↑
+                </button>
               </form>
               <form
                 method="post"
                 action="{{ url_for('admin.move_talent', talent_id=talent['id'], direction='down', status=status_filter, category=category_filter, q=search_query, sort_by=sort_by, sort_order=sort_order) }}"
                 class="admin-table__form admin-table__form--inline"
               >
-                <button type="submit" class="btn btn-small" title="Descendre dans l'ordre d'affichage">↓</button>
+                <button
+                  type="submit"
+                  class="btn btn-small"
+                  title="Descendre dans l'ordre d'affichage"
+                >
+                  ↓
+                </button>
               </form>
               {% endif %}
               <a
@@ -184,11 +252,19 @@
                 action="{{ url_for('admin.update_talent', talent_id=talent['id']) }}"
                 class="admin-table__form"
               >
-                {{ action_forms[talent['id']].csrf_token }}
-                {{ action_forms[talent['id']].talent_id(value=talent['id']) }}
+                {{ action_forms[talent['id']].csrf_token }} {{
+                action_forms[talent['id']].talent_id(value=talent['id']) }}
                 <input type="hidden" name="action" value="approve" />
-                <input type="hidden" name="status_filter" value="{{ status_filter }}" />
-                <input type="hidden" name="search_query" value="{{ search_query }}" />
+                <input
+                  type="hidden"
+                  name="status_filter"
+                  value="{{ status_filter }}"
+                />
+                <input
+                  type="hidden"
+                  name="search_query"
+                  value="{{ search_query }}"
+                />
                 <button type="submit" class="btn btn-approve">Publier</button>
               </form>
               <form
@@ -196,24 +272,42 @@
                 action="{{ url_for('admin.update_talent', talent_id=talent['id']) }}"
                 class="admin-table__form"
               >
-                {{ action_forms[talent['id']].csrf_token }}
-                {{ action_forms[talent['id']].talent_id(value=talent['id']) }}
+                {{ action_forms[talent['id']].csrf_token }} {{
+                action_forms[talent['id']].talent_id(value=talent['id']) }}
                 <input type="hidden" name="action" value="reject" />
-                <input type="hidden" name="status_filter" value="{{ status_filter }}" />
-                <input type="hidden" name="search_query" value="{{ search_query }}" />
+                <input
+                  type="hidden"
+                  name="status_filter"
+                  value="{{ status_filter }}"
+                />
+                <input
+                  type="hidden"
+                  name="search_query"
+                  value="{{ search_query }}"
+                />
                 <button type="submit" class="btn btn-reject">Refuser</button>
               </form>
               <form
                 method="post"
                 action="{{ url_for('admin.update_talent', talent_id=talent['id']) }}"
                 class="admin-table__form"
-                onsubmit="return confirm('Supprimer définitivement ce talent ?');"
+                onsubmit="
+                  return confirm('Supprimer définitivement ce talent ?');
+                "
               >
-                {{ action_forms[talent['id']].csrf_token }}
-                {{ action_forms[talent['id']].talent_id(value=talent['id']) }}
+                {{ action_forms[talent['id']].csrf_token }} {{
+                action_forms[talent['id']].talent_id(value=talent['id']) }}
                 <input type="hidden" name="action" value="delete" />
-                <input type="hidden" name="status_filter" value="{{ status_filter }}" />
-                <input type="hidden" name="search_query" value="{{ search_query }}" />
+                <input
+                  type="hidden"
+                  name="status_filter"
+                  value="{{ status_filter }}"
+                />
+                <input
+                  type="hidden"
+                  name="search_query"
+                  value="{{ search_query }}"
+                />
                 <button type="submit" class="btn btn-delete">Supprimer</button>
               </form>
             </td>
@@ -224,17 +318,11 @@
     </div>
     {% else %}
     <p class="admin-empty">
-      {% if search_query %}
-      Aucun talent ne correspond à cette recherche.
-      {% elif status_filter == 'en_attente' %}
-      Aucune proposition de talent en attente.
-      {% elif status_filter == 'valide' %}
-      Aucun talent publié pour le moment.
-      {% elif status_filter == 'refuse' %}
-      Aucun talent refusé pour l'instant.
-      {% else %}
-      Aucun talent à afficher.
-      {% endif %}
+      {% if search_query %} Aucun talent ne correspond à cette recherche. {%
+      elif status_filter == 'en_attente' %} Aucune proposition de talent en
+      attente. {% elif status_filter == 'valide' %} Aucun talent publié pour le
+      moment. {% elif status_filter == 'refuse' %} Aucun talent refusé pour
+      l'instant. {% else %} Aucun talent à afficher. {% endif %}
     </p>
     {% endif %}
   </section>

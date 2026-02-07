@@ -36,7 +36,6 @@ from ..utils.text import slugify
 
 public_bp = Blueprint("public", __name__)
 
-scroll_to_form = False
 
 @public_bp.route("/", methods=["GET", "POST"])
 @limiter.limit(lambda: "1000 per hour" if current_app.config.get("DEBUG") else "5 per hour")
@@ -92,6 +91,8 @@ def accueil():
         form_inline=form_inline,
         form_talent=form_talent,
         scroll_to_form=scroll_to_form,  
+        active_tab="sites",
+
     )
 
 
@@ -239,6 +240,7 @@ def talents():
         talents=talents_by_category,
         form=form,
         scroll_to_form=scroll_to_form,  
+        active_tab="talents",
     )
 
 

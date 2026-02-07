@@ -41,6 +41,10 @@ def create_app() -> Flask:
 
     env = os.getenv("FLASK_ENV", "development")
     app.config.from_object(config.get(env, config["default"]))
+    
+    print("FLASK_ENV =", os.getenv("FLASK_ENV"))
+    print("ENV CONFIG LOADED =", env)
+
 
     apply_security_settings(app, env)
     init_extensions(app)

@@ -1,9 +1,6 @@
-{% extends "base.html" %}
-
-{% block seo_title %}{{ page_title }} - Réunion Wiki{% endblock %}
-{% block seo_description %}Interface de gestion des talents pour l'administration Réunion Wiki.{% endblock %}
-
-{% block content %}
+{% extends "base.html" %} {% block seo_title %}{{ page_title }} - Réunion Wiki{%
+endblock %} {% block seo_description %}Interface de gestion des talents pour
+l'administration Réunion Wiki.{% endblock %} {% block content %}
 <section class="admin-card">
   <header class="admin-card__header">
     <div>
@@ -12,71 +9,117 @@
       <p>{{ subtitle|safe }}</p>
       {% endif %}
     </div>
-    {% set sort_by = sort_by|default('date_updated') %}
-    {% set sort_order = sort_order|default('desc') %}
-    {% set category_filter = category_filter|default('') %}
-    <a class="btn btn-secondary" href="{{ url_for('admin.talents', status=status_filter, category=category_filter, q=search_query, sort_by=sort_by, sort_order=sort_order) }}">
+    {% set sort_by = sort_by|default('date_updated') %} {% set sort_order =
+    sort_order|default('desc') %} {% set category_filter =
+    category_filter|default('') %}
+    <a
+      class="btn btn-secondary"
+      href="{{ url_for('admin.talents', status=status_filter, category=category_filter, q=search_query, sort_by=sort_by, sort_order=sort_order) }}"
+    >
       ← Retour aux talents
     </a>
   </header>
 
-  <form method="post" action="{{ form_action }}" class="admin-form" novalidate>
+  <form
+    method="post"
+    action="{{ form_action }}"
+    class="admin-form"
+    enctype="multipart/form-data"
+    novalidate
+  >
     {{ form.hidden_tag() }}
 
     <div class="admin-form__field">
-      {{ form.pseudo.label(class_="admin-form__label") }}
-      {{ form.pseudo(class_="admin-form__input") }}
-      {% for error in form.pseudo.errors %}
+      {{ form.pseudo.label(class_="admin-form__label") }} {{
+      form.pseudo(class_="admin-form__input") }} {% for error in
+      form.pseudo.errors %}
       <span class="admin-form__error">{{ error }}</span>
       {% endfor %}
     </div>
 
     <div class="admin-form__field">
-      {{ form.instagram.label(class_="admin-form__label") }}
-      {{ form.instagram(class_="admin-form__input") }}
-      {% for error in form.instagram.errors %}
+      {{ form.instagram.label(class_="admin-form__label") }} {{
+      form.instagram(class_="admin-form__input") }} {% for error in
+      form.instagram.errors %}
       <span class="admin-form__error">{{ error }}</span>
       {% endfor %}
     </div>
 
     <div class="admin-form__field">
-      {{ form.description.label(class_="admin-form__label") }}
-      {{ form.description(class_="admin-form__textarea", rows="5") }}
-      {% for error in form.description.errors %}
+      {{ form.description.label(class_="admin-form__label") }} {{
+      form.description(class_="admin-form__textarea", rows="5") }} {% for error
+      in form.description.errors %}
       <span class="admin-form__error">{{ error }}</span>
       {% endfor %}
     </div>
 
     <div class="admin-form__group">
       <div class="admin-form__field">
-        {{ form.category.label(class_="admin-form__label") }}
-        {{ form.category(class_="admin-form__input") }}
-        {% for error in form.category.errors %}
+        {{ form.category.label(class_="admin-form__label") }} {{
+        form.category(class_="admin-form__input") }} {% for error in
+        form.category.errors %}
         <span class="admin-form__error">{{ error }}</span>
         {% endfor %}
       </div>
       <div class="admin-form__field">
-        {{ form.status.label(class_="admin-form__label") }}
-        {{ form.status(class_="admin-form__input") }}
-        {% for error in form.status.errors %}
+        {{ form.status.label(class_="admin-form__label") }} {{
+        form.status(class_="admin-form__input") }} {% for error in
+        form.status.errors %}
         <span class="admin-form__error">{{ error }}</span>
         {% endfor %}
       </div>
     </div>
+    <div class="admin-form__field">
+      {{ form.image_slug.label(class_="admin-form__label") }} {{
+      form.image_slug(class_="admin-form__input") }}
+      <small class="admin-form__hint">
+        Nom du fichier sans extension (ex : harendra)
+      </small>
+      {% for error in form.image_slug.errors %}
+      <span class="admin-form__error">{{ error }}</span>
+      {% endfor %}
+    </div>
+    {% if talent.image %}
+    <div class="admin-form__field">
+      <label class="admin-form__label">Image actuelle</label>
+      <a
+        href="{{ url_for('static', filename='talents/' ~ talent.image) }}"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        <img
+          src="{{ url_for('static', filename='talents/' ~ talent.image) }}"
+          alt="Image actuelle"
+          style="
+            max-width: 120px;
+            max-height: 120px;
+            object-fit: cover;
+            border-radius: 6px;
+          "
+        />
+      </a>
+    </div>
+    {% endif %}
 
     <div class="admin-form__field">
-      {{ form.image.label(class_="admin-form__label") }}
-      {{ form.image(class_="admin-form__input") }}
-      <small class="admin-form__hint">Optionnel : chemin vers une image statique (ex : talents/pseudo.jpg).</small>
+      {{ form.image.label(class_="admin-form__label") }} {{
+      form.image(class_="admin-form__input") }}
+      <small class="admin-form__hint">
+        Image optionnelle (JPG, PNG, WEBP).
+      </small>
+
       {% for error in form.image.errors %}
       <span class="admin-form__error">{{ error }}</span>
       {% endfor %}
     </div>
 
     <div class="admin-form__field">
-      {{ form.display_order.label(class_="admin-form__label") }}
-      {{ form.display_order(class_="admin-form__input") }}
-      <small class="admin-form__hint">Ordre d'affichage dans la catégorie (0 par défaut, plus petit = affiché en premier).</small>
+      {{ form.display_order.label(class_="admin-form__label") }} {{
+      form.display_order(class_="admin-form__input") }}
+      <small class="admin-form__hint"
+        >Ordre d'affichage dans la catégorie (0 par défaut, plus petit = affiché
+        en premier).</small
+      >
       {% for error in form.display_order.errors %}
       <span class="admin-form__error">{{ error }}</span>
       {% endfor %}

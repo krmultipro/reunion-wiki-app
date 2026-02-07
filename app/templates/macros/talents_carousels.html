@@ -1,0 +1,6 @@
+{% from "macros/talent_carousel.html" import talent_carousel %} {% macro
+talents_carousels(talents) %} {% if talents %} {% for category, people in
+talents.items() %} {% if people %} {{ talent_carousel(category, people) }} {%
+endif %} {% endfor %} {% else %}
+<p class="talents-empty">Aucun talent publié pour le moment.</p>
+{% endif %} {% endmacro %}

@@ -1,7 +1,12 @@
 """Administration routes (dashboard, moderation, talents)."""
 
 from __future__ import annotations
+from posixpath import basename
+from werkzeug.utils import secure_filename
+import pathlib
 
+
+from click import Path
 from flask import (
     Blueprint,
     abort,
@@ -535,38 +540,82 @@ def edit_talent(talent_id: int):
         row = get_talent_by_id(talent_id)
     except DatabaseError:
         flash("Erreur lors de la récupération du talent.", "error")
-        return redirect(url_for("admin.talents", status=status_filter, category=category_filter or "", q=search_query, sort_by=sort_by, sort_order=sort_order))
+        return redirect(url_for(
+            "admin.talents",
+            status=status_filter,
+            category=category_filter or "",
+            q=search_query,
+            sort_by=sort_by,
+            sort_order=sort_order,
+        ))
 
     if not row:
         flash("Talent introuvable.", "error")
-        return redirect(url_for("admin.talents", status=status_filter, category=category_filter or "", q=search_query, sort_by=sort_by, sort_order=sort_order))
+        return redirect(url_for(
+            "admin.talents",
+            status=status_filter,
+            category=category_filter or "",
+            q=search_query,
+            sort_by=sort_by,
+            sort_order=sort_order,
+        ))
 
     talent = dict(row)
 
-    form.category.choices = get_talent_category_choices(talent.get("category"))
-    form.status.choices = get_talent_status_choices()
+    UPLOAD_DIR = pathlib.Path(current_app.root_path) / "static" / "talents"
+    image_name = talent.get("image") or ""
 
+    # 🔹 Pré-remplissage SEULEMENT des champs texte
     if request.method == "GET":
         form.pseudo.data = talent["pseudo"]
         form.instagram.data = talent["instagram"]
         form.description.data = talent["description"]
         form.category.data = talent["category"] or ""
-        form.image.data = talent["image"] or ""
         form.status.data = talent["status"]
         form.display_order.data = talent.get("display_order", 0) or 0
+        # ⚠️ form.image.data = INTERDIT (FileField)
+        
+        # 🔹 Pré-remplir le nom de fichier (sans extension)
+    if talent.get("image"):
+        form.image_slug.data = talent["image"].rsplit(".", 1)[0]
+
 
     if form.validate_on_submit():
         try:
+            if form.image.data:
+                file = form.image.data
+                original_name = secure_filename(file.filename)
+
+                if original_name and "." in original_name:
+                    ext = original_name.rsplit(".", 1)[1].lower()
+
+                    if form.image_slug.data:
+                        base_name = secure_filename(form.image_slug.data)
+                    else:
+                        base_name = original_name.rsplit(".", 1)[0]
+
+                    filename = f"{base_name}.{ext}"
+                else:
+                    # fallback de sécurité
+                    filename = secure_filename(file.filename)
+
+                UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+                file.save(UPLOAD_DIR / filename)
+
+                image_name = filename
+
+
             success, message = update_talent_full(
                 talent_id=talent_id,
                 pseudo=form.pseudo.data,
                 instagram=form.instagram.data,
                 description=form.description.data,
                 category=form.category.data or "",
-                image=form.image.data or "",
+                image=image_name,  # 🔥 conserve l’ancienne si pas de nouvel upload
                 status=form.status.data,
                 display_order=form.display_order.data or 0,
             )
+
             if success:
                 current_app.logger.info(
                     "Mise à jour admin du talent #%s par '%s' (%s)",
@@ -575,11 +624,17 @@ def edit_talent(talent_id: int):
                     request.remote_addr or "IP inconnue",
                 )
                 flash(message, "success")
-                return redirect(
-                    url_for("admin.talents", status=status_filter, category=category_filter or "", q=search_query, sort_by=sort_by, sort_order=sort_order)
-                )
-            else:
-                flash(message, "warning")
+                return redirect(url_for(
+                    "admin.talents",
+                    status=status_filter,
+                    category=category_filter or "",
+                    q=search_query,
+                    sort_by=sort_by,
+                    sort_order=sort_order,
+                ))
+
+            flash(message, "warning")
+
         except DatabaseError:
             flash("Erreur lors de la mise à jour du talent.", "error")
 
@@ -601,27 +656,83 @@ def edit_talent(talent_id: int):
         subtitle=f"Statut actuel : <strong>{TALENT_STATUS_LABELS.get(talent['status'], talent['status'])}</strong>",
         status_filter=status_filter,
         search_query=search_query,
+        talent=talent,  
     )
+
+
 
 
 @admin_bp.route("/talents/new", methods=["GET", "POST"])
 @admin_required
 def create_talent():
+    current_app.logger.info("DEBUG: create_talent() appelée")
+
     form = TalentAdminForm()
     form.category.choices = get_talent_category_choices()
     form.status.choices = get_talent_status_choices()
 
+    UPLOAD_DIR = pathlib.Path(current_app.root_path) / "static" / "talents"
+    image_name = ""
+
+    current_app.logger.info("DEBUG: form submitted = %s", form.is_submitted())
+    current_app.logger.info("DEBUG: form errors = %s", form.errors)
+
     if form.validate_on_submit():
         try:
+            current_app.logger.info(
+                "DEBUG: form.image.data = %r (type=%s)",
+                form.image.data,
+                type(form.image.data),
+            )
+
+            if form.image.data:
+                file = form.image.data
+                original_name = secure_filename(file.filename)
+
+                current_app.logger.info(
+                    "DEBUG: original filename = %s", original_name
+                )
+
+                if original_name:
+                    ext = original_name.rsplit(".", 1)[-1].lower()
+
+                    current_app.logger.info(
+                        "DEBUG: image_slug = %r", form.image_slug.data
+                    )
+
+                    if form.image_slug.data:
+                        base_name = secure_filename(form.image_slug.data)
+                    else:
+                        base_name = original_name.rsplit(".", 1)[0]
+
+                    filename = f"{base_name}.{ext}"
+
+                    current_app.logger.info(
+                        "DEBUG: saving file to %s", UPLOAD_DIR / filename
+                    )
+
+                    UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+                    file.save(UPLOAD_DIR / filename)
+
+                    image_name = filename
+                    current_app.logger.info(
+                        "DEBUG: image_name set to %s", image_name
+                    )
+
+            current_app.logger.info(
+                "DEBUG: sending to DB image=%r", image_name
+            )
+
             success, message = create_talent_admin(
                 pseudo=form.pseudo.data,
                 instagram=form.instagram.data,
                 description=form.description.data,
                 category=form.category.data or "",
-                image=form.image.data or "",
+                image=image_name,
                 status=form.status.data,
                 display_order=form.display_order.data or 0,
             )
+
             if success:
                 current_app.logger.info(
                     "Création admin d'un talent (%s) par '%s' (%s)",
@@ -630,13 +741,22 @@ def create_talent():
                     request.remote_addr or "IP inconnue",
                 )
                 flash(message, "success")
+
                 target_status = (
-                    form.status.data if form.status.data in TALENT_STATUSES else "en_attente"
+                    form.status.data
+                    if form.status.data in TALENT_STATUSES
+                    else "en_attente"
                 )
-                return redirect(url_for("admin.talents", status=target_status))
-            else:
-                flash(message, "error")
+                return redirect(
+                    url_for("admin.talents", status=target_status)
+                )
+
+            flash(message, "error")
+
         except DatabaseError:
+            current_app.logger.exception(
+                "DEBUG: exception lors de l'ajout du talent"
+            )
             flash("Erreur lors de l'ajout du talent.", "error")
 
     return render_template(
@@ -649,4 +769,6 @@ def create_talent():
         subtitle="Renseigne les informations du talent Instagram.",
         status_filter="en_attente",
         search_query="",
+        talent={},  # 👈 AJOUT CRUCIAL
     )
+
