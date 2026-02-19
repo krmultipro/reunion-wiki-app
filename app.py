@@ -1122,34 +1122,45 @@ def redirect_site(site_id):
         app.logger.info(
             f"[GO] Site trouvé id={site_id} | ancien compteur={row['click_count']} | url={row['lien']}"
         )
-
-        # Incrémentation du compteur
-        cur.execute(
-            "UPDATE sites SET click_count = click_count + 1 WHERE id = ?",
-            (site_id,)
-        )
-
-        # Récupération du nouveau compteur après mise à jour
-        cur.execute(
-            "SELECT click_count FROM sites WHERE id = ?",
-            (site_id,)
-        )
-        new_count = cur.fetchone()["click_count"]
         
-        # Enregistrement du clic détaillé (historique)
-        cur.execute(
-            "INSERT INTO site_clicks (site_id) VALUES (?)",
-            (site_id,)
-        )
-
-        conn.commit()
+        ip = request.headers.get("X-Forwarded-For", request.remote_addr)
+        user_agent = request.headers.get("User-Agent", "")
         
-        
+        # Anti-bot simple
+        ua_lower = user_agent.lower()
+        if "bot" in ua_lower or "crawl" in ua_lower or "spider" in ua_lower:
+            app.logger.info(f"[GO] Bot détecté, clic ignoré id={site_id} ua={user_agent}")
+            return redirect(row["lien"])
 
 
-        app.logger.info(
-            f"[GO] Nouveau compteur pour site_id={site_id} = {new_count}"
-        )
+        # Vérifie si cette IP a cliqué ce site dans les 30 dernières minutes
+        cur.execute("""
+            SELECT id FROM site_clicks
+            WHERE site_id = ?
+            AND ip_address = ?
+            AND clicked_at >= datetime('now', '-30 minutes')
+        """, (site_id, ip))
+
+        recent_click = cur.fetchone()
+
+        if not recent_click:
+            # Incrémente compteur
+            cur.execute(
+                "UPDATE sites SET click_count = click_count + 1 WHERE id = ?",
+                (site_id,)
+            )
+
+            # Log clic
+            cur.execute("""
+                INSERT INTO site_clicks (site_id, ip_address, user_agent)
+                VALUES (?, ?, ?)
+            """, (site_id, ip, user_agent))
+
+            conn.commit()
+
+            app.logger.info(f"[GO] Clic validé id={site_id} ip={ip}")
+        else:
+            app.logger.info(f"[GO] Clic ignoré (trop récent) id={site_id} ip={ip}")
 
         return redirect(row["lien"])
 
