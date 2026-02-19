@@ -10,24 +10,26 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Télécharger le code
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # 2️⃣ Construire l'image Docker avec nom dynamique
-      - name: Build Docker image
-        run: |
-          docker build -t reunionwiki:${{ github.ref_name }} .
+      # 🔹 Créer une variable safe (remplace / par -)
+      - name: Prepare safe branch name
+        run: echo "BRANCH_NAME=${GITHUB_REF_NAME//\//-}" >> $GITHUB_ENV
 
-      # 3️⃣ Lancer le conteneur avec nom dynamique
+      # 🔹 Build avec tag corrigé
+      - name: Build Docker image
+        run: docker build -t reunionwiki:${{ env.BRANCH_NAME }} .
+
+      # 🔹 Run container avec nom corrigé
       - name: Run container
         run: |
           docker run -d \
-            --name reunionwiki_${{ github.ref_name }} \
+            --name reunionwiki_${{ env.BRANCH_NAME }} \
             -p 8000:8000 \
-            reunionwiki:${{ github.ref_name }}
+            reunionwiki:${{ env.BRANCH_NAME }}
 
-      # 4️⃣ Vérifier que ça répond
+      # 🔹 Test
       - name: Test container
         run: |
           sleep 5
