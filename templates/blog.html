@@ -1,0 +1,56 @@
+{% extends "base.html" %}{% block content %}
+<article class="blog-article">
+  <header class="blog-header">
+    <h1>Les meilleurs sites internet de La Réunion en 2026</h1>
+    <p class="blog-intro">
+      Découvrez une sélection des sites les plus utiles pour la vie quotidienne
+      à La Réunion : emploi, culture, transport, météo, actualités et bien plus.
+    </p>
+  </header>
+
+  <section class="blog-content">
+    <h2>Un annuaire local simple et efficace</h2>
+    <p>
+      Réunion Wiki met en avant des sites fiables, régulièrement mis à jour, et
+      pensés pour faciliter l’accès aux services essentiels de l’île. Chaque
+      catégorie regroupe des ressources locales utiles aux habitants comme aux
+      nouveaux arrivants.
+    </p>
+
+    <h2>Les catégories disponibles</h2>
+    <ul class="blog-category-list">
+      {% for cat in categories %}
+      <li>
+        <a href="/categorie/{{ categories_slug[cat] }}">
+          <strong>{{ cat }}</strong>
+        </a>
+        : {% if "emploi" in cat|lower %} offres d'emploi, formations locales et
+        opportunités professionnelles {% elif "culture" in cat|lower %}
+        événements culturels, musique, musées et sorties {% elif "nourriture" in
+        cat|lower %} recettes péi, producteurs locaux, restaurants et marchés {%
+        elif "transport" in cat|lower %} bus, covoiturage, horaires et
+        informations routières {% elif "météo" in cat|lower or "meteo" in
+        cat|lower %} alertes cycloniques, vigilance météo et prévisions en temps
+        réel {% elif "actualités" in cat|lower or "actualites" in cat|lower %}
+        médias locaux, presse et informations régionales {% elif "achat" in
+        cat|lower %} petites annonces, e-commerce et bons plans réunionnais {%
+        else %} ressources locales utiles à découvrir {% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+
+    <h2>Pourquoi utiliser Réunion Wiki ?</h2>
+    <p>
+      Le portail est pensé pour être rapide, simple et 100% local. Contrairement
+      aux moteurs de recherche classiques, les sites sont sélectionnés et
+      organisés par thème afin de gagner du temps.
+    </p>
+
+    <p>
+      🌴 Réunion Wiki évolue continuellement grâce aux suggestions de la
+      communauté et aux mises à jour régulières.
+    </p>
+  </section>
+</article>
+
+{% endblock %}

@@ -252,6 +252,10 @@ def faq():
     return render_template("faq.html")
 
 
+@app.route("/blog")
+def blog():
+    return render_template("blog.html")
+
 
 def format_date(value, fmt="%d/%m/%Y"):
     if not value:
@@ -1182,7 +1186,7 @@ def nouveaux_sites():
     cur = conn.cursor()
 #recupere tous les sites par ordre descroissant d'ajout
     cur.execute("""
-        SELECT nom, lien, categorie, description, date_ajout
+        SELECT id, nom, lien, categorie, description, date_ajout
         FROM sites
         WHERE status = 'valide'
         ORDER BY date_ajout DESC
