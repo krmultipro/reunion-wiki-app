@@ -1,4 +1,34 @@
+name: Feature Deploy Test
+
 on:
   push:
     branches:
-      - feature/counterSite
+      - "feature/**"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1️⃣ Télécharger le code
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # 2️⃣ Construire l'image Docker avec nom dynamique
+      - name: Build Docker image
+        run: |
+          docker build -t reunionwiki:${{ github.ref_name }} .
+
+      # 3️⃣ Lancer le conteneur avec nom dynamique
+      - name: Run container
+        run: |
+          docker run -d \
+            --name reunionwiki_${{ github.ref_name }} \
+            -p 8000:8000 \
+            reunionwiki:${{ github.ref_name }}
+
+      # 4️⃣ Vérifier que ça répond
+      - name: Test container
+        run: |
+          sleep 5
+          curl -f http://localhost:8000
