@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from flask import (
     Flask,
+    current_app,
     render_template,
     make_response,
     send_from_directory,
@@ -13,6 +14,9 @@ from flask import (
     has_request_context,
     abort,
 )
+from dotenv import load_dotenv
+
+
 from datetime import datetime
 import sqlite3
 import os
@@ -44,10 +48,7 @@ app = Flask(__name__)
 env = os.getenv('FLASK_ENV', 'development')
 app.config.from_object(config.get(env, config['default']))
 
-# Configuration de la base de données
-DATABASE_PATH = os.getenv('DATABASE_PATH')
-if not DATABASE_PATH or not DATABASE_PATH.startswith('/'):
-    DATABASE_PATH = '/app/data/base.db'
+
 
 # SÉCURITÉ : Rate limiting pour éviter le spam avec Redis
 limiter = Limiter(
@@ -62,13 +63,20 @@ limiter.init_app(app)
 def get_db_connection():
     """Retourne une connexion sécurisée à la base de données"""
     try:
-        conn = sqlite3.connect(DATABASE_PATH)
+     
+
+        conn = sqlite3.connect(app.config['DATABASE_PATH'])
         conn.row_factory = sqlite3.Row
+
+
         init_db_schema(conn)
+
         return conn
-    except sqlite3.Error as e:
-        app.logger.error(f"Erreur de connexion à la base de données: {e}")
-        return None
+
+    except Exception as e:
+        print("ERREUR COMPLETE :", e)
+        raise  # important pour voir la vraie erreur
+
 
 
 def send_submission_notification(payload):
@@ -322,7 +330,7 @@ def get_derniers_sites_global(limit=3):
         cur = conn.cursor()
         # Récupère les derniers sites ajoutés par date d'ajout pour la page index
         cur.execute("""
-            SELECT nom, lien, categorie, description, date_ajout
+            SELECT id, nom, lien, categorie, description, date_ajout
             FROM sites
             WHERE status = 'valide'
             ORDER BY date_ajout DESC
@@ -332,6 +340,28 @@ def get_derniers_sites_global(limit=3):
         return cur.fetchall()
     except sqlite3.Error as e:
         app.logger.error(f"Erreur lors de la récupération des derniers sites: {e}")
+        return []
+    finally:
+        conn.close()
+
+
+def get_top_sites(limit=5):
+    conn = get_db_connection()
+    if not conn:
+        return []
+
+    try:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT id, nom, lien, categorie, description, click_count
+            FROM sites
+            WHERE status = 'valide'
+            ORDER BY click_count DESC
+            LIMIT ?
+        """, (limit,))
+        return cur.fetchall()
+    except sqlite3.Error as e:
+        app.logger.error(f"Erreur top sites: {e}")
         return []
     finally:
         conn.close()
@@ -1002,11 +1032,12 @@ def admin_create_site():
 def accueil():
     data = get_sites_en_vedette()
     derniers_sites = get_derniers_sites_global(3)
+    top_sites = get_top_sites(5)
     # Prépare un formulaire inline (mêmes règles que le formulaire complet)
     form_inline = SiteForm()
     form_inline.categorie.choices = [(cat, cat) for cat in get_categories()]
     form_inline.categorie.choices.insert(0, ('', 'Sélectionnez une catégorie'))
-    return render_template("index.html", data=data, derniers_sites=derniers_sites, form_inline=form_inline)
+    return render_template("index.html", data=data, derniers_sites=derniers_sites, top_sites=top_sites, form_inline=form_inline)
 
 
 @app.route("/categorie/<slug>")
@@ -1063,6 +1094,73 @@ def voir_categorie(slug):
         canonical=canonical,
         form_inline=form_inline
     )
+
+
+@app.route("/go/<int:site_id>")
+def redirect_site(site_id):
+    app.logger.info(f"[GO] Tentative de redirection pour site_id={site_id}")
+
+    conn = get_db_connection()
+    if not conn:
+        app.logger.error("[GO] Connexion DB impossible")
+        abort(500)
+
+    try:
+        cur = conn.cursor()
+
+        # Vérifie que le site existe
+        cur.execute(
+            "SELECT lien, click_count FROM sites WHERE id = ? AND status = 'valide'",
+            (site_id,)
+        )
+        row = cur.fetchone()
+
+        if not row:
+            app.logger.warning(f"[GO] Site introuvable ou non valide id={site_id}")
+            abort(404)
+
+        app.logger.info(
+            f"[GO] Site trouvé id={site_id} | ancien compteur={row['click_count']} | url={row['lien']}"
+        )
+
+        # Incrémentation du compteur
+        cur.execute(
+            "UPDATE sites SET click_count = click_count + 1 WHERE id = ?",
+            (site_id,)
+        )
+
+        # Récupération du nouveau compteur après mise à jour
+        cur.execute(
+            "SELECT click_count FROM sites WHERE id = ?",
+            (site_id,)
+        )
+        new_count = cur.fetchone()["click_count"]
+        
+        # Enregistrement du clic détaillé (historique)
+        cur.execute(
+            "INSERT INTO site_clicks (site_id) VALUES (?)",
+            (site_id,)
+        )
+
+        conn.commit()
+        
+        
+
+
+        app.logger.info(
+            f"[GO] Nouveau compteur pour site_id={site_id} = {new_count}"
+        )
+
+        return redirect(row["lien"])
+
+    except sqlite3.Error as e:
+        app.logger.error(f"[GO] Erreur SQLite site_id={site_id} | {e}")
+        abort(500)
+
+    finally:
+        conn.close()
+        app.logger.info(f"[GO] Connexion DB fermée pour site_id={site_id}")
+
 
 
 @app.route("/nouveaux-sites")

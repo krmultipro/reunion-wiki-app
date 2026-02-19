@@ -5,7 +5,11 @@ Wiki{% endblock %} {% block content %}
   <ul>
     {% for site in sites %}
     <li>
-      <a href="{{ site['lien'] }}" target="_blank" rel="noopener noreferrer">
+      <a
+        href="{{ url_for('redirect_site', site_id=site['id']) }}"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
         <strong>{{ site['nom'] }}</strong> </a
       ><br />
       <small>

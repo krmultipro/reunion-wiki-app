@@ -105,6 +105,12 @@ h3 {
   text-shadow: 0.2rem 0.2rem 2rem var(--lava);
 }
 
+.site-clicks {
+  font-size: 0.8rem;
+  color: var(--lava);
+  margin-left: 8px;
+}
+
 #bouton_plus a {
   text-decoration: underline;
   font-weight: bold;
@@ -412,13 +418,61 @@ footer a:hover {
 .recent-site-title:hover {
   color: var(--lava);
 }
-.recent-site-badge {
-  background: var(--vert-fougere);
-  color: #fff;
-  border-radius: 999px;
-  padding: 0.1rem 0.5rem;
-  font-size: 0.75rem;
-  white-space: nowrap;
+/* ===== SECTION TOP SITES ===== */
+
+.top-sites {
+  margin: 60px 0;
+  padding: 30px;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.06);
+}
+
+.top-sites h2 {
+  margin-bottom: 20px;
+  font-size: 1.6rem;
+  font-weight: 600;
+  color: var(--lava);
+}
+
+.top-sites ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.top-sites li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 18px;
+  margin-bottom: 12px;
+  border-radius: 12px;
+  background: #f9fafb;
+  transition: all 0.2s ease;
+}
+
+.top-sites li:hover {
+  background: #f1f5f9;
+  transform: translateY(-2px);
+}
+
+.top-sites a {
+  text-decoration: none;
+  color: #1f2937;
+  font-weight: 500;
+}
+
+.top-sites a:hover {
+  color: var(--lava);
+}
+
+.top-sites-category h2:hover {
+  color: var(--lava);
+}
+
+.top-sites-category {
+  order: -1; /* si tu veux l'afficher en premier en desktop */
 }
 
 .recent-site-meta {
@@ -444,6 +498,7 @@ footer a:hover {
   margin: 0.6rem 0 0;
   line-height: 1.5;
   color: var(--gris-texte);
+  display: inline;
 }
 
 .section-footer {
