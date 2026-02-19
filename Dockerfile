@@ -23,6 +23,7 @@ EXPOSE 8000
 
 #Utilise un user non-root (meilleure sécurité)
 RUN adduser --disabled-password --gecos '' appuser
+RUN chown -R appuser:appuser /app
 USER appuser 
 
 # Lance Gunicorn avec 1 worker en production
