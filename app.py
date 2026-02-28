@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from urllib import response
+
 from flask import (
     Flask,
     current_app,
@@ -245,9 +247,10 @@ def internal_server_error(e):
 @app.after_request
 def add_cache_headers(response):
     """Ajoute des headers de cache optimisés selon le type de contenu"""
-    if request.endpoint in ['static', 'service_worker']:
-        # Fichiers statiques : cache long
-        response.headers['Cache-Control'] = 'public, max-age=31536000'  # 1 an
+    if request.endpoint == 'service_worker':
+        response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    elif request.endpoint == 'static':
+        response.headers['Cache-Control'] = 'public, max-age=31536000'
     elif request.endpoint in ['accueil', 'voir_categorie']:
         # Pages dynamiques : cache court
         response.headers['Cache-Control'] = 'public, max-age=300'  # 5 minutes

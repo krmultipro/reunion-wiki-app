@@ -54,14 +54,14 @@
     />
     <link
       rel="manifest"
-      href="{{ url_for('static', filename='manifest.webmanifest') }}"
+      href="{{ url_for('static', filename='manifest.webmanifest') }}?v=10"
     />
     <meta name="theme-color" content="#009688" />
 
     <!-- CSS -->
     <link
       rel="stylesheet"
-      href="{{ url_for('static', filename='css/style.css') }}?v=9"
+      href="{{ url_for('static', filename='css/style.css') }}?v=10"
     />
 
     {% block head %}{% endblock %}
@@ -208,7 +208,7 @@
       // Enregistrement du Service Worker
       if ("serviceWorker" in navigator) {
         navigator.serviceWorker
-          .register("/service-worker.js")
+          .register("/service-worker.js?v=7")
           .then(() => console.log("Service Worker enregistré"))
           .catch((err) => console.error("Erreur Service Worker :", err));
       }
