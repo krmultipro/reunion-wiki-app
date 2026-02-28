@@ -169,50 +169,65 @@ _HAS_CATEGORIES_TABLE = False
 
 
 def init_db_schema(conn):
-    """Crée la table categories si nécessaire et la pré-remplit depuis sites."""
-    global _HAS_CATEGORIES_TABLE
-    if _HAS_CATEGORIES_TABLE:
-        return
+    """Initialise et migre le schéma de la base si nécessaire."""
+    cur = conn.cursor()
 
-    try:
-        cur = conn.cursor()
-        cur.execute(
-            """
-            CREATE TABLE IF NOT EXISTS categories (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                nom TEXT NOT NULL UNIQUE,
-                slug TEXT NOT NULL UNIQUE,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-            )
-            """
+    # ======================
+    # TABLE SITES (si inexistante)
+    # ======================
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS sites (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nom TEXT NOT NULL,
+            ville TEXT,
+            lien TEXT NOT NULL,
+            description TEXT,
+            categorie TEXT,
+            status TEXT DEFAULT 'en_attente',
+            date_ajout DATETIME,
+            en_vedette INTEGER DEFAULT 0,
+            click_count INTEGER DEFAULT 0
         )
-        conn.commit()
-        _HAS_CATEGORIES_TABLE = True
+    """)
 
-        # Pré-remplit avec les catégories existantes si la table est vide
-        cur.execute("SELECT COUNT(*) FROM categories")
-        existing_count = cur.fetchone()[0]
-        if existing_count == 0:
-            cur.execute(
-                "SELECT DISTINCT categorie FROM sites WHERE categorie IS NOT NULL AND TRIM(categorie) != ''"
-            )
-            rows = cur.fetchall()
-            for row in rows:
-                nom_cat = row[0]
-                if not nom_cat:
-                    continue
-                slug = slugify(nom_cat)
-                try:
-                    cur.execute(
-                        "INSERT OR IGNORE INTO categories (nom, slug) VALUES (?, ?)",
-                        (nom_cat, slug),
-                    )
-                except sqlite3.IntegrityError:
-                    continue
-            conn.commit()
-    except sqlite3.Error as e:
-        app.logger.warning(f"Impossible d'initialiser la table categories: {e}")
-        _HAS_CATEGORIES_TABLE = False
+    # ======================
+    # MIGRATION COLONNES SITES
+    # ======================
+    cur.execute("PRAGMA table_info(sites)")
+    columns = [col[1] for col in cur.fetchall()]
+
+    if "click_count" not in columns:
+        cur.execute("ALTER TABLE sites ADD COLUMN click_count INTEGER DEFAULT 0")
+
+    if "en_vedette" not in columns:
+        cur.execute("ALTER TABLE sites ADD COLUMN en_vedette INTEGER DEFAULT 0")
+
+    # ======================
+    # TABLE SITE_CLICKS
+    # ======================
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS site_clicks (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            site_id INTEGER NOT NULL,
+            ip_address TEXT NOT NULL,
+            user_agent TEXT,
+            clicked_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
+    # ======================
+    # TABLE CATEGORIES (ta logique)
+    # ======================
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS categories (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nom TEXT NOT NULL UNIQUE,
+            slug TEXT NOT NULL UNIQUE,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
+    conn.commit()
 
 # GESTION D'ERREURS : Pages d'erreur personnalisées
 @app.errorhandler(404)
