@@ -13,12 +13,13 @@ Wiki{% endblock %} {% block seo_description %}Résultats de recherche pour "{{ q
         target="_blank"
         rel="noopener noreferrer"
       >
-        {{ site['nom'] }}
+        <strong>{{ site['nom'] }}</strong>{% if site['ville'] %} - 📍 {{
+        site['ville'] }}{% endif %} ↗
       </a>
-      — {{ site['categorie'] }}
-      <br />
-      {{ site['description'][:140] }}...
+      :
+      <span>{{ site['description']|truncate(80, True, '...') }}</span>
     </li>
+
     {% endfor %}
   </ul>
   {% else %}
