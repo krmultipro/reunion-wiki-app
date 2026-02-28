@@ -90,13 +90,21 @@ endblock %} {% block content %}
         </li>
         {% endfor %}
       </ul>
+      <div class="section-footer">
+        <a href="/w" class="view-all-btn">
+          <span>Voir tous les sites les plus consultés</span>
+          <span class="btn-arrow">→</span>
+        </a>
+      </div>
     </div>
 
     <div class="recent-sites-section">
       <div class="section-header">
         <h2>
           <span class="section-icon">🆕</span>
-          <a href="/nouveaux-sites">Derniers sites ajoutés</a>
+          <a href="{{ url_for('recently_added_sites') }}"
+            >Derniers sites ajoutés</a
+          >
         </h2>
         <p class="section-subtitle">
           Les dernières découvertes de la communauté
@@ -138,7 +146,7 @@ endblock %} {% block content %}
       </div>
 
       <div class="section-footer">
-        <a href="/nouveaux-sites" class="view-all-btn">
+        <a href="{{ url_for('recently_added_sites') }}" class="view-all-btn">
           <span>Voir tous les nouveaux sites</span>
           <span class="btn-arrow">→</span>
         </a>

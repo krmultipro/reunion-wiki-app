@@ -1182,7 +1182,7 @@ def redirect_site(site_id):
 
 
 
-@app.route("/nouveaux-sites")
+@app.route("/sites-ajoutes-recemment")
 def recently_added_sites():
     conn = get_db_connection()
     if not conn:
@@ -1203,12 +1203,12 @@ def recently_added_sites():
 
 
 
-@app.route("/legal-notices")
+@app.route("/mentions-legales")
 def legal_notices():
     return render_template("legal-notices.html")
 
 
-@app.route("/most-visited-sites")
+@app.route("/sites-les-plus-visites")
 def most_visited_sites():
     conn = get_db_connection()
     if not conn:
@@ -1249,8 +1249,8 @@ def google_verification():
     return app.send_static_file('google87e16279463c4021.html')
 
 
-@app.route("/website-submission-form", methods=["GET", "POST"])
-@limiter.limit("5 per minute")  # SÉCURITÉ : Limite les soumissions de formulaire
+@app.route("/proposer-site", methods=["GET", "POST"])
+#@limiter.limit("5 per minute")  # SÉCURITÉ : Limite les soumissions de formulaire
 def website_submission_form():
     """SÉCURITÉ : Formulaire avec validation complète"""
     form = SiteForm()

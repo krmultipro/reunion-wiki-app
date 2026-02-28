@@ -145,6 +145,7 @@ h3 {
 .top-recent {
   display: flex;
   flex-direction: row;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-around;
   gap: 2rem;
@@ -166,7 +167,7 @@ footer a {
 footer a:hover {
   color: var(--lava);
 }
-.nouveaux-sites {
+.recently-added-sites {
   background-color: var(--blanc);
   border-radius: 0.5rem;
   padding: 1.1rem;

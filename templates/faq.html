@@ -81,7 +81,8 @@
     </summary>
     <div>
       Le délai peut varier (vérification manuelle + modération). Vous verrez les
-      ajouts validés ici : <a href="/nouveaux-sites">Nouveaux sites</a>.
+      ajouts validés ici :
+      <a href="{{ url_for('recently_added_sites') }}">Nouveaux sites</a>.
     </div>
   </details>
 
@@ -184,8 +185,9 @@
   <details>
     <summary>Comment suivre les nouveaux sites ajoutés ?</summary>
     <div>
-      Consultez <a href="/nouveaux-sites">Nouveaux sites</a>. Vous pouvez aussi
-      nous suivre sur les réseaux (voir le footer).
+      Consultez
+      <a href="{{ url_for('recently_added_sites') }}">Nouveaux sites</a>. Vous
+      pouvez aussi nous suivre sur les réseaux (voir le footer).
     </div>
   </details>
 
