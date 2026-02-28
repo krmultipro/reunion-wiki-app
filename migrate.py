@@ -1,9 +1,15 @@
 import sqlite3
 import os
+from flask import Flask
 from config import config
 
+# Recrée une mini app juste pour charger la config proprement
+app = Flask(__name__)
+
 env = os.getenv('FLASK_ENV', 'development')
-DATABASE_PATH = config.get(env, config['default'])['DATABASE_PATH']
+app.config.from_object(config.get(env, config['default']))
+
+DATABASE_PATH = app.config['DATABASE_PATH']
 
 print("📂 Vérification DB :", DATABASE_PATH)
 
@@ -34,12 +40,14 @@ cur = conn.cursor()
 
 for table, columns in EXPECTED_SCHEMA.items():
 
+    # Crée table si absente
     cur.execute(f"""
         CREATE TABLE IF NOT EXISTS {table} (
             {', '.join(f"{col} {defn}" for col, defn in columns.items())}
         )
     """)
 
+    # Vérifie colonnes existantes
     cur.execute(f"PRAGMA table_info({table})")
     existing_cols = [col[1] for col in cur.fetchall()]
 
