@@ -47,39 +47,7 @@ from werkzeug.security import check_password_hash
 
 app = Flask(__name__)
 
-def run_startup_migration():
-    """Exécute la migration au démarrage de l'application."""
-    try:
-        conn = sqlite3.connect(app.config['DATABASE_PATH'])
-        cur = conn.cursor()
 
-        # Ajout colonne click_count si absente
-        cur.execute("PRAGMA table_info(sites)")
-        columns = [col[1] for col in cur.fetchall()]
-        if "click_count" not in columns:
-            cur.execute("ALTER TABLE sites ADD COLUMN click_count INTEGER DEFAULT 0")
-
-        if "en_vedette" not in columns:
-            cur.execute("ALTER TABLE sites ADD COLUMN en_vedette INTEGER DEFAULT 0")
-
-        # Crée site_clicks si absente
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS site_clicks (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                site_id INTEGER NOT NULL,
-                ip_address TEXT NOT NULL,
-                user_agent TEXT,
-                clicked_at DATETIME DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-
-        conn.commit()
-        conn.close()
-
-        print("✅ Migration DB vérifiée au démarrage")
-
-    except Exception as e:
-        print("❌ Erreur migration startup:", e)
 
 # CONFIGURATION : Chargement selon l'environnement
 env = os.getenv('FLASK_ENV', 'development')
@@ -1306,7 +1274,7 @@ def google_verification():
 
 
 @app.route("/proposer-site", methods=["GET", "POST"])
-#@limiter.limit("5 per minute")  # SÉCURITÉ : Limite les soumissions de formulaire
+@limiter.limit("5 per minute")  # SÉCURITÉ : Limite les soumissions de formulaire
 def website_submission_form():
     """SÉCURITÉ : Formulaire avec validation complète"""
     form = SiteForm()
