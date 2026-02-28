@@ -83,6 +83,32 @@
       <div class="nav-scroll" data-scrollable>
         <!-- Liste des liens -->
         <ul class="nav-links" id="main-nav-links">
+          <li class="nav-search-item">
+            <form
+              action="{{ url_for('search') }}"
+              method="get"
+              class="nav-search-form"
+              role="search"
+            >
+              <button
+                type="submit"
+                class="nav-search-btn"
+                aria-label="Rechercher"
+              >
+                🔍
+              </button>
+              <input
+                id="nav-search-input"
+                name="q"
+                type="search"
+                class="nav-search-input"
+                placeholder="Rechercher un site ou une catégorie"
+                value="{{ request.args.get('q', '') }}"
+                autocomplete="off"
+              />
+            </form>
+          </li>
+
           <li>
             <a
               href="{{ url_for('accueil') }}"

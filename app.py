@@ -1260,6 +1260,45 @@ def month_name(date_value):
     return mois_fr[dt.month - 1]
 
 
+from flask import request, redirect, url_for, render_template
+
+@app.route("/recherche")
+def search():
+    q = (request.args.get("q") or "").strip()
+    if not q:
+        return redirect(url_for("accueil"))
+
+    conn = get_db_connection()
+    if not conn:
+        return render_template("500.html"), 500
+
+    cur = conn.cursor()
+    like = f"%{q}%"
+
+    cur.execute(
+        """
+        SELECT id, nom, lien, categorie, description, click_count, date_ajout
+        FROM sites
+        WHERE status = 'valide'
+          AND (
+            nom LIKE ?
+            OR categorie LIKE ?
+          )
+        ORDER BY
+          CASE WHEN nom LIKE ? THEN 0 ELSE 1 END,
+          click_count DESC,
+          date_ajout DESC
+        LIMIT 100
+        """,
+        (like, like, like),
+    )
+    sites = cur.fetchall()
+    conn.close()
+
+    return render_template("search-results.html", q=q, sites=sites)
+
+
+
 
 @app.route('/service-worker.js')
 def service_worker():
