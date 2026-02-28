@@ -1227,13 +1227,21 @@ def most_visited_sites():
 
 
 
+from datetime import datetime
+
 @app.template_filter('month_name')
 def month_name(date_value):
     if isinstance(date_value, str):
         dt = datetime.fromisoformat(date_value)
     else:
         dt = date_value
-    return dt.strftime("%b").upper()
+
+    mois_fr = [
+        "JAN", "FÉV", "MAR", "AVR", "MAI", "JUN",
+        "JUI", "AOÛ", "SEP", "OCT", "NOV", "DÉC"
+    ]
+
+    return mois_fr[dt.month - 1]
 
 
 

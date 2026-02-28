@@ -91,7 +91,7 @@ endblock %} {% block content %}
         {% endfor %}
       </ul>
       <div class="section-footer">
-        <a href="/w" class="view-all-btn">
+        <a href="{{ url_for('most_visited_sites') }}" class="view-all-btn">
           <span>Voir tous les sites les plus consultés</span>
           <span class="btn-arrow">→</span>
         </a>
@@ -123,7 +123,12 @@ endblock %} {% block content %}
             >
               {{ site['nom'] }}
             </a>
+
             <span class="recent-site-badge">Nouveau</span>
+            <span class="recent-site-date">
+              {{ site['date_ajout'][8:10] }} {{ site['date_ajout']|month_name }}
+              {{ site['date_ajout'][0:4] }}
+            </span>
           </div>
 
           <div class="recent-site-meta">
@@ -133,9 +138,6 @@ endblock %} {% block content %}
             >
               {{ site['categorie'] }}
             </a>
-            <span class="recent-site-date"
-              >{{ site['date_ajout']|format_date }}</span
-            >
           </div>
 
           <p class="recent-site-description">
