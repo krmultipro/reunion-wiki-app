@@ -163,7 +163,8 @@
               Proposer un site
             </a>
           </li>
-          <li><a href="{{ url_for('faq') }}">FAQ</a></li>
+          <li><a href="{{ url_for('faq') }}"  class="{{ 'active' if request.path == url_for('faq') else '' }}"               aria-current="{{ 'page' if request.path == url_for('faq') else '' }}"
+>FAQ</a></li>
 
           <li>
             <a
