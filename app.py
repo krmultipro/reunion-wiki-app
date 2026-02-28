@@ -1277,21 +1277,32 @@ def search():
 
     cur.execute(
         """
-        SELECT id, nom, lien, categorie, description, click_count, date_ajout
+        SELECT id, nom, lien, ville, categorie, description, click_count, date_ajout
         FROM sites
         WHERE status = 'valide'
           AND (
             nom LIKE ?
             OR categorie LIKE ?
+            OR description LIKE ?
+            OR ville LIKE ?
+            OR lien LIKE ?
           )
         ORDER BY
-          CASE WHEN nom LIKE ? THEN 0 ELSE 1 END,
+          CASE
+            WHEN nom LIKE ? THEN 0
+            WHEN categorie LIKE ? THEN 1
+            WHEN description LIKE ? THEN 2
+            WHEN ville LIKE ? THEN 3
+            WHEN lien LIKE ? THEN 4
+            ELSE 5
+          END,
           click_count DESC,
           date_ajout DESC
         LIMIT 100
         """,
-        (like, like, like),
+        (like, like, like, like, like, like, like, like, like, like),
     )
+
     sites = cur.fetchall()
     conn.close()
 
