@@ -1,0 +1,36 @@
+name: Feature Deploy Test
+
+on:
+  push:
+    branches:
+      - "feature/**"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # 🔹 Créer une variable safe (remplace / par -)
+      - name: Prepare safe branch name
+        run: echo "BRANCH_NAME=${GITHUB_REF_NAME//\//-}" >> $GITHUB_ENV
+
+      # 🔹 Build avec tag corrigé
+      - name: Build Docker image
+        run: docker build -t reunionwiki:${{ env.BRANCH_NAME }} .
+
+      # 🔹 Run container avec nom corrigé
+      - name: Run container
+        run: |
+          docker run -d \
+            --name reunionwiki_${{ env.BRANCH_NAME }} \
+            -p 8000:8000 \
+            reunionwiki:${{ env.BRANCH_NAME }}
+
+      # 🔹 Test
+      - name: Test container
+        run: |
+          sleep 5
+          curl -f http://localhost:8000

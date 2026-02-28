@@ -72,6 +72,11 @@
       <h1 class="site_title"><a href="/">Réunion Wiki</a></h1>
       {% block header_content %}{% endblock %}
     </header>
+    <p>
+      Bienvenue sur <strong>Réunion Wiki 🌴</strong><br />
+      Un répertoire <em>simple, rapide et local</em> pour accéder facilement aux
+      sites essentiels de La Réunion.
+    </p>
 
     <!-- Navigation principale -->
     <nav class="main-nav">
@@ -88,7 +93,7 @@
             </a>
           </li>
 
-          {% for cat in categories %} {% set slug = categories_slug[cat] %} {%
+          <!--{% for cat in categories %} {% set slug = categories_slug[cat] %} {%
           set cat_url = url_for('voir_categorie', slug=slug) %}
           <li>
             <a
@@ -99,25 +104,44 @@
               {{ cat }}
             </a>
           </li>
-          {% endfor %}
+          {% endfor %}-->
+          <li>
+            <a
+              href="{{ url_for('most_visited_sites') }}"
+              class="{{ 'active' if request.path == url_for('most_visited_sites') else '' }}"
+              aria-current="{{ 'page' if request.path == url_for('most_visited_sites') else '' }}"
+            >
+              Sites les plus visités
+            </a>
+          </li>
 
           <li>
             <a
-              href="{{ url_for('nouveaux_sites') }}"
-              class="{{ 'active' if request.path == url_for('nouveaux_sites') else '' }}"
-              aria-current="{{ 'page' if request.path == url_for('nouveaux_sites') else '' }}"
+              href="{{ url_for('recently_added_sites') }}"
+              class="{{ 'active' if request.path == url_for('recently_added_sites') else '' }}"
+              aria-current="{{ 'page' if request.path == url_for('recently_added_sites') else '' }}"
             >
               Derniers sites ajoutés
             </a>
           </li>
-          <li><a href="{{ url_for('faq') }}">FAQ</a></li>
           <li>
             <a
-              href="{{ url_for('formulaire') }}"
-              class="{{ 'active' if request.path == url_for('formulaire') else '' }}"
-              aria-current="{{ 'page' if request.path == url_for('formulaire') else '' }}"
+              href="{{ url_for('website_submission_form') }}"
+              class="{{ 'active' if request.path == url_for('website_submission_form') else '' }}"
+              aria-current="{{ 'page' if request.path == url_for('website_submission_form') else '' }}"
             >
               Proposer un site
+            </a>
+          </li>
+          <li><a href="{{ url_for('faq') }}">FAQ</a></li>
+
+          <li>
+            <a
+              href="{{ url_for('blog') }}"
+              class="{{ 'active' if request.path == url_for('blog') else '' }}"
+              aria-current="{{ 'page' if request.path == url_for('blog') else '' }}"
+            >
+              Blog
             </a>
           </li>
           <li>
@@ -150,7 +174,10 @@
       <p><strong>Réunion Wiki</strong> - Simplifions l'information locale.</p>
       <nav>
         <a href="{{ url_for('faq') }}">FAQ</a> |
-        <a href="/mentions-legales" target="_blank">Mentions légales</a> |
+        <a href="{{ url_for('legal_notices') }}" target="_blank"
+          >Mentions légales</a
+        >
+        |
         <a href="https://forms.gle/GScJkMiEZXVSted78" target="_blank"
           >Contact</a
         >

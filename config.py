@@ -10,13 +10,24 @@ from dotenv import load_dotenv
 # Chargement des variables d'environnement
 load_dotenv()
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 class Config:
+    print("Chargement de la configuration...")
     """Configuration de base"""
     SECRET_KEY = os.getenv('SECRET_KEY', 'dev-key-change-in-production')
-    DATABASE_PATH = os.getenv('DATABASE_PATH', '/app/data/base.db')
+    DATABASE_PATH = os.getenv('DATABASE_PATH')
     
-    if not DATABASE_PATH.startswith('/'):
-        DATABASE_PATH = os.path.join('/app', DATABASE_PATH)
+    print("DATABASE_PATH initial:", DATABASE_PATH)
+    
+    if not DATABASE_PATH:
+        # Si aucune variable => utilise site/data/base.db
+        DATABASE_PATH = os.path.join(BASE_DIR, 'data', 'base.db')
+    elif not os.path.isabs(DATABASE_PATH):
+        # Si chemin relatif => le rendre absolu depuis le projet
+        DATABASE_PATH = os.path.join(BASE_DIR, DATABASE_PATH)
+        
+    print("DATABASE_PATH final:", DATABASE_PATH)
     
     # NOTIFICATIONS : configuration email (désactivée par défaut)
     MAIL_ENABLED = os.getenv('MAIL_ENABLED', 'false').lower() == 'true'

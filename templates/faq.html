@@ -81,7 +81,8 @@
     </summary>
     <div>
       Le délai peut varier (vérification manuelle + modération). Vous verrez les
-      ajouts validés ici : <a href="/nouveaux-sites">Nouveaux sites</a>.
+      ajouts validés ici :
+      <a href="{{ url_for('recently_added_sites') }}">Nouveaux sites</a>.
     </div>
   </details>
 
@@ -89,7 +90,7 @@
     <summary>Puis-je modifier ou supprimer un site que j’ai proposé ?</summary>
     <div>
       Oui, via
-      <a href="https://forms.gle/GScJkMiEZXVSted78" target="_blank">contact</a>
+      <a href="https://forms.gle/GScJkMiEZXVSted78">contact</a>
       (indiquez l’URL et la modification souhaitée). Nous vérifierons puis
       mettrons à jour.
     </div>
@@ -184,8 +185,9 @@
   <details>
     <summary>Comment suivre les nouveaux sites ajoutés ?</summary>
     <div>
-      Consultez <a href="/nouveaux-sites">Nouveaux sites</a>. Vous pouvez aussi
-      nous suivre sur les réseaux (voir le footer).
+      Consultez
+      <a href="{{ url_for('recently_added_sites') }}">Nouveaux sites</a>. Vous
+      pouvez aussi nous suivre sur les réseaux (voir le footer).
     </div>
   </details>
 
@@ -201,7 +203,7 @@
     <summary>Comment signaler un lien mort ou un problème ?</summary>
     <div>
       Passez par
-      <a href="https://forms.gle/GScJkMiEZXVSted78" target="_blank">contact</a>
+      <a href="https://forms.gle/GScJkMiEZXVSted78">contact</a>
       avec l’URL concernée et une brève description du souci.
     </div>
   </details>

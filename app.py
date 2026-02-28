@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from flask import (
     Flask,
+    current_app,
     render_template,
     make_response,
     send_from_directory,
@@ -13,6 +14,13 @@ from flask import (
     has_request_context,
     abort,
 )
+from dotenv import load_dotenv
+import locale
+locale.setlocale(locale.LC_TIME, "fr_FR.UTF-8")
+from datetime import datetime
+
+
+
 from datetime import datetime
 import sqlite3
 import os
@@ -44,10 +52,7 @@ app = Flask(__name__)
 env = os.getenv('FLASK_ENV', 'development')
 app.config.from_object(config.get(env, config['default']))
 
-# Configuration de la base de données
-DATABASE_PATH = os.getenv('DATABASE_PATH')
-if not DATABASE_PATH or not DATABASE_PATH.startswith('/'):
-    DATABASE_PATH = '/app/data/base.db'
+
 
 # SÉCURITÉ : Rate limiting pour éviter le spam avec Redis
 limiter = Limiter(
@@ -62,13 +67,20 @@ limiter.init_app(app)
 def get_db_connection():
     """Retourne une connexion sécurisée à la base de données"""
     try:
-        conn = sqlite3.connect(DATABASE_PATH)
+     
+
+        conn = sqlite3.connect(app.config['DATABASE_PATH'])
         conn.row_factory = sqlite3.Row
+
+
         init_db_schema(conn)
+
         return conn
-    except sqlite3.Error as e:
-        app.logger.error(f"Erreur de connexion à la base de données: {e}")
-        return None
+
+    except Exception as e:
+        print("ERREUR COMPLETE :", e)
+        raise  # important pour voir la vraie erreur
+
 
 
 def send_submission_notification(payload):
@@ -223,7 +235,7 @@ def add_cache_headers(response):
     elif request.endpoint in ['accueil', 'voir_categorie']:
         # Pages dynamiques : cache court
         response.headers['Cache-Control'] = 'public, max-age=300'  # 5 minutes
-    elif request.endpoint == 'formulaire':
+    elif request.endpoint == 'website_submission_form':
         # Formulaires : pas de cache
         response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
     
@@ -243,6 +255,10 @@ def add_cache_headers(response):
 def faq():
     return render_template("faq.html")
 
+
+@app.route("/blog")
+def blog():
+    return render_template("blog.html")
 
 
 def format_date(value, fmt="%d/%m/%Y"):
@@ -322,7 +338,7 @@ def get_derniers_sites_global(limit=3):
         cur = conn.cursor()
         # Récupère les derniers sites ajoutés par date d'ajout pour la page index
         cur.execute("""
-            SELECT nom, lien, categorie, description, date_ajout
+            SELECT id, nom, lien, categorie, description, date_ajout
             FROM sites
             WHERE status = 'valide'
             ORDER BY date_ajout DESC
@@ -332,6 +348,28 @@ def get_derniers_sites_global(limit=3):
         return cur.fetchall()
     except sqlite3.Error as e:
         app.logger.error(f"Erreur lors de la récupération des derniers sites: {e}")
+        return []
+    finally:
+        conn.close()
+
+
+def get_top_sites(limit=5):
+    conn = get_db_connection()
+    if not conn:
+        return []
+
+    try:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT id, nom, lien, categorie, description, click_count
+            FROM sites
+            WHERE status = 'valide'
+            ORDER BY click_count DESC
+            LIMIT ?
+        """, (limit,))
+        return cur.fetchall()
+    except sqlite3.Error as e:
+        app.logger.error(f"Erreur top sites: {e}")
         return []
     finally:
         conn.close()
@@ -1002,11 +1040,12 @@ def admin_create_site():
 def accueil():
     data = get_sites_en_vedette()
     derniers_sites = get_derniers_sites_global(3)
+    top_sites = get_top_sites(5)
     # Prépare un formulaire inline (mêmes règles que le formulaire complet)
     form_inline = SiteForm()
     form_inline.categorie.choices = [(cat, cat) for cat in get_categories()]
     form_inline.categorie.choices.insert(0, ('', 'Sélectionnez une catégorie'))
-    return render_template("index.html", data=data, derniers_sites=derniers_sites, form_inline=form_inline)
+    return render_template("index.html", data=data, derniers_sites=derniers_sites, top_sites=top_sites, form_inline=form_inline)
 
 
 @app.route("/categorie/<slug>")
@@ -1065,15 +1104,93 @@ def voir_categorie(slug):
     )
 
 
-@app.route("/nouveaux-sites")
-def nouveaux_sites():
+@app.route("/go/<int:site_id>")
+def redirect_site(site_id):
+    app.logger.info(f"[GO] Tentative de redirection pour site_id={site_id}")
+
+    conn = get_db_connection()
+    if not conn:
+        app.logger.error("[GO] Connexion DB impossible")
+        abort(500)
+
+    try:
+        cur = conn.cursor()
+
+        # Vérifie que le site existe
+        cur.execute(
+            "SELECT lien, click_count FROM sites WHERE id = ? AND status = 'valide'",
+            (site_id,)
+        )
+        row = cur.fetchone()
+
+        if not row:
+            app.logger.warning(f"[GO] Site introuvable ou non valide id={site_id}")
+            abort(404)
+
+        app.logger.info(
+            f"[GO] Site trouvé id={site_id} | ancien compteur={row['click_count']} | url={row['lien']}"
+        )
+        
+        ip = request.headers.get("X-Forwarded-For", request.remote_addr)
+        user_agent = request.headers.get("User-Agent", "")
+        
+        # Anti-bot simple
+        ua_lower = user_agent.lower()
+        if "bot" in ua_lower or "crawl" in ua_lower or "spider" in ua_lower:
+            app.logger.info(f"[GO] Bot détecté, clic ignoré id={site_id} ua={user_agent}")
+            return redirect(row["lien"])
+
+
+        # Vérifie si cette IP a cliqué ce site dans les 30 dernières minutes
+        cur.execute("""
+            SELECT id FROM site_clicks
+            WHERE site_id = ?
+            AND ip_address = ?
+            AND clicked_at >= datetime('now', '-30 minutes')
+        """, (site_id, ip))
+
+        recent_click = cur.fetchone()
+
+        if not recent_click:
+            # Incrémente compteur
+            cur.execute(
+                "UPDATE sites SET click_count = click_count + 1 WHERE id = ?",
+                (site_id,)
+            )
+
+            # Log clic
+            cur.execute("""
+                INSERT INTO site_clicks (site_id, ip_address, user_agent)
+                VALUES (?, ?, ?)
+            """, (site_id, ip, user_agent))
+
+            conn.commit()
+
+            app.logger.info(f"[GO] Clic validé id={site_id} ip={ip}")
+        else:
+            app.logger.info(f"[GO] Clic ignoré (trop récent) id={site_id} ip={ip}")
+
+        return redirect(row["lien"])
+
+    except sqlite3.Error as e:
+        app.logger.error(f"[GO] Erreur SQLite site_id={site_id} | {e}")
+        abort(500)
+
+    finally:
+        conn.close()
+        app.logger.info(f"[GO] Connexion DB fermée pour site_id={site_id}")
+
+
+
+@app.route("/sites-ajoutes-recemment")
+def recently_added_sites():
     conn = get_db_connection()
     if not conn:
         return render_template("500.html"), 500
     cur = conn.cursor()
 #recupere tous les sites par ordre descroissant d'ajout
     cur.execute("""
-        SELECT nom, lien, categorie, description, date_ajout
+        SELECT id, nom, lien, categorie, description, date_ajout
         FROM sites
         WHERE status = 'valide'
         ORDER BY date_ajout DESC
@@ -1082,13 +1199,51 @@ def nouveaux_sites():
     sites = cur.fetchall()
     conn.close()
 
-    return render_template("nouveaux_sites.html", sites=sites)
+    return render_template("recently-added-sites.html", sites=sites)
 
 
 
 @app.route("/mentions-legales")
-def mentions_legales():
-    return render_template("mentions_legales.html")
+def legal_notices():
+    return render_template("legal-notices.html")
+
+
+@app.route("/sites-les-plus-visites")
+def most_visited_sites():
+    conn = get_db_connection()
+    if not conn:
+        return render_template("500.html"), 500
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT id, nom, lien, categorie, description, click_count
+        FROM sites
+        WHERE status = 'valide'
+        ORDER BY click_count DESC
+    """)
+    sites = cur.fetchall()
+    conn.close()
+
+    return render_template("most-visited-sites.html", sites=sites)
+
+
+
+from datetime import datetime
+
+@app.template_filter('month_name')
+def month_name(date_value):
+    if isinstance(date_value, str):
+        dt = datetime.fromisoformat(date_value)
+    else:
+        dt = date_value
+
+    mois_fr = [
+        "JAN", "FÉV", "MAR", "AVR", "MAI", "JUN",
+        "JUI", "AOÛ", "SEP", "OCT", "NOV", "DÉC"
+    ]
+
+    return mois_fr[dt.month - 1]
+
+
 
 @app.route('/service-worker.js')
 def service_worker():
@@ -1102,9 +1257,9 @@ def google_verification():
     return app.send_static_file('google87e16279463c4021.html')
 
 
-@app.route("/formulaire", methods=["GET", "POST"])
-@limiter.limit("5 per minute")  # SÉCURITÉ : Limite les soumissions de formulaire
-def formulaire():
+@app.route("/proposer-site", methods=["GET", "POST"])
+#@limiter.limit("5 per minute")  # SÉCURITÉ : Limite les soumissions de formulaire
+def website_submission_form():
     """SÉCURITÉ : Formulaire avec validation complète"""
     form = SiteForm()
     
@@ -1121,7 +1276,7 @@ def formulaire():
 
         if categorie not in get_categories():
             flash("Catégorie non valide.", "error")
-            return render_template("formulaire.html", form=form)
+            return render_template("website-submission-form.html", form=form)
 
         conn = get_db_connection()
         if not conn:
@@ -1162,8 +1317,8 @@ def formulaire():
         finally:
             conn.close()
     
-    # Si GET ou formulaire invalide → affiche le formulaire avec erreurs
-    return render_template("formulaire.html", form=form)
+    # Si GET ou website-submission-form invalide → affiche le formulaire avec erreurs
+    return render_template("website-submission-form.html", form=form)
 #decorateur, injecte automatiquement variable dans tous les templates Jinja2
 
 
