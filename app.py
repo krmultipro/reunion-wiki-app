@@ -1273,7 +1273,12 @@ def search():
         return render_template("500.html"), 500
 
     cur = conn.cursor()
+
     like = f"%{q}%"
+
+    # Normalisation "saint-denis" <-> "saint denis"
+    q_city = " ".join(q.lower().replace("-", " ").split())
+    like_city = f"%{q_city}%"
 
     cur.execute(
         """
@@ -1284,15 +1289,16 @@ def search():
             nom LIKE ?
             OR categorie LIKE ?
             OR description LIKE ?
-            OR ville LIKE ?
             OR lien LIKE ?
+            OR ville LIKE ?
+            OR LOWER(REPLACE(COALESCE(ville, ''), '-', ' ')) LIKE ?
           )
         ORDER BY
           CASE
             WHEN nom LIKE ? THEN 0
             WHEN categorie LIKE ? THEN 1
             WHEN description LIKE ? THEN 2
-            WHEN ville LIKE ? THEN 3
+            WHEN ville LIKE ? OR LOWER(REPLACE(COALESCE(ville, ''), '-', ' ')) LIKE ? THEN 3
             WHEN lien LIKE ? THEN 4
             ELSE 5
           END,
@@ -1300,13 +1306,17 @@ def search():
           date_ajout DESC
         LIMIT 100
         """,
-        (like, like, like, like, like, like, like, like, like, like),
+        (
+            like, like, like, like, like, like_city,
+            like, like, like, like, like_city, like
+        ),
     )
 
     sites = cur.fetchall()
     conn.close()
 
     return render_template("search-results.html", q=q, sites=sites)
+
 
 
 
