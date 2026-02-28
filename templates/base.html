@@ -113,6 +113,37 @@
               Sites les plus visités
             </a>
           </li>
+          <li>
+  <a
+    href="{{ url_for('trends') }}"
+    class="{{ 'active' if request.path == url_for('trends') else '' }}"
+    aria-current="{{ 'page' if request.path == url_for('trends') else '' }}"
+  >
+    Tendances
+  </a>
+</li>
+
+<li>
+  <a
+    href="{{ url_for('most_visited_categories') }}"
+    class="{{ 'active' if request.path == url_for('most_visited_categories') else '' }}"
+    aria-current="{{ 'page' if request.path == url_for('most_visited_categories') else '' }}"
+  >
+    Catégories les plus visitées
+  </a>
+</li>
+<!--<li>
+  <a
+    href="{{ url_for('villes_index') }}"
+    class="{{ 'active' if request.path == url_for('villes_index') else '' }}"
+    aria-current="{{ 'page' if request.path == url_for('villes_index') else '' }}"
+  >
+    Villes
+  </a>
+</li>
+-->
+
+
 
           <li>
             <a

@@ -315,34 +315,51 @@ app.jinja_env.filters["format_date"] = format_date
 
 # SÉCURITÉ : Récupère les sites pré-sélectionnés avec gestion d'erreurs
 def get_sites_en_vedette():
-    """Récupère les sites en vedette par catégorie"""
+    """Récupère les catégories triées par clics + sites en vedette triés par clics."""
     conn = get_db_connection()
     if not conn:
-        return {}
-    
+        return {}, {}
+
     try:
         cur = conn.cursor()
 
-        # Récupère les différentes catégories dont au moins un site a le statut valide
+        # Catégories triées par popularité (somme des clics)
         cur.execute(
             """
-                SELECT DISTINCT categorie
-                FROM sites
-                WHERE status = 'valide'
+            SELECT
+                categorie,
+                COUNT(*) AS site_count,
+                COALESCE(SUM(click_count), 0) AS total_clicks
+            FROM sites
+            WHERE status = 'valide'
+              AND categorie IS NOT NULL
+              AND TRIM(categorie) != ''
+            GROUP BY categorie
+            ORDER BY total_clicks DESC, site_count DESC, categorie COLLATE NOCASE ASC
             """
         )
-        categories = [row["categorie"] for row in cur.fetchall() if row["categorie"]]
-        if has_request_context():
-            g._categories_cache = categories
-        data = {cat: [] for cat in categories}
+        cat_rows = cur.fetchall()
 
-        # Récupère les sites en vedette en une seule requête
+        data = {row["categorie"]: [] for row in cat_rows}
+        category_stats = {
+            row["categorie"]: {
+                "site_count": row["site_count"],
+                "total_clicks": row["total_clicks"],
+            }
+            for row in cat_rows
+        }
+
+        # Sites en vedette: triés d'abord par clics
         cur.execute(
             """
-                SELECT *
-                FROM sites
-                WHERE status = 'valide' AND en_vedette = 1
-                ORDER BY categorie ASC, date_ajout DESC
+            SELECT
+                s.*,
+                v.nom AS ville_nom,
+                v.slug AS ville_slug
+            FROM sites s
+            LEFT JOIN villes v ON v.id = s.ville_id
+            WHERE s.status = 'valide' AND s.en_vedette = 1
+            ORDER BY s.categorie ASC, s.click_count DESC, s.date_ajout DESC
             """
         )
 
@@ -351,10 +368,11 @@ def get_sites_en_vedette():
             if cat in data and len(data[cat]) < 3:
                 data[cat].append(site)
 
-        return data
+        return data, category_stats
+
     except sqlite3.Error as e:
         app.logger.error(f"Erreur lors de la récupération des sites en vedette: {e}")
-        return {}
+        return {}, {}
     finally:
         conn.close()
 
@@ -384,6 +402,7 @@ def get_derniers_sites_global(limit=3):
         conn.close()
 
 
+
 def get_top_sites(limit=5):
     conn = get_db_connection()
     if not conn:
@@ -404,6 +423,8 @@ def get_top_sites(limit=5):
         return []
     finally:
         conn.close()
+
+
 
 
 # SÉCURITÉ : Récupère les catégories avec gestion d'erreurs
@@ -1069,14 +1090,21 @@ def admin_create_site():
 
 @app.route("/")
 def accueil():
-    data = get_sites_en_vedette()
+    data, category_stats = get_sites_en_vedette()
     derniers_sites = get_derniers_sites_global(3)
     top_sites = get_top_sites(5)
-    # Prépare un formulaire inline (mêmes règles que le formulaire complet)
     form_inline = SiteForm()
     form_inline.categorie.choices = [(cat, cat) for cat in get_categories()]
     form_inline.categorie.choices.insert(0, ('', 'Sélectionnez une catégorie'))
-    return render_template("index.html", data=data, derniers_sites=derniers_sites, top_sites=top_sites, form_inline=form_inline)
+    return render_template(
+        "index.html",
+        data=data,
+        category_stats=category_stats,
+        derniers_sites=derniers_sites,
+        top_sites=top_sites,
+        form_inline=form_inline
+    )
+
 
 
 @app.route("/categorie/<slug>")
@@ -1457,6 +1485,246 @@ def get_categories_slug():
     if has_request_context():
         g._categories_slug_cache = categories_slug
     return categories_slug
+
+
+
+
+def slugify_ville(nom: str) -> str:
+    s = (nom or "").strip().lower()
+    repl = {
+        "à":"a","â":"a","ä":"a","é":"e","è":"e","ê":"e","ë":"e",
+        "î":"i","ï":"i","ô":"o","ö":"o","ù":"u","û":"u","ü":"u","ç":"c"
+    }
+    for k, v in repl.items():
+        s = s.replace(k, v)
+    for ch in ["'", "’", ".", ","]:
+        s = s.replace(ch, "")
+    s = "-".join(s.split())
+    return s
+
+@app.route("/villes")
+def villes_index():
+    conn = get_db_connection()
+    if not conn:
+        return render_template("500.html"), 500
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT
+          v.id,
+          v.nom,
+          v.slug,
+          COUNT(s.id) AS nb_sites,
+          COALESCE(SUM(s.click_count), 0) AS total_clicks
+        FROM villes v
+        LEFT JOIN sites s
+          ON s.ville_id = v.id
+         AND s.status = 'valide'
+        GROUP BY v.id, v.nom, v.slug
+ORDER BY total_clicks DESC, nb_sites DESC, v.nom COLLATE NOCASE ASC
+
+    """)
+    villes = cur.fetchall()
+    conn.close()
+
+    return render_template("cities.html", villes=villes)
+
+
+@app.route("/ville/<slug>")
+def voir_ville(slug):
+    conn = get_db_connection()
+    if not conn:
+        return render_template("500.html"), 500
+    cur = conn.cursor()
+
+    cur.execute("SELECT id, nom, slug FROM villes WHERE slug = ?", (slug,))
+    ville = cur.fetchone()
+    if not ville:
+        conn.close()
+        return render_template("404.html"), 404
+
+    cur.execute("""
+        SELECT s.*
+        FROM sites s
+        WHERE s.status = 'valide' AND s.ville_id = ?
+        ORDER BY s.en_vedette DESC, s.date_ajout DESC
+    """, (ville["id"],))
+    sites = cur.fetchall()
+
+    cur.execute("""
+        SELECT COALESCE(SUM(click_count), 0) AS total_clicks
+        FROM sites
+        WHERE status = 'valide' AND ville_id = ?
+    """, (ville["id"],))
+    total_clicks = cur.fetchone()["total_clicks"]
+
+    conn.close()
+    return render_template("city.html", ville=ville, sites=sites, total_clicks=total_clicks)
+
+
+
+@app.route("/categories-les-plus-visitees")
+def most_visited_categories():
+    conn = get_db_connection()
+    if not conn:
+        return render_template("500.html"), 500
+
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            """
+            SELECT
+                categorie,
+                COUNT(*) AS site_count,
+                COALESCE(SUM(click_count), 0) AS total_clicks
+            FROM sites
+            WHERE status = 'valide'
+              AND categorie IS NOT NULL
+              AND TRIM(categorie) != ''
+            GROUP BY categorie
+            ORDER BY total_clicks DESC, site_count DESC, categorie COLLATE NOCASE ASC
+            """
+        )
+        categories_rank = cur.fetchall()
+        return render_template("most-visited-categories.html", categories_rank=categories_rank)
+    finally:
+        conn.close()
+
+@app.route("/tendances")
+def trends():
+    conn = get_db_connection()
+    if not conn:
+        return render_template("500.html"), 500
+
+    try:
+        cur = conn.cursor()
+
+        # Top en ce moment (7 jours) + variation vs 7 jours précédents
+        cur.execute(
+            """
+            WITH clicks_7 AS (
+                SELECT site_id, COUNT(*) AS c7
+                FROM site_clicks
+                WHERE clicked_at >= datetime('now', '-7 days')
+                GROUP BY site_id
+            ),
+            clicks_prev7 AS (
+                SELECT site_id, COUNT(*) AS cprev
+                FROM site_clicks
+                WHERE clicked_at >= datetime('now', '-14 days')
+                  AND clicked_at < datetime('now', '-7 days')
+                GROUP BY site_id
+            )
+            SELECT
+                s.id,
+                s.nom,
+                s.categorie,
+                COALESCE(c7.c7, 0) AS clicks_7d,
+                COALESCE(cp.cprev, 0) AS clicks_prev_7d,
+                CASE
+                    WHEN COALESCE(cp.cprev, 0) = 0 THEN NULL
+                    ELSE ROUND((COALESCE(c7.c7, 0) - cp.cprev) * 100.0 / cp.cprev, 1)
+                END AS growth_pct
+            FROM sites s
+            LEFT JOIN clicks_7 c7 ON c7.site_id = s.id
+            LEFT JOIN clicks_prev7 cp ON cp.site_id = s.id
+            WHERE s.status = 'valide'
+            ORDER BY clicks_7d DESC, growth_pct DESC
+            LIMIT 10
+            """
+        )
+        trending_sites = cur.fetchall()
+
+        # Top stable (30 jours)
+        cur.execute(
+            """
+            SELECT
+                s.id,
+                s.nom,
+                s.categorie,
+                COUNT(sc.id) AS clicks_30d
+            FROM sites s
+            LEFT JOIN site_clicks sc
+              ON sc.site_id = s.id
+             AND sc.clicked_at >= datetime('now', '-30 days')
+            WHERE s.status = 'valide'
+            GROUP BY s.id, s.nom, s.categorie
+            ORDER BY clicks_30d DESC
+            LIMIT 10
+            """
+        )
+        stable_sites = cur.fetchall()
+
+        # Catégories en hausse (7j vs 7j précédents)
+        cur.execute(
+            """
+            WITH c7 AS (
+                SELECT s.categorie, COUNT(sc.id) AS clicks_7d
+                FROM sites s
+                LEFT JOIN site_clicks sc
+                  ON sc.site_id = s.id
+                 AND sc.clicked_at >= datetime('now', '-7 days')
+                WHERE s.status = 'valide'
+                GROUP BY s.categorie
+            ),
+            cp AS (
+                SELECT s.categorie, COUNT(sc.id) AS clicks_prev_7d
+                FROM sites s
+                LEFT JOIN site_clicks sc
+                  ON sc.site_id = s.id
+                 AND sc.clicked_at >= datetime('now', '-14 days')
+                 AND sc.clicked_at < datetime('now', '-7 days')
+                WHERE s.status = 'valide'
+                GROUP BY s.categorie
+            )
+            SELECT
+                c7.categorie,
+                COALESCE(c7.clicks_7d, 0) AS clicks_7d,
+                COALESCE(cp.clicks_prev_7d, 0) AS clicks_prev_7d,
+                CASE
+                    WHEN COALESCE(cp.clicks_prev_7d, 0) = 0 THEN NULL
+                    ELSE ROUND((COALESCE(c7.clicks_7d, 0) - cp.clicks_prev_7d) * 100.0 / cp.clicks_prev_7d, 1)
+                END AS growth_pct
+            FROM c7
+            LEFT JOIN cp ON cp.categorie = c7.categorie
+            WHERE c7.categorie IS NOT NULL AND TRIM(c7.categorie) != ''
+            ORDER BY clicks_7d DESC, growth_pct DESC
+            LIMIT 10
+            """
+        )
+        trending_categories = cur.fetchall()
+
+        # Nouveaux sites qui performent (ajoutés récemment + clics 7j)
+        cur.execute(
+            """
+            SELECT
+                s.id,
+                s.nom,
+                s.categorie,
+                COUNT(sc.id) AS clicks_7d
+            FROM sites s
+            LEFT JOIN site_clicks sc
+              ON sc.site_id = s.id
+             AND sc.clicked_at >= datetime('now', '-7 days')
+            WHERE s.status = 'valide'
+              AND s.date_ajout >= datetime('now', '-30 days')
+            GROUP BY s.id, s.nom, s.categorie
+            ORDER BY clicks_7d DESC
+            LIMIT 10
+            """
+        )
+        new_performers = cur.fetchall()
+
+        return render_template(
+            "trends.html",
+            trending_sites=trending_sites,
+            stable_sites=stable_sites,
+            trending_categories=trending_categories,
+            new_performers=new_performers,
+        )
+    finally:
+        conn.close()
+
 
 if __name__ == "__main__":
     app.run(debug=True)

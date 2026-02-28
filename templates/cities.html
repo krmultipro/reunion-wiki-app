@@ -1,0 +1,37 @@
+{% extends "base.html" %} {% block seo_title %}Villes de La Réunion - Réunion
+Wiki{% endblock %} {% block seo_description %}Explore les villes de La Réunion
+et découvre les sites utiles les plus consultés pour chaque commune.{% endblock
+%} {% block content %}
+<div class="category_page ranking_page">
+  <h2>🏙️ Villes de La Réunion</h2>
+
+  <ul>
+    {% for v in villes %}
+    <li class="ranking-item">
+      <div class="ranking-top-line">
+        <span class="ranking-badge">
+          {% if loop.index == 1 %}🥇 {% elif loop.index == 2 %}🥈 {% elif
+          loop.index == 3 %}🥉 {% else %}#{{ loop.index }} {% endif %}
+        </span>
+
+        <a
+          href="{{ url_for('voir_ville', slug=v['slug']) }}"
+          class="ranking-title"
+        >
+          {{ v['nom'] }}
+        </a>
+      </div>
+
+      <div class="ranking-stats">
+        {{ v['total_clicks'] }} clic{{ '' if v['total_clicks'] == 1 else 's' }}
+        • {{ v['nb_sites'] }} site{{ '' if v['nb_sites'] == 1 else 's' }}
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+
+  <div id="bouton_plus">
+    <a href="{{ url_for('accueil') }}">← Retour à l'accueil</a>
+  </div>
+</div>
+{% endblock %}

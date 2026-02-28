@@ -1,36 +1,33 @@
-{% extends "base.html" %}
-
-{% block seo_title %}Erreur serveur - Réunion Wiki{% endblock %}
-{% block seo_description %}Une erreur technique s'est produite sur Réunion Wiki. Nous travaillons à la résoudre.{% endblock %}
-
-{% block content %}
+{% extends "base.html" %} {% block seo_title %}Erreur serveur - Réunion Wiki{%
+endblock %} {% block seo_description %}Une erreur technique s'est produite sur
+Réunion Wiki. Je travaille à la résoudre.{% endblock %} {% block content %}
 <div class="error-page">
-    <h1>🔧 Erreur technique</h1>
-    <p>Désolé, une erreur technique s'est produite sur notre serveur.</p>
-    <p>Nous avons été notifiés et travaillons à résoudre le problème.</p>
-    
-    <div id="bouton_plus">
-        <a href="/">← Retour à l'accueil</a>
-    </div>
+  <h1>🔧 Erreur technique</h1>
+  <p>Désolé, une erreur technique s'est produite sur notre serveur.</p>
+  <p>J'ai été notifiés et travaille à résoudre le problème.</p>
+
+  <div id="bouton_plus">
+    <a href="/">← Retour à l'accueil</a>
+  </div>
 </div>
 
 <style>
-.error-page {
+  .error-page {
     text-align: center;
     padding: 2rem;
     max-width: 600px;
     margin: 0 auto;
-}
+  }
 
-.error-page h1 {
+  .error-page h1 {
     color: var(--lava);
     font-size: 2rem;
     margin-bottom: 1rem;
-}
+  }
 
-.error-page p {
+  .error-page p {
     margin-bottom: 1rem;
     line-height: 1.6;
-}
+  }
 </style>
 {% endblock %}

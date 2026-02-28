@@ -1,0 +1,120 @@
+{% extends "base.html" %} {% block seo_title %}Ce qui marche en ce moment -
+Réunion Wiki{% endblock %} {% block seo_description %}Découvrez les sites et
+catégories les plus consultés à La Réunion : tendances de la semaine, valeurs
+sûres du mois et nouveaux sites populaires.{% endblock %} {% block content %}
+<div class="category_page ranking_page">
+  <h2>📈 Ce qui marche en ce moment</h2>
+  <p class="intro">
+    Cette page montre les sites et catégories les plus consultés sur Réunion
+    Wiki. Les chiffres sont mis à jour automatiquement.
+  </p>
+
+  <h3>🔥 Les plus consultés cette semaine</h3>
+  <p class="intro">Les sites les plus regardés ces 7 derniers jours.</p>
+  <ul>
+    {% for site in trending_sites %}
+    <li class="ranking-item">
+      <div class="ranking-top-line">
+        <span class="ranking-badge">
+          {% if loop.index == 1 %}🥇 {% elif loop.index == 2 %}🥈 {% elif
+          loop.index == 3 %}🥉 {% else %}#{{ loop.index }} {% endif %}
+        </span>
+        <a
+          href="{{ url_for('redirect_site', site_id=site['id']) }}"
+          class="ranking-title"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {{ site['nom'] }}
+        </a>
+      </div>
+      <div class="ranking-stats">
+        {{ site['clicks_7d'] }} visite{{ '' if site['clicks_7d'] == 1 else 's'
+        }} cette semaine {% if site['growth_pct'] is not none %} • {% if
+        site['growth_pct'] > 0 %}en hausse de {{ site['growth_pct'] }}% {% elif
+        site['growth_pct'] < 0 %}en baisse de {{ (site['growth_pct']|abs) }}% {%
+        else %}stable {% endif %} {% endif %}
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+
+  <h3>✅ Les valeurs sûres du mois</h3>
+  <p class="intro">
+    Les sites les plus utiles et les plus réguliers sur les 30 derniers jours.
+  </p>
+  <ul>
+    {% for site in stable_sites %}
+    <li class="ranking-item">
+      <div class="ranking-top-line">
+        <a
+          href="{{ url_for('redirect_site', site_id=site['id']) }}"
+          class="ranking-title"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {{ site['nom'] }}
+        </a>
+      </div>
+      <div class="ranking-stats">
+        {{ site['clicks_30d'] }} visite{{ '' if site['clicks_30d'] == 1 else 's'
+        }} ce mois-ci
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+
+  <h3>⬆️ Les catégories qui montent</h3>
+  <p class="intro">Les thèmes qui attirent le plus de monde en ce moment.</p>
+  <ul>
+    {% for cat in trending_categories %}
+    <li class="ranking-item">
+      <div class="ranking-top-line">
+        <a
+          href="/categorie/{{ categories_slug[cat['categorie']] }}"
+          class="ranking-title"
+        >
+          {{ cat['categorie'] }}
+        </a>
+      </div>
+      <div class="ranking-stats">
+        {{ cat['clicks_7d'] }} visite{{ '' if cat['clicks_7d'] == 1 else 's' }}
+        cette semaine {% if cat['growth_pct'] is not none %} • {% if
+        cat['growth_pct'] > 0 %}en hausse de {{ cat['growth_pct'] }}% {% elif
+        cat['growth_pct'] < 0 %}en baisse de {{ (cat['growth_pct']|abs) }}% {%
+        else %}stable {% endif %} {% endif %}
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+
+  <h3>🆕 Nouveaux sites qui plaisent déjà</h3>
+  <p class="intro">
+    Les nouveaux sites ajoutés récemment et déjà bien consultés.
+  </p>
+  <ul>
+    {% for site in new_performers %}
+    <li class="ranking-item">
+      <div class="ranking-top-line">
+        <a
+          href="{{ url_for('redirect_site', site_id=site['id']) }}"
+          class="ranking-title"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {{ site['nom'] }}
+        </a>
+      </div>
+      <div class="ranking-stats">
+        {{ site['clicks_7d'] }} visite{{ '' if site['clicks_7d'] == 1 else 's'
+        }} cette semaine
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+
+  <div id="bouton_plus">
+    <a href="{{ url_for('accueil') }}">← Retour à l'accueil</a>
+  </div>
+</div>
+{% endblock %}
