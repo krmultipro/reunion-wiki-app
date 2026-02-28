@@ -15,6 +15,10 @@ from flask import (
     abort,
 )
 from dotenv import load_dotenv
+import locale
+locale.setlocale(locale.LC_TIME, "fr_FR.UTF-8")
+from datetime import datetime
+
 
 
 from datetime import datetime
@@ -231,7 +235,7 @@ def add_cache_headers(response):
     elif request.endpoint in ['accueil', 'voir_categorie']:
         # Pages dynamiques : cache court
         response.headers['Cache-Control'] = 'public, max-age=300'  # 5 minutes
-    elif request.endpoint == 'formulaire':
+    elif request.endpoint == 'website_submission_form':
         # Formulaires : pas de cache
         response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
     
@@ -1179,7 +1183,7 @@ def redirect_site(site_id):
 
 
 @app.route("/nouveaux-sites")
-def nouveaux_sites():
+def recently_added_sites():
     conn = get_db_connection()
     if not conn:
         return render_template("500.html"), 500
@@ -1195,13 +1199,43 @@ def nouveaux_sites():
     sites = cur.fetchall()
     conn.close()
 
-    return render_template("nouveaux_sites.html", sites=sites)
+    return render_template("recently-added-sites.html", sites=sites)
 
 
 
-@app.route("/mentions-legales")
-def mentions_legales():
-    return render_template("mentions_legales.html")
+@app.route("/legal-notices")
+def legal_notices():
+    return render_template("legal-notices.html")
+
+
+@app.route("/most-visited-sites")
+def most_visited_sites():
+    conn = get_db_connection()
+    if not conn:
+        return render_template("500.html"), 500
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT id, nom, lien, categorie, description, click_count
+        FROM sites
+        WHERE status = 'valide'
+        ORDER BY click_count DESC
+    """)
+    sites = cur.fetchall()
+    conn.close()
+
+    return render_template("most-visited-sites.html", sites=sites)
+
+
+
+@app.template_filter('month_name')
+def month_name(date_value):
+    if isinstance(date_value, str):
+        dt = datetime.fromisoformat(date_value)
+    else:
+        dt = date_value
+    return dt.strftime("%b").upper()
+
+
 
 @app.route('/service-worker.js')
 def service_worker():
@@ -1215,9 +1249,9 @@ def google_verification():
     return app.send_static_file('google87e16279463c4021.html')
 
 
-@app.route("/formulaire", methods=["GET", "POST"])
+@app.route("/website-submission-form", methods=["GET", "POST"])
 @limiter.limit("5 per minute")  # SÉCURITÉ : Limite les soumissions de formulaire
-def formulaire():
+def website_submission_form():
     """SÉCURITÉ : Formulaire avec validation complète"""
     form = SiteForm()
     
@@ -1234,7 +1268,7 @@ def formulaire():
 
         if categorie not in get_categories():
             flash("Catégorie non valide.", "error")
-            return render_template("formulaire.html", form=form)
+            return render_template("website-submission-form.html", form=form)
 
         conn = get_db_connection()
         if not conn:
@@ -1275,8 +1309,8 @@ def formulaire():
         finally:
             conn.close()
     
-    # Si GET ou formulaire invalide → affiche le formulaire avec erreurs
-    return render_template("formulaire.html", form=form)
+    # Si GET ou website-submission-form invalide → affiche le formulaire avec erreurs
+    return render_template("website-submission-form.html", form=form)
 #decorateur, injecte automatiquement variable dans tous les templates Jinja2
 
 

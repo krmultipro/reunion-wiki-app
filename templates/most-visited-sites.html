@@ -1,0 +1,36 @@
+{% extends "base.html" %} {% block title %} Sites les plus visités - Réunion
+Wiki {% endblock %} {% block content %}
+<div class="category_page ranking_page">
+  <h2>🏆 Classement des sites les plus visités</h2>
+
+  <ul>
+    {% for site in sites %}
+    <li class="ranking-item">
+      <div class="ranking-top-line">
+        <span class="ranking-badge">
+          {% if loop.index == 1 %}🥇 {% elif loop.index == 2 %}🥈 {% elif
+          loop.index == 3 %}🥉 {% else %}#{{ loop.index }} {% endif %}
+        </span>
+
+        <a
+          href="{{ url_for('redirect_site', site_id=site['id']) }}"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="ranking-title"
+        >
+          {{ site['nom'] }}
+        </a>
+      </div>
+
+      <div class="ranking-stats">{{ site['click_count'] }} visites</div>
+
+      <p class="ranking-description">{{ site['description'][:110] }}...</p>
+    </li>
+    {% endfor %}
+  </ul>
+
+  <div id="bouton_plus">
+    <a href="/">← Retour à l'accueil</a>
+  </div>
+</div>
+{% endblock %}

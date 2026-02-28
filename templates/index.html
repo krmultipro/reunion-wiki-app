@@ -67,7 +67,8 @@ endblock %} {% block content %}
   </div>
 
   <!--Debut div top, recent, submit sites-->
-  <div class="top-recent-submit">
+
+  <div class="top-recent">
     <div class="category top-sites-category">
       <h2>🔥 Les sites les plus consultés</h2>
       <ul>
@@ -143,10 +144,10 @@ endblock %} {% block content %}
         </a>
       </div>
     </div>
-    {% if form_inline %}
-    <div id="proposer-un-site">
-      {% include "_proposer_form.html" with context %}
-    </div>
-    {% endif %} {% endblock %}
   </div>
+  {% if form_inline %}
+  <div id="proposer-un-site">
+    {% include "_proposer_form.html" with context %}
+  </div>
+  {% endif %} {% endblock %}
 </div>

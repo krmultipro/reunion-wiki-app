@@ -13,7 +13,7 @@ services:
     build: . # Construit l'image depuis le Dockerfile
     restart: always
     env_file:
-      - .env# Charge automatiquement vos variables SECRET_KEY, DATABASE_PATH, etc.
+      - .env # Charge automatiquement vos variables SECRET_KEY, DATABASE_PATH, etc.
     environment:
       - FLASK_ENV=production #désactive débug
       - RATELIMIT_STORAGE_URL=redis://redis:6379/0 # parle au service redis pour le nom interne
