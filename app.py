@@ -16,7 +16,6 @@ from flask import (
 )
 from dotenv import load_dotenv
 import locale
-locale.setlocale(locale.LC_TIME, "fr_FR.UTF-8")
 from datetime import datetime
 
 
