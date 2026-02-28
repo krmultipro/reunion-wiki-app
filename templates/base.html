@@ -52,16 +52,15 @@
       rel="apple-touch-icon"
       href="{{ url_for('static', filename='icons/icon-192x192.png') }}"
     />
-    <link
-      rel="manifest"
-      href="{{ url_for('static', filename='manifest.webmanifest') }}?v=10"
-    />
+    href="{{ url_for('static', filename='manifest.webmanifest') }}?v={{
+    asset_v('manifest.webmanifest') }}">
+
     <meta name="theme-color" content="#009688" />
 
     <!-- CSS -->
     <link
       rel="stylesheet"
-      href="{{ url_for('static', filename='css/style.css') }}?v=10"
+      href="{{ url_for('static', filename='css/style.css') }}?v={{ asset_v('css/style.css') }}"
     />
 
     {% block head %}{% endblock %}
@@ -208,7 +207,7 @@
       // Enregistrement du Service Worker
       if ("serviceWorker" in navigator) {
         navigator.serviceWorker
-          .register("/service-worker.js?v=7")
+          .register("/service-worker.js?v={{ asset_v('service-worker.js') }}")
           .then(() => console.log("Service Worker enregistré"))
           .catch((err) => console.error("Erreur Service Worker :", err));
       }

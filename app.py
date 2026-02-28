@@ -172,6 +172,18 @@ def admin_required(func):
 _HAS_CATEGORIES_TABLE = False
 
 
+
+@app.context_processor
+def asset_versioning():
+    def asset_v(path):
+        full = os.path.join(app.static_folder, path)
+        try:
+            return int(os.path.getmtime(full))
+        except OSError:
+            return 1
+    return {"asset_v": asset_v}
+
+
 def init_db_schema(conn):
     """Initialise et migre le schéma de la base si nécessaire."""
     cur = conn.cursor()

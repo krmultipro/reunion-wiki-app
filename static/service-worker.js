@@ -2,7 +2,6 @@ const CACHE_NAME = "reunionwiki-cache-v7";
 
 // Liste des fichiers à mettre en cache
 const urlsToCache = [
-  "/static/css/style.css?v=10", // ton fichier CSS principal
   "/static/icons/icon-192x192.png", // corriger le nom
   "/static/icons/icon-512x512.png", // corriger le nom
 ];
