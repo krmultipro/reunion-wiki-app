@@ -4,8 +4,6 @@ Formulaires avec validation pour Réunion Wiki
 SÉCURITÉ : Validation côté serveur pour éviter les injections
 """
 
-from dataclasses import field
-
 from flask_wtf import FlaskForm
 from wtforms import BooleanField, HiddenField, PasswordField, SelectField, StringField, SubmitField, TextAreaField
 from wtforms.validators import DataRequired, Length, URL, ValidationError
@@ -117,10 +115,17 @@ class AdminLoginForm(FlaskForm):
     submit = SubmitField("Se connecter")
 
 
+class AdminLogoutForm(FlaskForm):
+    """Formulaire de déconnexion admin (POST + CSRF)."""
+
+    submit = SubmitField("Déconnexion")
+
+
 class ModerationActionForm(FlaskForm):
     """Actions de modération sur une proposition"""
 
     site_id = HiddenField(validators=[DataRequired()])
+    return_to = HiddenField()
 
 
 class AdminSiteForm(SiteForm):
@@ -156,3 +161,9 @@ class DeleteCategoryForm(FlaskForm):
     """Suppression d'une catégorie"""
 
     category_id = HiddenField(validators=[DataRequired()])
+
+
+class DeleteClickForm(FlaskForm):
+    """Suppression d'un événement de clic."""
+
+    click_id = HiddenField(validators=[DataRequired()])

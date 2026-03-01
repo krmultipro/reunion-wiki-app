@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+
+{% block seo_title %}Clics - Réunion Wiki{% endblock %}
+{% block seo_description %}Journal des clics sur les sites Réunion Wiki.{% endblock %}
+
+{% block content %}
+<section class="admin-dashboard">
+  <header class="admin-dashboard__header">
+    <div class="admin-dashboard__intro">
+      <h1>Journal des clics</h1>
+      <p>Bonjour {{ admin_username or "admin" }}.</p>
+    </div>
+    <div class="admin-dashboard__actions">
+      <a class="btn btn-secondary" href="{{ url_for('admin_dashboard') }}">Tableau de bord</a>
+      <a class="btn btn-secondary" href="{{ url_for('admin_sites') }}">Sites</a>
+      <a class="btn btn-secondary" href="{{ url_for('admin_categories') }}">Catégories</a>
+      <form method="post" action="{{ url_for('admin_logout') }}" class="admin-inline-form">
+        {{ admin_logout_form.hidden_tag() }}
+        <button type="submit" class="btn btn-secondary">Déconnexion</button>
+      </form>
+    </div>
+  </header>
+
+  <form method="get" class="admin-filters">
+    <div class="admin-filters__row">
+      <div class="admin-filters__field">
+        <label for="days">Période</label>
+        <select id="days" name="days" class="admin-form__input">
+          <option value="1" {% if days_filter == 1 %}selected{% endif %}>24h</option>
+          <option value="7" {% if days_filter == 7 %}selected{% endif %}>7 jours</option>
+          <option value="30" {% if days_filter == 30 %}selected{% endif %}>30 jours</option>
+          <option value="90" {% if days_filter == 90 %}selected{% endif %}>90 jours</option>
+          <option value="365" {% if days_filter == 365 %}selected{% endif %}>365 jours</option>
+        </select>
+      </div>
+      <div class="admin-filters__field">
+        <label for="sort">Tri</label>
+        <select id="sort" name="sort" class="admin-form__input">
+          <option value="newest" {% if sort_filter == 'newest' %}selected{% endif %}>Plus récents</option>
+          <option value="oldest" {% if sort_filter == 'oldest' %}selected{% endif %}>Plus anciens</option>
+        </select>
+      </div>
+      <div class="admin-filters__field admin-filters__field--search">
+        <label for="q">Recherche</label>
+        <input
+          id="q"
+          name="q"
+          class="admin-form__input"
+          type="search"
+          maxlength="120"
+          value="{{ query_text }}"
+          placeholder="Site, catégorie, ville, lien, user-agent..."
+        />
+      </div>
+      <div class="admin-filters__actions">
+        <button type="submit" class="btn btn-secondary">Filtrer</button>
+        <a class="btn btn-secondary" href="{{ url_for('admin_clicks') }}">Réinitialiser</a>
+      </div>
+    </div>
+  </form>
+
+  <p class="admin-filters__meta">{{ total_clicks }} clic{{ '' if total_clicks == 1 else 's' }} trouvé{{ '' if total_clicks == 1 else 's' }}.</p>
+
+  {% if click_events %}
+  <div class="admin-table-wrapper">
+    <table class="admin-table admin-table--sites">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Site</th>
+          <th>Catégorie</th>
+          <th>Ville</th>
+          <th>IP</th>
+          <th>User-Agent</th>
+          <th>Statut</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for click in click_events %}
+        <tr>
+          <td data-label="Date">{{ click['clicked_at']|format_date("%d/%m/%Y %H:%M") }}</td>
+          <td data-label="Site">
+            <a href="{{ url_for('admin_edit_site', site_id=click['site_id']) }}">{{ click['site_nom'] }}</a>
+          </td>
+          <td data-label="Catégorie">{{ click['categorie'] or "—" }}</td>
+          <td data-label="Ville">{{ click['ville'] or "—" }}</td>
+          <td data-label="IP">{{ click['ip_masked'] }}</td>
+          <td class="admin-table__cell--description" data-label="User-Agent">{{ click['user_agent'] or "—" }}</td>
+          <td data-label="Statut">{{ click['status'] }}</td>
+          <td class="admin-table__cell--actions admin-table__cell--actions--compact" data-label="Action">
+            <form
+              method="post"
+              action="{{ url_for('admin_delete_click', click_id=click['id']) }}"
+              onsubmit="return confirm('Supprimer cet événement de clic ?');"
+            >
+              {{ delete_forms[click['id']].csrf_token }}
+              {{ delete_forms[click['id']].click_id(value=click['id']) }}
+              <input type="hidden" name="return_to" value="{{ return_to }}" />
+              <button type="submit" class="btn btn-delete">Supprimer</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="admin-empty">Aucun clic trouvé sur la période sélectionnée.</p>
+  {% endif %}
+
+  {% if total_pages > 1 %}
+  <nav class="admin-pagination" aria-label="Pagination clics admin">
+    {% set prev_page = page - 1 %}
+    {% set next_page = page + 1 %}
+    <a
+      class="btn btn-secondary {% if page <= 1 %}is-disabled{% endif %}"
+      {% if page > 1 %}
+      href="{{ url_for('admin_clicks', q=query_text, sort=sort_filter, days=days_filter, page=prev_page) }}"
+      {% else %}
+      aria-disabled="true"
+      {% endif %}
+    >
+      ← Précédent
+    </a>
+    <span>Page {{ page }} / {{ total_pages }}</span>
+    <a
+      class="btn btn-secondary {% if page >= total_pages %}is-disabled{% endif %}"
+      {% if page < total_pages %}
+      href="{{ url_for('admin_clicks', q=query_text, sort=sort_filter, days=days_filter, page=next_page) }}"
+      {% else %}
+      aria-disabled="true"
+      {% endif %}
+    >
+      Suivant →
+    </a>
+  </nav>
+  {% endif %}
+</section>
+{% endblock %}

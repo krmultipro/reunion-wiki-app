@@ -64,8 +64,7 @@
       </div>
       <div class="form-field form-field--wide">
         {{ form.description.label(class="form-label") }} {{
-        form.description(class="form-textarea", rows="4", placeholder="Décrivez
-        brièvement ce site et pourquoi il est utile...") }} {% if
+        form.description(class="form-textarea", rows="4", placeholder="Décrivez brièvement ce site et pourquoi il est utile...") }} {% if
         form.description.errors %}
         <div class="form-errors" id="{{ form.description.id }}-errors">
           {% for error in form.description.errors %}

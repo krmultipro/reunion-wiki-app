@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-from urllib import response
 
 from flask import (
     Flask,
@@ -18,23 +17,22 @@ from flask import (
 )
 from dotenv import load_dotenv
 import locale
-from datetime import datetime
-
-
-
-from datetime import datetime
+from datetime import datetime, timedelta
 import sqlite3
 import os
+from urllib.parse import urlparse
 from forms import (
     AdminLoginForm,
+    AdminLogoutForm,
     ModerationActionForm,
     SiteForm,
     AdminSiteForm,
     CategoryForm,
     DeleteCategoryForm,
+    DeleteClickForm,
 )
 from flask_limiter import Limiter
-from flask_limiter.util import get_remote_address
+from flask_wtf.csrf import CSRFProtect, CSRFError
 from config import config
 
 # >>> AJOUT : imports utilitaires pour un slug ASCII propre (sans emojis/accents)
@@ -54,15 +52,33 @@ app = Flask(__name__)
 # CONFIGURATION : Chargement selon l'environnement
 env = os.getenv('FLASK_ENV', 'development')
 app.config.from_object(config.get(env, config['default']))
+app.config.setdefault("PERMANENT_SESSION_LIFETIME", timedelta(hours=8))
+app.config.setdefault("WTF_CSRF_TIME_LIMIT", 3600)
+app.config.setdefault("SESSION_COOKIE_HTTPONLY", True)
+app.config.setdefault("SESSION_COOKIE_SAMESITE", "Lax")
+if env == "production":
+    app.config.setdefault("SESSION_COOKIE_SECURE", True)
+csrf = CSRFProtect(app)
+
+
+def get_client_ip() -> str:
+    """Retourne l'IP cliente réelle derrière un reverse proxy."""
+    forwarded_for = request.headers.get("X-Forwarded-For", "")
+    if forwarded_for:
+        return forwarded_for.split(",")[0].strip()
+    return request.remote_addr or "0.0.0.0"
+
+
+default_limit = app.config.get("RATELIMIT_DEFAULT")
 
 
 
 # SÉCURITÉ : Rate limiting pour éviter le spam avec Redis
 limiter = Limiter(
-    key_func=get_remote_address,
+    key_func=get_client_ip,
     storage_uri=app.config.get('RATELIMIT_STORAGE_URL', 'memory://'),
     strategy="fixed-window",
-    default_limits=[app.config['RATELIMIT_DEFAULT']]
+    default_limits=[default_limit] if default_limit else []
 )
 limiter.init_app(app)
 
@@ -74,6 +90,7 @@ def get_db_connection():
 
         conn = sqlite3.connect(app.config['DATABASE_PATH'])
         conn.row_factory = sqlite3.Row
+        conn.execute("PRAGMA foreign_keys = ON")
 
 
         init_db_schema(conn)
@@ -154,6 +171,38 @@ def verify_admin_credentials(username, password):
     return False
 
 
+def is_safe_next_url(next_url: str) -> bool:
+    """Autorise uniquement les chemins locaux internes."""
+    if not next_url:
+        return False
+    if not next_url.startswith("/") or next_url.startswith("//"):
+        return False
+    parsed = urlparse(next_url)
+    return parsed.scheme == "" and parsed.netloc == ""
+
+
+def parse_positive_int(value, default=1):
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError):
+        return default
+    return parsed if parsed > 0 else default
+
+
+def mask_ip(ip_value: str) -> str:
+    """Masque les IP dans l'admin pour limiter l'exposition de données personnelles."""
+    if not ip_value:
+        return "—"
+    ip = ip_value.split(",")[0].strip()
+    if ":" in ip:  # IPv6
+        parts = ip.split(":")
+        return ":".join(parts[:3]) + ":*:*"
+    parts = ip.split(".")
+    if len(parts) == 4:
+        return f"{parts[0]}.{parts[1]}.x.x"
+    return "—"
+
+
 def admin_required(func):
     """Décorateur de protection des routes admin."""
 
@@ -182,6 +231,13 @@ def asset_versioning():
         except OSError:
             return 1
     return {"asset_v": asset_v}
+
+
+@app.context_processor
+def inject_admin_logout_form():
+    if session.get("admin_authenticated"):
+        return {"admin_logout_form": AdminLogoutForm()}
+    return {}
 
 
 def init_db_schema(conn):
@@ -218,6 +274,9 @@ def init_db_schema(conn):
     if "en_vedette" not in columns:
         cur.execute("ALTER TABLE sites ADD COLUMN en_vedette INTEGER DEFAULT 0")
 
+    if "ville_id" not in columns:
+        cur.execute("ALTER TABLE sites ADD COLUMN ville_id INTEGER")
+
     # ======================
     # TABLE SITE_CLICKS
     # ======================
@@ -227,7 +286,19 @@ def init_db_schema(conn):
             site_id INTEGER NOT NULL,
             ip_address TEXT NOT NULL,
             user_agent TEXT,
-            clicked_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            clicked_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (site_id) REFERENCES sites(id) ON DELETE CASCADE
+        )
+    """)
+
+    # ======================
+    # TABLE VILLES
+    # ======================
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS villes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nom TEXT NOT NULL UNIQUE,
+            slug TEXT NOT NULL UNIQUE
         )
     """)
 
@@ -243,6 +314,16 @@ def init_db_schema(conn):
         )
     """)
 
+    # ======================
+    # INDEXES
+    # ======================
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_sites_status ON sites(status)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_sites_categorie ON sites(categorie)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_sites_click_count ON sites(click_count)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_sites_ville_id ON sites(ville_id)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_site_clicks_site_id ON site_clicks(site_id)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_site_clicks_clicked_at ON site_clicks(clicked_at)")
+
     conn.commit()
 
 # GESTION D'ERREURS : Pages d'erreur personnalisées
@@ -254,6 +335,13 @@ def page_not_found(e):
 def internal_server_error(e):
     app.logger.error(f"Erreur serveur: {e}")
     return render_template('500.html'), 500
+
+
+@app.errorhandler(CSRFError)
+def handle_csrf_error(e):
+    app.logger.warning(f"CSRF bloqué: {e.description}")
+    flash("Session expirée ou formulaire invalide. Réessaie.", "error")
+    return redirect(request.referrer or url_for("accueil"))
 
 # PERFORMANCE : Headers de cache pour les réponses
 @app.after_request
@@ -534,17 +622,20 @@ def get_nom_categorie_depuis_slug(slug):
 
 
 @app.route("/admin/login", methods=["GET", "POST"])
+@limiter.limit("5 per minute")
 def admin_login():
     form = AdminLoginForm()
     next_url = request.args.get("next")
-    if not next_url or not next_url.startswith("/"):
+    if not is_safe_next_url(next_url):
         next_url = url_for("admin_dashboard")
 
     if form.validate_on_submit():
         if verify_admin_credentials(form.username.data, form.password.data):
+            session.clear()
             session.permanent = True
             session["admin_authenticated"] = True
             session["admin_username"] = form.username.data
+            session["admin_login_at"] = datetime.utcnow().isoformat()
             flash("Connexion réussie.", "success")
             return redirect(next_url)
         flash("Identifiants invalides.", "error")
@@ -552,10 +643,13 @@ def admin_login():
     return render_template("admin/login.html", form=form, next_url=next_url)
 
 
-@app.route("/admin/logout")
+@app.route("/admin/logout", methods=["POST"])
+@admin_required
 def admin_logout():
-    session.pop("admin_authenticated", None)
-    session.pop("admin_username", None)
+    form = AdminLogoutForm()
+    if not form.validate_on_submit():
+        abort(400)
+    session.clear()
     flash("Déconnexion effectuée.", "success")
     return redirect(url_for("admin_login"))
 
@@ -594,10 +688,12 @@ def admin_dashboard():
 
     stats = {row["status"]: row["total"] for row in stats_rows}
 
+    current_path = request.full_path.rstrip("?")
     action_forms = {}
     for site in pending_sites:
         form = ModerationActionForm()
         form.site_id.data = str(site["id"])
+        form.return_to.data = current_path
         action_forms[site["id"]] = form
 
     return render_template(
@@ -617,35 +713,317 @@ def admin_sites():
         flash("Impossible de se connecter à la base de données.", "error")
         return redirect(url_for("admin_dashboard"))
 
+    status_filter = (request.args.get("status") or "all").strip()
+    city_filter = (request.args.get("city") or "all").strip()
+    query_text = (request.args.get("q") or "").strip()
+    sort_filter = (request.args.get("sort") or "date_desc").strip()
+    page = parse_positive_int(request.args.get("page"), default=1)
+    per_page = 50
+
+    allowed_status = {"all", "valide", "en_attente", "refuse"}
+    allowed_sorts = {
+        "date_desc": "s.date_ajout DESC, s.id DESC",
+        "date_asc": "s.date_ajout ASC, s.id ASC",
+        "clicks_desc": "s.click_count DESC, s.id DESC",
+        "clicks_asc": "s.click_count ASC, s.id ASC",
+        "name_asc": "s.nom COLLATE NOCASE ASC, s.id DESC",
+        "name_desc": "s.nom COLLATE NOCASE DESC, s.id DESC",
+    }
+
+    if status_filter not in allowed_status:
+        status_filter = "all"
+    if sort_filter not in allowed_sorts:
+        sort_filter = "date_desc"
+    if len(query_text) > 120:
+        query_text = query_text[:120]
+
     try:
         cur = conn.cursor()
-        cur.execute(
-            """
-            SELECT id, nom, categorie, ville, lien, description, status, date_ajout, en_vedette
-            FROM sites
-            ORDER BY date_ajout DESC, id DESC
-            """
-        )
+        cur.execute("SELECT nom, slug FROM villes ORDER BY nom COLLATE NOCASE ASC")
+        cities = cur.fetchall()
+
+        allowed_city_slugs = {row["slug"] for row in cities}
+        if city_filter != "all" and city_filter not in allowed_city_slugs:
+            city_filter = "all"
+
+        where_clauses = ["1=1"]
+        params = []
+
+        if status_filter != "all":
+            where_clauses.append("s.status = ?")
+            params.append(status_filter)
+
+        if city_filter != "all":
+            where_clauses.append("v.slug = ?")
+            params.append(city_filter)
+
+        if query_text:
+            like = f"%{query_text}%"
+            where_clauses.append(
+                """
+                (
+                    s.nom LIKE ?
+                    OR s.categorie LIKE ?
+                    OR s.description LIKE ?
+                    OR s.lien LIKE ?
+                    OR COALESCE(v.nom, s.ville, '') LIKE ?
+                )
+                """
+            )
+            params.extend([like, like, like, like, like])
+
+        where_sql = " AND ".join(where_clauses)
+        sort_sql = allowed_sorts[sort_filter]
+
+        count_sql = f"""
+            SELECT COUNT(*) AS total
+            FROM sites s
+            LEFT JOIN villes v ON v.id = s.ville_id
+            WHERE {where_sql}
+        """
+        cur.execute(count_sql, params)
+        total_sites = cur.fetchone()["total"]
+
+        total_pages = max((total_sites + per_page - 1) // per_page, 1)
+        if page > total_pages:
+            page = total_pages
+        offset = (page - 1) * per_page
+
+        query_sql = f"""
+            SELECT
+                s.id,
+                s.nom,
+                s.categorie,
+                COALESCE(v.nom, s.ville) AS ville_display,
+                v.slug AS ville_slug,
+                s.lien,
+                s.description,
+                s.status,
+                s.date_ajout,
+                s.en_vedette,
+                s.click_count
+            FROM sites s
+            LEFT JOIN villes v ON v.id = s.ville_id
+            WHERE {where_sql}
+            ORDER BY {sort_sql}
+            LIMIT ? OFFSET ?
+        """
+        cur.execute(query_sql, params + [per_page, offset])
         all_sites = cur.fetchall()
     except sqlite3.Error as e:
         app.logger.error(f"Erreur lors de la récupération des sites: {e}")
         flash("Erreur lors du chargement des sites.", "error")
         all_sites = []
+        cities = []
+        total_sites = 0
+        total_pages = 1
+        page = 1
     finally:
         conn.close()
 
+    current_path = request.full_path.rstrip("?")
     action_forms = {}
     for site in all_sites:
         form = ModerationActionForm()
         form.site_id.data = str(site["id"])
+        form.return_to.data = current_path
         action_forms[site["id"]] = form
 
     return render_template(
         "admin/sites.html",
         sites=all_sites,
         action_forms=action_forms,
+        cities=cities,
+        status_filter=status_filter,
+        city_filter=city_filter,
+        query_text=query_text,
+        sort_filter=sort_filter,
+        page=page,
+        total_pages=total_pages,
+        total_sites=total_sites,
         admin_username=session.get("admin_username"),
     )
+
+
+@app.route("/admin/clicks", methods=["GET"])
+@admin_required
+def admin_clicks():
+    conn = get_db_connection()
+    if not conn:
+        flash("Impossible de se connecter à la base de données.", "error")
+        return redirect(url_for("admin_dashboard"))
+
+    query_text = (request.args.get("q") or "").strip()
+    sort_filter = (request.args.get("sort") or "newest").strip()
+    days_filter = parse_positive_int(request.args.get("days"), default=30)
+    page = parse_positive_int(request.args.get("page"), default=1)
+    per_page = 100
+
+    if len(query_text) > 120:
+        query_text = query_text[:120]
+    if sort_filter not in {"newest", "oldest"}:
+        sort_filter = "newest"
+    if days_filter not in {1, 7, 30, 90, 365}:
+        days_filter = 30
+
+    try:
+        cur = conn.cursor()
+        where_clauses = [
+            "sc.clicked_at >= datetime('now', ?)"
+        ]
+        params = [f"-{days_filter} days"]
+
+        if query_text:
+            like = f"%{query_text}%"
+            where_clauses.append(
+                """
+                (
+                    s.nom LIKE ?
+                    OR s.categorie LIKE ?
+                    OR COALESCE(v.nom, s.ville, '') LIKE ?
+                    OR s.lien LIKE ?
+                    OR sc.user_agent LIKE ?
+                )
+                """
+            )
+            params.extend([like, like, like, like, like])
+
+        where_sql = " AND ".join(where_clauses)
+        sort_sql = "sc.clicked_at DESC, sc.id DESC" if sort_filter == "newest" else "sc.clicked_at ASC, sc.id ASC"
+
+        cur.execute(
+            f"""
+            SELECT COUNT(*) AS total
+            FROM site_clicks sc
+            JOIN sites s ON s.id = sc.site_id
+            LEFT JOIN villes v ON v.id = s.ville_id
+            WHERE {where_sql}
+            """,
+            params,
+        )
+        total_clicks = cur.fetchone()["total"]
+        total_pages = max((total_clicks + per_page - 1) // per_page, 1)
+        if page > total_pages:
+            page = total_pages
+        offset = (page - 1) * per_page
+
+        cur.execute(
+            f"""
+            SELECT
+                sc.id,
+                sc.site_id,
+                sc.ip_address,
+                sc.user_agent,
+                sc.clicked_at,
+                s.nom AS site_nom,
+                s.categorie,
+                COALESCE(v.nom, s.ville) AS ville,
+                s.status
+            FROM site_clicks sc
+            JOIN sites s ON s.id = sc.site_id
+            LEFT JOIN villes v ON v.id = s.ville_id
+            WHERE {where_sql}
+            ORDER BY {sort_sql}
+            LIMIT ? OFFSET ?
+            """,
+            params + [per_page, offset],
+        )
+        rows = cur.fetchall()
+
+        click_events = []
+        delete_forms = {}
+        current_path = request.full_path.rstrip("?")
+        for row in rows:
+            row_dict = dict(row)
+            row_dict["ip_masked"] = mask_ip(row["ip_address"])
+            click_events.append(row_dict)
+            delete_forms[row["id"]] = DeleteClickForm(click_id=str(row["id"]))
+
+    except sqlite3.Error as e:
+        app.logger.error(f"Erreur lors du chargement des clics admin: {e}")
+        flash("Erreur lors du chargement des clics.", "error")
+        click_events = []
+        delete_forms = {}
+        current_path = url_for("admin_clicks")
+        total_clicks = 0
+        total_pages = 1
+        page = 1
+    finally:
+        conn.close()
+
+    return render_template(
+        "admin/clicks.html",
+        click_events=click_events,
+        delete_forms=delete_forms,
+        query_text=query_text,
+        sort_filter=sort_filter,
+        days_filter=days_filter,
+        page=page,
+        total_pages=total_pages,
+        total_clicks=total_clicks,
+        return_to=current_path,
+        admin_username=session.get("admin_username"),
+    )
+
+
+@app.route("/admin/clicks/<int:click_id>/delete", methods=["POST"])
+@admin_required
+def admin_delete_click(click_id):
+    form = DeleteClickForm()
+    if not form.validate_on_submit():
+        flash("Formulaire invalide.", "error")
+        return redirect(url_for("admin_clicks"))
+
+    try:
+        form_click_id = int(form.click_id.data)
+    except (TypeError, ValueError):
+        abort(400)
+
+    if form_click_id != click_id:
+        abort(400)
+
+    return_to = request.form.get("return_to", "")
+    if not is_safe_next_url(return_to):
+        return_to = url_for("admin_clicks")
+
+    conn = get_db_connection()
+    if not conn:
+        flash("Impossible de se connecter à la base de données.", "error")
+        return redirect(return_to)
+
+    try:
+        cur = conn.cursor()
+        cur.execute("SELECT site_id FROM site_clicks WHERE id = ?", (click_id,))
+        click_row = cur.fetchone()
+        if not click_row:
+            flash("Clic introuvable.", "error")
+            return redirect(return_to)
+
+        site_id = click_row["site_id"]
+        cur.execute("DELETE FROM site_clicks WHERE id = ?", (click_id,))
+        if cur.rowcount == 0:
+            flash("Clic introuvable.", "error")
+            conn.rollback()
+            return redirect(return_to)
+
+        cur.execute(
+            """
+            UPDATE sites
+            SET click_count = CASE WHEN click_count > 0 THEN click_count - 1 ELSE 0 END
+            WHERE id = ?
+            """,
+            (site_id,),
+        )
+        conn.commit()
+        flash("Événement de clic supprimé.", "success")
+    except sqlite3.Error as e:
+        conn.rollback()
+        app.logger.error(f"Erreur lors de la suppression du clic {click_id}: {e}")
+        flash("Erreur lors de la suppression du clic.", "error")
+    finally:
+        conn.close()
+
+    return redirect(return_to)
 
 
 @app.route("/admin/categories", methods=["GET"])
@@ -854,10 +1232,11 @@ def admin_delete_category(category_id):
 @admin_required
 def admin_update_site(site_id):
     form = ModerationActionForm()
+    return_to = form.return_to.data if is_safe_next_url(form.return_to.data or "") else url_for("admin_dashboard")
     if not form.validate_on_submit():
         app.logger.warning(f"Modération formulaire invalide: {form.errors}")
         flash("Formulaire invalide.", "error")
-        return redirect(url_for("admin_dashboard"))
+        return redirect(return_to)
 
     try:
         site_id_form = int(form.site_id.data)
@@ -870,12 +1249,12 @@ def admin_update_site(site_id):
     action = request.form.get("action")
     if action not in {"approve", "reject", "delete", "pending"}:
         flash("Action inconnue.", "error")
-        return redirect(url_for("admin_dashboard"))
+        return redirect(return_to)
 
     conn = get_db_connection()
     if not conn:
         flash("Impossible d'accéder à la base de données.", "error")
-        return redirect(url_for("admin_dashboard"))
+        return redirect(return_to)
 
     message = ""
     try:
@@ -915,7 +1294,7 @@ def admin_update_site(site_id):
     finally:
         conn.close()
 
-    return redirect(url_for("admin_dashboard"))
+    return redirect(return_to)
 
 
 @app.route("/admin/propositions/<int:site_id>/edit", methods=["GET", "POST"])
@@ -1190,8 +1569,8 @@ def redirect_site(site_id):
             f"[GO] Site trouvé id={site_id} | ancien compteur={row['click_count']} | url={row['lien']}"
         )
         
-        ip = request.headers.get("X-Forwarded-For", request.remote_addr)
-        user_agent = request.headers.get("User-Agent", "")
+        ip = get_client_ip()
+        user_agent = (request.headers.get("User-Agent", "") or "")[:400]
         
         # Anti-bot simple
         ua_lower = user_agent.lower()
@@ -1286,8 +1665,6 @@ def most_visited_sites():
 
 
 
-from datetime import datetime
-
 @app.template_filter('month_name')
 def month_name(date_value):
     if isinstance(date_value, str):
@@ -1302,8 +1679,6 @@ def month_name(date_value):
 
     return mois_fr[dt.month - 1]
 
-
-from flask import request, redirect, url_for, render_template
 
 @app.route("/recherche")
 def search():

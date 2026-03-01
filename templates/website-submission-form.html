@@ -87,9 +87,7 @@ Votre suggestion sera vérifiée avant publication.{% endblock %} {% block conte
 
       <div class="form-field form-field--wide">
         {{ form.description.label(class="form-label") }} {{
-        form.description(class="form-textarea", rows="5", placeholder="Décris le
-        site, ses fonctionnalités clés et pourquoi il est utile pour La
-        Réunion.") }} {% if form.description.errors %}
+        form.description(class="form-textarea", rows="5", placeholder="Décris le site, ses fonctionnalités clés et pourquoi il est utile pour La Réunion.") }} {% if form.description.errors %}
         <div class="form-errors" id="{{ form.description.id }}-errors">
           {% for error in form.description.errors %}
           <span class="error-item">{{ error }}</span>

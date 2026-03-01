@@ -12,14 +12,19 @@
     </div>
     <div class="admin-dashboard__actions">
       <a class="btn btn-primary" href="{{ url_for('admin_create_category') }}">+ Ajouter une catégorie</a>
+      <a class="btn btn-secondary" href="{{ url_for('admin_clicks') }}">Clics</a>
       <a class="btn btn-secondary" href="{{ url_for('admin_sites') }}">Sites</a>
       <a class="btn btn-secondary" href="{{ url_for('admin_dashboard') }}">Tableau de bord</a>
+      <form method="post" action="{{ url_for('admin_logout') }}" class="admin-inline-form">
+        {{ admin_logout_form.hidden_tag() }}
+        <button type="submit" class="btn btn-secondary">Déconnexion</button>
+      </form>
     </div>
   </header>
 
   {% if categories_ %}
   <div class="admin-table-wrapper">
-    <table class="admin-table">
+    <table class="admin-table admin-table--sites">
       <thead>
         <tr>
           <th>Nom</th>
@@ -31,10 +36,10 @@
       <tbody>
         {% for cat in categories_ %}
         <tr>
-          <td class="admin-table__cell--title">{{ cat['nom'] }}</td>
-          <td>{{ cat['slug'] }}</td>
-          <td>{{ cat['created_at']|format_date("%d/%m/%Y %H:%M") }}</td>
-          <td class="admin-table__cell--actions">
+          <td class="admin-table__cell--title" data-label="Nom">{{ cat['nom'] }}</td>
+          <td data-label="Slug">{{ cat['slug'] }}</td>
+          <td data-label="Créée le">{{ cat['created_at']|format_date("%d/%m/%Y %H:%M") }}</td>
+          <td class="admin-table__cell--actions admin-table__cell--actions--compact" data-label="Actions">
             <a class="btn btn-edit" href="{{ url_for('admin_edit_category', category_id=cat['id']) }}">Modifier</a>
             <form method="post" action="{{ url_for('admin_delete_category', category_id=cat['id']) }}" class="admin-table__form" onsubmit="return confirm('Supprimer cette catégorie ?');">
               {{ delete_forms[cat['id']].csrf_token }}
