@@ -44,6 +44,10 @@ sûres du mois et nouveaux sites populaires.{% endblock %} {% block content %}
     {% for site in stable_sites %}
     <li class="ranking-item">
       <div class="ranking-top-line">
+        <span class="ranking-badge">
+          {% if loop.index == 1 %}🥇 {% elif loop.index == 2 %}🥈 {% elif
+          loop.index == 3 %}🥉 {% else %}#{{ loop.index }} {% endif %}
+        </span>
         <a
           href="{{ url_for('redirect_site', site_id=site['id']) }}"
           class="ranking-title"
@@ -67,6 +71,10 @@ sûres du mois et nouveaux sites populaires.{% endblock %} {% block content %}
     {% for cat in trending_categories %}
     <li class="ranking-item">
       <div class="ranking-top-line">
+        <span class="ranking-badge">
+          {% if loop.index == 1 %}🥇 {% elif loop.index == 2 %}🥈 {% elif
+          loop.index == 3 %}🥉 {% else %}#{{ loop.index }} {% endif %}
+        </span>
         <a
           href="/categorie/{{ categories_slug[cat['categorie']] }}"
           class="ranking-title"
@@ -93,6 +101,10 @@ sûres du mois et nouveaux sites populaires.{% endblock %} {% block content %}
     {% for site in new_performers %}
     <li class="ranking-item">
       <div class="ranking-top-line">
+        <span class="ranking-badge">
+          {% if loop.index == 1 %}🥇 {% elif loop.index == 2 %}🥈 {% elif
+          loop.index == 3 %}🥉 {% else %}#{{ loop.index }} {% endif %}
+        </span>
         <a
           href="{{ url_for('redirect_site', site_id=site['id']) }}"
           class="ranking-title"

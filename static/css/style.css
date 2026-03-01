@@ -1822,6 +1822,7 @@ h1 {
   justify-content: center;
   width: 2.6rem;
   height: 2.2rem;
+  padding: 0 !important;
   border-radius: 999px;
   text-decoration: none;
   background: var(--vert-fougere);
@@ -1853,13 +1854,14 @@ h1 {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 2.55rem;
-    height: 2.55rem;
+    width: 2.2rem;
+    height: 2.2rem;
+    padding: 0 !important;
     border-radius: 0.5rem;
     text-decoration: none;
     background: var(--vert-fougere);
     color: var(--blanc);
-    font-size: 1rem;
+    font-size: 0.9rem;
     line-height: 1;
   }
 

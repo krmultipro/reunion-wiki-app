@@ -23,6 +23,14 @@
       <a class="btn btn-secondary" href="{{ url_for('admin_categories') }}">
         Catégories
       </a>
+      <a
+        class="btn btn-secondary"
+        href="https://docs.google.com/forms/d/1tmiz_GY5H1FMSb2w1Ho_3XrHs864aTk_zjoADXcMDoU/edit#responses"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        Contacts (Google Forms)
+      </a>
       <form method="post" action="{{ url_for('admin_logout') }}" class="admin-inline-form">
         {{ admin_logout_form.hidden_tag() }}
         <button type="submit" class="btn btn-secondary">Déconnexion</button>
