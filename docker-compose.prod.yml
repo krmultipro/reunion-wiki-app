@@ -5,7 +5,7 @@ services:
     image: redis:7-alpine
     restart: unless-stopped
     networks:
-      - reunionwiki_net
+      - reunionwiki_prod_net
 
   web:
     build: .
@@ -19,9 +19,9 @@ services:
     depends_on:
       - redis
     volumes:
-      - ./data:/data
+      - ./data_prod:/app/data
     networks:
-      - reunionwiki_net
+      - reunionwiki_prod_net
 
   nginx:
     image: nginx:alpine
@@ -40,7 +40,7 @@ services:
     depends_on:
       - web
     networks:
-      - reunionwiki_net
+      - reunionwiki_prod_net
 
   certbot:
     image: certbot/certbot
@@ -48,8 +48,8 @@ services:
       - ./certbot/www:/var/www/certbot
       - ./certbot/conf:/etc/letsencrypt
     networks:
-      - reunionwiki_net
+      - reunionwiki_prod_net
 
 networks:
-  reunionwiki_net:
-    external: true
+  reunionwiki_prod_net:
+    driver: bridge
