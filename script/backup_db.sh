@@ -3,7 +3,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 APP_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
-OUT_DIR="$APP_DIR/data/backups"
+OUT_DIR="$APP_DIR/data_prod/backups"
 COMPOSE_FILE="$APP_DIR/docker-compose.prod.yml"
 
 mkdir -p "$OUT_DIR"
