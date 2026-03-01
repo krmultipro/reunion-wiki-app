@@ -1940,8 +1940,8 @@ h1 {
     min-width: 0;
   }
 
-  .nav-more-panel a {
-    display: flex;
+.nav-more-panel a {
+  display: flex;
     align-items: center;
     justify-content: center;
     width: 100%;
@@ -1959,6 +1959,18 @@ h1 {
     word-break: break-word;
     line-height: 1.15;
     font-size: 0.76rem;
-    box-sizing: border-box;
-  }
+  box-sizing: border-box;
+}
+
+.nav-more-panel a.active,
+.nav-more-panel a[aria-current="page"] {
+  background: var(--lava);
+  color: var(--blanc);
+}
+
+.nav-more-panel a.active:hover,
+.nav-more-panel a[aria-current="page"]:hover {
+  background: var(--lava);
+  color: var(--blanc);
+}
 }
