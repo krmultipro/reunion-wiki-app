@@ -53,9 +53,7 @@ class SiteForm(FlaskForm):
         Length(min=2, max=100, message="Le nom doit faire entre 2 et 100 caractères")
     ], filters=[_sanitize_basic])
     
-    ville = StringField('Ville', [
-        Length(max=50, message="Le nom de la ville ne peut pas dépasser 50 caractères")
-    ], filters=[_sanitize_basic])
+    ville = SelectField('Ville', choices=[], filters=[_strip_filter])
     
     lien = StringField('Lien du site', [
         DataRequired(message="Le lien du site est obligatoire"),
@@ -130,6 +128,10 @@ class ModerationActionForm(FlaskForm):
 
 class AdminSiteForm(SiteForm):
     """Formulaire complet pour la création/édition d'un site côté admin"""
+
+    ville = StringField('Ville', [
+        Length(max=50, message="Le nom de la ville ne peut pas dépasser 50 caractères")
+    ], filters=[_sanitize_basic])
 
     status = SelectField(
         "Statut",

@@ -75,8 +75,7 @@ Votre suggestion sera vérifiée avant publication.{% endblock %} {% block conte
 
       <div class="form-field">
         {{ form.ville.label(class="form-label") }} {{
-        form.ville(class="form-input", placeholder="Ex : Saint-Denis
-        (optionnel)") }} {% if form.ville.errors %}
+        form.ville(class="form-select") }} {% if form.ville.errors %}
         <div class="form-errors" id="{{ form.ville.id }}-errors">
           {% for error in form.ville.errors %}
           <span class="error-item">{{ error }}</span>

@@ -572,6 +572,33 @@ def get_categories():
     finally:
         conn.close()
 
+
+def get_city_choices():
+    """Retourne les choix de villes pour les formulaires publics."""
+    if has_request_context() and hasattr(g, "_city_choices_cache"):
+        return g._city_choices_cache
+
+    choices = [("", "Non précisée")]
+    conn = get_db_connection()
+    if not conn:
+        return choices
+
+    try:
+        cur = conn.cursor()
+        cur.execute("SELECT nom FROM villes ORDER BY nom COLLATE NOCASE ASC")
+        for row in cur.fetchall():
+            nom = row["nom"]
+            if nom:
+                choices.append((nom, nom))
+    except sqlite3.Error as e:
+        app.logger.error(f"Erreur lors du chargement des villes: {e}")
+    finally:
+        conn.close()
+
+    if has_request_context():
+        g._city_choices_cache = choices
+    return choices
+
 #slug pour rendre compatible le nom de categorie dans la barre d'adresse
 def slugify(nom):
     # >>> AJOUT : slug ASCII propre et stable (supprime emojis/accents/symboles)
@@ -1475,6 +1502,7 @@ def accueil():
     form_inline = SiteForm()
     form_inline.categorie.choices = [(cat, cat) for cat in get_categories()]
     form_inline.categorie.choices.insert(0, ('', 'Sélectionnez une catégorie'))
+    form_inline.ville.choices = get_city_choices()
     return render_template(
         "index.html",
         data=data,
@@ -1525,6 +1553,7 @@ def voir_categorie(slug):
     cats = get_categories()
     form_inline.categorie.choices = [(cat, cat) for cat in cats]
     form_inline.categorie.choices.insert(0, ('', 'Sélectionnez une catégorie'))
+    form_inline.ville.choices = get_city_choices()
     if nom_categorie in cats:
         form_inline.categorie.data = nom_categorie
 
@@ -1760,6 +1789,7 @@ def website_submission_form():
     # Charge les catégories dynamiquement pour le SelectField
     form.categorie.choices = [(cat, cat) for cat in get_categories()]
     form.categorie.choices.insert(0, ('', 'Sélectionnez une catégorie'))
+    form.ville.choices = get_city_choices()
     
     if form.validate_on_submit():
         nom = form.nom.data
