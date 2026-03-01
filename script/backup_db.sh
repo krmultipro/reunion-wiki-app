@@ -1,19 +1,30 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-APP_DIR="/var/www/reunion-wiki-app"
-OUT_DIR="$APP_DIR/backups"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+APP_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+OUT_DIR="$APP_DIR/data/backups"
+COMPOSE_FILE="$APP_DIR/docker-compose.prod.yml"
 
 mkdir -p "$OUT_DIR"
 
 cd "$APP_DIR"
 
-docker-compose -f docker-compose.prod.yml exec -T web python - <<'PY'
+if command -v docker-compose >/dev/null 2>&1; then
+  COMPOSE_CMD=(docker-compose -f "$COMPOSE_FILE")
+elif command -v docker >/dev/null 2>&1; then
+  COMPOSE_CMD=(docker compose -f "$COMPOSE_FILE")
+else
+  echo "Erreur: docker-compose (ou docker compose) introuvable." >&2
+  exit 1
+fi
+
+"${COMPOSE_CMD[@]}" exec -T web python - <<'PY'
 import os, sqlite3, gzip, shutil
 from datetime import datetime, timedelta
 
 db = "/data/base.db"
-out_dir = "/app/backups"
+out_dir = "/data/backups"
 os.makedirs(out_dir, exist_ok=True)
 
 ts = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
