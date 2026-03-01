@@ -5,15 +5,16 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 APP_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 OUT_DIR="$APP_DIR/data_prod/backups"
 COMPOSE_FILE="$APP_DIR/docker-compose.prod.yml"
+PROJECT_NAME="${COMPOSE_PROJECT_NAME:-reunionwiki_prod}"
 
 mkdir -p "$OUT_DIR"
 
 cd "$APP_DIR"
 
 if command -v docker-compose >/dev/null 2>&1; then
-  COMPOSE_CMD=(docker-compose -f "$COMPOSE_FILE")
+  COMPOSE_CMD=(docker-compose -p "$PROJECT_NAME" -f "$COMPOSE_FILE")
 elif command -v docker >/dev/null 2>&1; then
-  COMPOSE_CMD=(docker compose -f "$COMPOSE_FILE")
+  COMPOSE_CMD=(docker compose -p "$PROJECT_NAME" -f "$COMPOSE_FILE")
 else
   echo "Erreur: docker-compose (ou docker compose) introuvable." >&2
   exit 1
