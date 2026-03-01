@@ -4,6 +4,8 @@ Formulaires avec validation pour Réunion Wiki
 SÉCURITÉ : Validation côté serveur pour éviter les injections
 """
 
+from dataclasses import field
+
 from flask_wtf import FlaskForm
 from wtforms import BooleanField, HiddenField, PasswordField, SelectField, StringField, SubmitField, TextAreaField
 from wtforms.validators import DataRequired, Length, URL, ValidationError
@@ -34,6 +36,16 @@ def _sanitize_multiline(value):
     value = re.sub(r"\n{3,}", "\n\n", value)
     return value
 
+def _normalize_url(value):
+    if not isinstance(value, str):
+        return value
+    value = _sanitize_basic(value)
+    if not value:
+        return value
+    if not value.startswith(("http://", "https://")):
+        value = "https://" + value
+    return value
+
 
 class SiteForm(FlaskForm):
     """Formulaire de proposition de site avec validation complète"""
@@ -49,8 +61,9 @@ class SiteForm(FlaskForm):
     
     lien = StringField('Lien du site', [
         DataRequired(message="Le lien du site est obligatoire"),
-        URL(message="Veuillez entrer une URL valide (ex: https://example.com)")
-    ], filters=[_sanitize_basic])
+        URL(message="Veuillez entrer une URL valide (ex: example.com ou https://example.com)")
+    ], filters=[_normalize_url])
+
     
     description = TextAreaField('Description', [
         DataRequired(message="La description est obligatoire"),
@@ -76,9 +89,9 @@ class SiteForm(FlaskForm):
     
     def validate_lien(self, field):
         """Validation personnalisée pour le lien"""
-        # S'assure que l'URL commence par http ou https
-        if not field.data.startswith(('http://', 'https://')):
-            raise ValidationError("L'URL doit commencer par http:// ou https://")
+        if not field.data.startswith(("http://", "https://")):
+            raise ValidationError("URL invalide")
+
 
     def validate_honeypot(self, field):
         """Champ trappé pour les robots : doit rester vide"""

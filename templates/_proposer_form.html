@@ -32,8 +32,8 @@
       </div>
       <div class="form-field">
         {{ form.lien.label(class="form-label") }} {{
-        form.lien(class="form-input", placeholder="https://example.com") }} {%
-        if form.lien.errors %}
+        form.lien(class="form-input", placeholder="example.com") }} {% if
+        form.lien.errors %}
         <div class="form-errors" id="{{ form.lien.id }}-errors">
           {% for error in form.lien.errors %}
           <span class="error-item">{{ error }}</span>
