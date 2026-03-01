@@ -11,9 +11,9 @@ sûres du mois et nouveaux sites populaires.{% endblock %} {% block content %}
 
   <h3>🔥 Les plus consultés cette semaine</h3>
   <p class="intro">Les sites les plus regardés ces 7 derniers jours.</p>
-  <ul>
+  <ul id="trending-week-list" class="js-load-more-list" data-step="5">
     {% for site in trending_sites %}
-    <li class="ranking-item">
+    <li class="ranking-item js-load-item">
       <div class="ranking-top-line">
         <span class="ranking-badge">
           {% if loop.index == 1 %}🥇 {% elif loop.index == 2 %}🥈 {% elif
@@ -35,14 +35,28 @@ sûres du mois et nouveaux sites populaires.{% endblock %} {% block content %}
     </li>
     {% endfor %}
   </ul>
+  <div class="load-more-wrap" id="trending-week-load-more-wrap">
+    <button
+      type="button"
+      id="trending-week-load-more-btn"
+      class="btn btn-secondary"
+    >
+      Voir plus
+    </button>
+    <p
+      id="trending-week-load-more-status"
+      class="load-more-status"
+      aria-live="polite"
+    ></p>
+  </div>
 
   <h3>✅ Les valeurs sûres du mois</h3>
   <p class="intro">
     Les sites les plus utiles et les plus réguliers sur les 30 derniers jours.
   </p>
-  <ul>
+  <ul id="stable-month-list" class="js-load-more-list" data-step="5">
     {% for site in stable_sites %}
-    <li class="ranking-item">
+    <li class="ranking-item js-load-item">
       <div class="ranking-top-line">
         <span class="ranking-badge">
           {% if loop.index == 1 %}🥇 {% elif loop.index == 2 %}🥈 {% elif
@@ -64,12 +78,26 @@ sûres du mois et nouveaux sites populaires.{% endblock %} {% block content %}
     </li>
     {% endfor %}
   </ul>
+  <div class="load-more-wrap" id="stable-month-load-more-wrap">
+    <button
+      type="button"
+      id="stable-month-load-more-btn"
+      class="btn btn-secondary"
+    >
+      Voir plus
+    </button>
+    <p
+      id="stable-month-load-more-status"
+      class="load-more-status"
+      aria-live="polite"
+    ></p>
+  </div>
 
   <h3>⬆️ Les catégories qui montent</h3>
   <p class="intro">Les thèmes qui attirent le plus de monde en ce moment.</p>
-  <ul>
+  <ul id="trending-categories-list" class="js-load-more-list" data-step="5">
     {% for cat in trending_categories %}
-    <li class="ranking-item">
+    <li class="ranking-item js-load-item">
       <div class="ranking-top-line">
         <span class="ranking-badge">
           {% if loop.index == 1 %}🥇 {% elif loop.index == 2 %}🥈 {% elif
@@ -84,22 +112,33 @@ sûres du mois et nouveaux sites populaires.{% endblock %} {% block content %}
       </div>
       <div class="ranking-stats">
         {{ cat['clicks_7d'] }} visite{{ '' if cat['clicks_7d'] == 1 else 's' }}
-        cette semaine {% if cat['growth_pct'] is not none %} • {% if
-        cat['growth_pct'] > 0 %}en hausse de {{ cat['growth_pct'] }}% {% elif
-        cat['growth_pct'] < 0 %}en baisse de {{ (cat['growth_pct']|abs) }}% {%
-        else %}stable {% endif %} {% endif %}
+        cette semaine
       </div>
     </li>
     {% endfor %}
   </ul>
+  <div class="load-more-wrap" id="trending-categories-load-more-wrap">
+    <button
+      type="button"
+      id="trending-categories-load-more-btn"
+      class="btn btn-secondary"
+    >
+      Voir plus
+    </button>
+    <p
+      id="trending-categories-load-more-status"
+      class="load-more-status"
+      aria-live="polite"
+    ></p>
+  </div>
 
   <h3>🆕 Nouveaux sites qui plaisent déjà</h3>
   <p class="intro">
     Les nouveaux sites ajoutés récemment et déjà bien consultés.
   </p>
-  <ul>
+  <ul id="new-performers-list" class="js-load-more-list" data-step="5">
     {% for site in new_performers %}
-    <li class="ranking-item">
+    <li class="ranking-item js-load-item">
       <div class="ranking-top-line">
         <span class="ranking-badge">
           {% if loop.index == 1 %}🥇 {% elif loop.index == 2 %}🥈 {% elif
@@ -121,9 +160,123 @@ sûres du mois et nouveaux sites populaires.{% endblock %} {% block content %}
     </li>
     {% endfor %}
   </ul>
+  <div class="load-more-wrap" id="new-performers-load-more-wrap">
+    <button
+      type="button"
+      id="new-performers-load-more-btn"
+      class="btn btn-secondary"
+    >
+      Voir plus
+    </button>
+    <p
+      id="new-performers-load-more-status"
+      class="load-more-status"
+      aria-live="polite"
+    ></p>
+  </div>
+
+  <section class="next-steps" aria-label="À voir ensuite">
+    <h3>À voir ensuite</h3>
+    <p>Continue ta découverte de Réunion Wiki 👇</p>
+
+    <div class="next-steps__links">
+      <a href="{{ url_for('most_visited_sites') }}">🏆 Sites les + visités</a>
+      <a href="{{ url_for('most_visited_categories') }}"
+        >📂 Catégories les + visitées</a
+      >
+      <a href="{{ url_for('recently_added_sites') }}"
+        >📌 Derniers sites ajoutés</a
+      >
+    </div>
+  </section>
 
   <div id="bouton_plus">
     <a href="{{ url_for('accueil') }}">← Retour à l'accueil</a>
   </div>
 </div>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    function setupLoadMore(cfg) {
+      const list = document.getElementById(cfg.listId);
+      const btn = document.getElementById(cfg.btnId);
+      const wrap = document.getElementById(cfg.wrapId);
+      const status = document.getElementById(cfg.statusId);
+      if (!list || !btn || !wrap || !status) return;
+
+      const items = Array.from(list.querySelectorAll(".js-load-item"));
+      const total = items.length;
+      const step = Number(list.dataset.step || 5);
+      let visibleCount = Math.min(step, total);
+
+      function render() {
+        items.forEach((item, index) => {
+          item.hidden = index >= visibleCount;
+        });
+        const noun = visibleCount > 1 ? cfg.plural : cfg.singular;
+        status.textContent = `${visibleCount} ${noun} affiché${visibleCount > 1 ? "s" : ""} sur ${total}`;
+
+        if (visibleCount >= total) {
+          btn.hidden = true;
+          if (total > step) {
+            status.textContent += ` • ${cfg.allText}`;
+          }
+        } else {
+          btn.hidden = false;
+        }
+      }
+
+      if (total <= step) {
+        wrap.hidden = true;
+        return;
+      }
+
+      btn.addEventListener("click", function () {
+        visibleCount = Math.min(visibleCount + step, total);
+        render();
+      });
+
+      render();
+    }
+
+    setupLoadMore({
+      listId: "trending-week-list",
+      btnId: "trending-week-load-more-btn",
+      wrapId: "trending-week-load-more-wrap",
+      statusId: "trending-week-load-more-status",
+      singular: "site",
+      plural: "sites",
+      allText: "Tous les sites sont affichés.",
+    });
+
+    setupLoadMore({
+      listId: "stable-month-list",
+      btnId: "stable-month-load-more-btn",
+      wrapId: "stable-month-load-more-wrap",
+      statusId: "stable-month-load-more-status",
+      singular: "site",
+      plural: "sites",
+      allText: "Tous les sites sont affichés.",
+    });
+
+    setupLoadMore({
+      listId: "trending-categories-list",
+      btnId: "trending-categories-load-more-btn",
+      wrapId: "trending-categories-load-more-wrap",
+      statusId: "trending-categories-load-more-status",
+      singular: "catégorie",
+      plural: "catégories",
+      allText: "Toutes les catégories sont affichées.",
+    });
+
+    setupLoadMore({
+      listId: "new-performers-list",
+      btnId: "new-performers-load-more-btn",
+      wrapId: "new-performers-load-more-wrap",
+      statusId: "new-performers-load-more-status",
+      singular: "site",
+      plural: "sites",
+      allText: "Tous les sites sont affichés.",
+    });
+  });
+</script>
 {% endblock %}
