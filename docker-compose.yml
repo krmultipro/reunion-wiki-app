@@ -9,14 +9,14 @@ services:
     volumes:
       - redis_dev_data:/data #redis stocke ses données dans /data dans le conteneur
     networks:
-      - reunionwiki_net
+      - reunionwiki_dev_net
 
   # Application Flask
   web:
     build: . # Construit l'image depuis le Dockerfile
     container_name: web_dev
     volumes:
-      - ./data:/app/data # Monte le dossier data pour la persistance des données
+      - ./data_dev:/app/data # Monte le dossier data pour la persistance des données
     restart: always
     env_file:
       - .env # Charge automatiquement vos variables SECRET_KEY, DATABASE_PATH, etc.
@@ -28,11 +28,11 @@ services:
     expose:
       - "8000" # Expose le port 8000 pour la communication interne entre conteneurs
     networks:
-      - reunionwiki_net
+      - reunionwiki_dev_net
 
 volumes:
   redis_dev_data: {}
 
 networks:
-  reunionwiki_net:
-    external: true
+  reunionwiki_dev_net:
+    driver: bridge
