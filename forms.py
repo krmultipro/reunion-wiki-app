@@ -129,10 +129,6 @@ class ModerationActionForm(FlaskForm):
 class AdminSiteForm(SiteForm):
     """Formulaire complet pour la création/édition d'un site côté admin"""
 
-    ville = StringField('Ville', [
-        Length(max=50, message="Le nom de la ville ne peut pas dépasser 50 caractères")
-    ], filters=[_sanitize_basic])
-
     status = SelectField(
         "Statut",
         choices=[
