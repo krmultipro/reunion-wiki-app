@@ -1359,13 +1359,19 @@ def admin_edit_site(site_id):
     categories_list = get_categories()
     form.categorie.choices = [(cat, cat) for cat in categories_list]
     form.categorie.choices.insert(0, ("", "Sélectionnez une catégorie"))
+    form.ville.choices = get_city_choices()
     posted_category = request.form.get("categorie")
+    posted_ville = request.form.get("ville")
     if posted_category and posted_category not in [choice[0] for choice in form.categorie.choices]:
         form.categorie.choices.append((posted_category, posted_category))
+    if posted_ville and posted_ville not in [choice[0] for choice in form.ville.choices]:
+        form.ville.choices.append((posted_ville, posted_ville))
 
     if request.method == "GET":
         form.nom.data = site["nom"]
-        form.ville.data = site["ville"]
+        if site["ville"] and site["ville"] not in [choice[0] for choice in form.ville.choices]:
+            form.ville.choices.append((site["ville"], site["ville"]))
+        form.ville.data = site["ville"] or ""
         form.lien.data = site["lien"]
         form.description.data = site["description"]
         form.status.data = site["status"]
@@ -1444,9 +1450,13 @@ def admin_create_site():
     categories_list = get_categories()
     form.categorie.choices = [(cat, cat) for cat in categories_list]
     form.categorie.choices.insert(0, ("", "Sélectionnez une catégorie"))
+    form.ville.choices = get_city_choices()
     posted_category = request.form.get("categorie")
+    posted_ville = request.form.get("ville")
     if posted_category and posted_category not in [choice[0] for choice in form.categorie.choices]:
         form.categorie.choices.append((posted_category, posted_category))
+    if posted_ville and posted_ville not in [choice[0] for choice in form.ville.choices]:
+        form.ville.choices.append((posted_ville, posted_ville))
 
     if form.validate_on_submit():
         if form.categorie.data not in [choice[0] for choice in form.categorie.choices if choice[0]]:
