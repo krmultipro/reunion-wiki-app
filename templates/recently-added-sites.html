@@ -3,9 +3,9 @@ Wiki{% endblock %} {% block content %}
 <div class="category_page recent_page">
   <h2>📌 Derniers sites ajoutés</h2>
 
-  <ul class="recent-list">
+  <ul id="recent-sites-list" class="recent-list js-load-more-list" data-step="5">
     {% for site in sites %}
-    <li class="recent-item">
+    <li class="recent-item js-load-item">
       <div class="recent-datebox">
         <span class="recent-day"> {{ site['date_ajout'][8:10] }} </span>
 
@@ -35,6 +35,80 @@ Wiki{% endblock %} {% block content %}
     {% endfor %}
   </ul>
 
+  <div class="load-more-wrap" id="recent-sites-load-more-wrap">
+    <button
+      type="button"
+      id="recent-sites-load-more-btn"
+      class="btn btn-secondary"
+    >
+      Voir plus
+    </button>
+    <p
+      id="recent-sites-load-more-status"
+      class="load-more-status"
+      aria-live="polite"
+    ></p>
+  </div>
+
+  <section class="next-steps" aria-label="À voir ensuite">
+    <h3>À voir ensuite</h3>
+    <p>Continue ta découverte de Réunion Wiki 👇</p>
+
+    <div class="next-steps__links">
+      <a href="{{ url_for('trends') }}">🔥 Tendances</a>
+      <a href="{{ url_for('most_visited_sites') }}">🏆 Sites les + visités</a>
+      <a href="{{ url_for('most_visited_categories') }}"
+        >📂 Catégories les + visitées</a
+      >
+    </div>
+  </section>
+
   <div id="bouton_plus"><a href="/">← Retour à l'accueil</a></div>
 </div>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const list = document.getElementById("recent-sites-list");
+    const btn = document.getElementById("recent-sites-load-more-btn");
+    const wrap = document.getElementById("recent-sites-load-more-wrap");
+    const status = document.getElementById("recent-sites-load-more-status");
+    if (!list || !btn || !wrap || !status) return;
+
+    const items = Array.from(list.querySelectorAll(".js-load-item"));
+    const total = items.length;
+    const step = Number(list.dataset.step || 5);
+    let visibleCount = Math.min(step, total);
+
+    function pluralSites(n) {
+      return n > 1 ? "sites" : "site";
+    }
+
+    function render() {
+      items.forEach((item, index) => {
+        item.hidden = index >= visibleCount;
+      });
+      status.textContent = `${visibleCount} ${pluralSites(visibleCount)} affiché${visibleCount > 1 ? "s" : ""} sur ${total}`;
+
+      if (visibleCount >= total) {
+        btn.hidden = true;
+        if (total > step) {
+          status.textContent += " • Tous les sites sont affichés.";
+        }
+      } else {
+        btn.hidden = false;
+      }
+    }
+
+    if (total <= step) {
+      wrap.hidden = true;
+      return;
+    }
+
+    btn.addEventListener("click", function () {
+      visibleCount = Math.min(visibleCount + step, total);
+      render();
+    });
+
+    render();
+  });
+</script>
 {% endblock %}
