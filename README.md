@@ -1,225 +1,200 @@
+````markdown
 # 🌴 Réunion Wiki
 
-Portail participatif qui recense les sites internet utiles de La Réunion : culture, emploi, services, météo, transports, etc. L’objectif est double :
+Réunion Wiki, c’est un portail participatif pour retrouver rapidement les sites utiles de La Réunion:
+emploi, démarches, santé, culture, transports, météo, actus, etc.
 
-- simplifier l’accès à l’information locale de qualité ;
-- mettre en lumière des ressources péi parfois méconnues en s’appuyant sur les contributions des Réunionnais.
+Objectif:
 
-Le projet est développé et maintenu par Kery dans le cadre d’un déploiement VPS (OVH) et d’une alternance en conception/développement d’applications.
-
----
-
-## ✨ Fonctionnalités clés
-
-- Liste de catégories thématiques (Emploi & formation, Culture & loisirs, Nourriture, Transport, Météo & alertes, Actualités, Achats) + page “Nouveaux sites”.
-- Carte “Proposer un site” sur l’accueil, les pages catégories et page dédiée, avec validation serveur, honeypot anti-bot et notification email.
-- Navigation mobile façon “ruban” scrollable, PWA installable (manifest + service worker réseau-first).
-- SEO optimisé : métadonnées dynamiques, sitemap, robots.txt, FAQ, canonical par slug.
-- Sécurité : CSRF, validation WTForms, rate limiting, headers de protection, configuration par environnement.
-- Monitoring : logs Nginx/Gunicorn, GoAccess (statistiques publiques), sauvegardes cron, systemd service.
-- Espace admin sécurisé (`/admin`) pour valider, modifier, publier ou supprimer les propositions directement sur la base de production.
-
-Retrouve l’historique des versions dans [`CHANGELOG.md`](CHANGELOG.md).
+- rendre l’info locale plus simple d’accès;
+- mettre en avant des ressources péi fiables;
+- construire un annuaire utile avec les contributions des Réunionnais.
 
 ---
 
-## 🧱 Architecture
+## ✨ Ce que fait le projet
 
-- **Backend** : Python 3, Flask, Jinja2, Flask-WTF, Flask-Limiter.
-- **Base de données** : SQLite (index sur colonnes clés, script `optimize_db.py`).
-- **Frontend** : HTML5, CSS3, JS léger (PWA, nav scrollable), aucun framework.
-- **Notifications** : SMTP (msmtp côté VPS ou configuration Gmail via variables d’environnement).
-- **Déploiement** : VPS OVH (Gunicorn + Nginx + Certbot), service systemd `reunionwiki`.
-- **Monitoring & sécurité** : UFW, Fail2Ban, backups cron, accès SSH par clés.
-
----
-
-## ✅ Prérequis
-
-- Python 3.10+
-- `pip` et `venv`
-- SQLite 3 (inclus dans la plupart des distributions)
-- Optionnel : Redis si tu veux utiliser un backend de rate limiting dédié
+- Annuaire de sites classés par catégories.
+- Page “Sites les plus visités”.
+- Page “Catégories les plus visitées”.
+- Page “Tendances” (tops semaine/mois, catégories en hausse, nouveaux sites qui performent).
+- Page “Derniers sites ajoutés”.
+- Recherche globale (nom, catégorie, description, lien, ville).
+- Villes gérées en base (`villes`) + pages par ville.
+- Formulaire “Proposer un site” (accueil + page dédiée + pages catégories).
+- Modération admin complète (`/admin`): valider, refuser, modifier, supprimer, créer.
+- Suivi des clics (`site_clicks`) + vue admin des clics.
+- SEO de base (title/description dynamiques, canonical, OG/Twitter).
+- PWA (manifest + service worker).
 
 ---
 
-## 🚀 Installation locale
+## 🧱 Stack technique
+
+- Backend: Python, Flask, Jinja2
+- Formulaires/sécurité: Flask-WTF, WTForms, CSRF
+- Limitation de trafic: Flask-Limiter (+ Redis en prod)
+- Base de données: SQLite
+- Déploiement prod: Docker + Docker Compose + Nginx + Gunicorn + Certbot
+
+---
+
+## 🗂️ Routes principales
+
+- `/` : accueil
+- `/recherche?q=...` : recherche
+- `/categorie/<slug>` : catégorie
+- `/sites-les-plus-visites` : top sites
+- `/categories-les-plus-visitees` : top catégories
+- `/sites-ajoutes-recemment` : derniers ajouts
+- `/tendances` : tendances
+- `/villes` : liste des villes
+- `/ville/<slug>` : page d’une ville
+- `/proposer-site` : formulaire complet
+- `/go/<id>` : redirection + incrément clic
+- `/admin` : dashboard modération
+
+---
+
+## 🛡️ Sécurité (résumé)
+
+- CSRF actif sur les formulaires.
+- Login admin + mot de passe hashé (`ADMIN_PASSWORD_HASH`).
+- Limitation de débit sur endpoints sensibles.
+- Validation serveur stricte des formulaires.
+- Redirections de retour contrôlées (`next` / `return_to`).
+- Logout admin en POST.
+- Tracking clics avec anti-spam basique:
+  - pas de double comptage même IP sur le même site pendant 30 min,
+  - filtrage simple des user-agents bots.
+
+---
+
+## 🚀 Lancer en local
 
 ```bash
-# 1. Cloner le projet
-git clone <URL_DU_REPO> reunion-wiki
-cd reunion-wiki
+git clone <URL_DU_REPO> reunion-wiki-app
+cd reunion-wiki-app
 
-# 2. Créer l'environnement virtuel
 python3 -m venv .venv
 source .venv/bin/activate
-
-# 3. Installer les dépendances
-pip install --upgrade pip
 pip install -r requirements.txt
 
-# 4. Copier l'exemple de configuration (à créer au besoin)
-cp script/.env.sample .env  # adapter les valeurs
+# config
+cp .env.example .env  # ou crée ton .env à la main
 
-# 5. Initialiser/optimiser la base (facultatif en dev)
-python3 optimize_db.py
-
-# 6. Lancer le serveur Flask
+# run
 python3 app.py
 ```
+````
 
-L’application écoute sur `http://127.0.0.1:5000`. Pour stopper : `Ctrl+C`, puis `deactivate`.
+App dispo sur `http://127.0.0.1:5000`
 
 ---
 
-## ⚙️ Configuration `.env`
-
-Créer un fichier `.env` à la racine (non versionné). Exemple minimal :
+## ⚙️ Variables `.env` utiles
 
 ```bash
-SECRET_KEY=change-me
-DATABASE_PATH=base.db
 FLASK_ENV=development
+SECRET_KEY=change-me
+DATABASE_PATH=data/base.db
 
-# Notifications email (désactivées par défaut)
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD_HASH=...
+
 MAIL_ENABLED=false
 MAIL_SERVER=smtp.gmail.com
 MAIL_PORT=587
-MAIL_USERNAME=reunionwiki974@gmail.com
-MAIL_PASSWORD=motdepasse_application
+MAIL_USERNAME=...
+MAIL_PASSWORD=...
 MAIL_USE_TLS=true
 MAIL_USE_SSL=false
-MAIL_DEFAULT_SENDER=reunionwiki974@gmail.com
-MAIL_RECIPIENTS=reunionwiki974@gmail.com
+MAIL_DEFAULT_SENDER=...
+MAIL_RECIPIENTS=...
 
-# Rate limiting (flask-limiter)
-RATELIMIT_DEFAULT=None
-# RATELIMIT_STORAGE_URL=redis://localhost:6379/0  # optionnel
-
-# Compte de modération (/admin)
-ADMIN_USERNAME=mon-admin
-ADMIN_PASSWORD=motdepassefort
-# ou utilisez un hash sécurisé et commentez ADMIN_PASSWORD :
-# ADMIN_PASSWORD_HASH=pbkdf2:sha256:...
+RATELIMIT_STORAGE_URL=redis://redis:6379/0
+RATELIMIT_DEFAULT=
+LOG_LEVEL=WARNING
 ```
 
-Les variables sont chargées automatiquement par `config.py`. Ne jamais commiter `.env`.
-
 ---
 
-## 🛡️ Interface admin & modération
-
-- URL : `/admin` (formulaire de connexion `/admin/login`, déconnexion `/admin/logout`).
-- Les identifiants sont lus dans l’environnement (`ADMIN_USERNAME` + `ADMIN_PASSWORD` **ou** `ADMIN_PASSWORD_HASH`).
-- Pour générer un hash sécurisé :
-  ```bash
-  python3 - <<'PY'
-  from werkzeug.security import generate_password_hash
-  print(generate_password_hash("motdepassefort"))
-  PY
-  ```
-  Copie le résultat dans `ADMIN_PASSWORD_HASH` et supprime `ADMIN_PASSWORD`.
-- Une fois connecté, tu peux valider, modifier, publier un nouveau site ou supprimer les propositions en attente ; la mise à jour est faite directement dans `base.db` (celle du VPS).
-- Chaque action est journalisée dans les logs Gunicorn (`journalctl -u reunionwiki -f`).
-
----
-
-## 🧪 Validation rapide
-
-- `python3 -m compileall app.py forms.py config.py optimize_db.py`  
-  (permet de détecter des erreurs de syntaxe avant push)
-- Tests manuels : navigation, soumission du formulaire, vérification des mails (si activés).
-
----
-
-## 🛠️ Commandes utiles
+## 🔐 Générer un hash admin
 
 ```bash
-# Optimiser la base (index, ANALYZE, VACUUM)
-python3 optimize_db.py
-
-# Lancer l'app en mode développement (auto reload via Flask)
-FLASK_ENV=development python3 app.py
-
-# Lancer via Gunicorn (local)
-gunicorn -w 4 -b 127.0.0.1:8000 app:app
-
-# Regarder les logs Gunicorn (stdout/stderr)
-journalctl -u reunionwiki -f
-
-# Sur le VPS : redémarrer le service
-sudo systemctl restart reunionwiki
-
-# Exporter la table `sites` (CSV horodaté)
-python3 script/export_sites.py \
-  --database /var/www/reunion-wiki-app/base.db \
-  --output-dir /home/reunionwiki/exports
+./.venv/bin/python -c "from werkzeug.security import generate_password_hash; print(generate_password_hash('TON_MOT_DE_PASSE'))"
 ```
 
 ---
 
-## 🚀 Déploiement OVH (workflow recommandé)
+## 🐳 Déploiement prod (Docker)
 
-1. **Développer/tester localement**, pousser sur GitHub/Gitea.
-2. Sur le VPS :
-   ```bash
-   cd /var/www
-   sudo mv reunion-wiki-app reunion-wiki-app.bak.$(date +%Y%m%d)
-   git clone <URL_DU_REPO> reunion-wiki-app
-   ```
-3. Copier les fichiers sensibles depuis l’ancienne version (`.env`, `base.db`, uploads, etc.).
-4. Vérifier les permissions (`sudo chown -R reunionwiki:reunionwiki /var/www/reunion-wiki-app`).
-5. Redémarrer Gunicorn via systemd :
-   ```bash
-   sudo systemctl restart reunionwiki
-   sudo systemctl status reunionwiki
-   ```
-6. Regarder les logs (`journalctl -u reunionwiki -f`) et Nginx (`/var/log/nginx/reunionwiki_access.log`).
+```bash
+git pull origin main
+docker compose -f docker-compose.prod.yml up -d --build
+```
 
-> ℹ️ Un script `update_from_github.sh` peut être utilisé s’il travaille sur un clone git valide. Toujours tester en staging avant de toucher la prod.
+Le conteneur web lance automatiquement:
+
+- `python migrate.py`
+- puis `gunicorn`
+
+Donc les migrations sont appliquées au démarrage.
 
 ---
 
-## 🔐 Sécurité & bonnes pratiques
+## 🗄️ Migration / base de données
 
-- Validation serveur stricte (WTForms + filtres custom) et champ honeypot.
-- CSRF sur tous les formulaires, rate limiting global et par endpoint.
-- Headers HTTP durcis (`X-Frame-Options`, `X-Content-Type-Options`, etc.).
-- Auth SMTP via mots de passe d’application (Gmail) ; pas de mot de passe en clair dans le code.
-- Service worker en mode réseau-first pour éviter les pages obsolètes.
-- Sauvegardes automatiques via cron (`/root/backup_reunionwiki.sh`) vers `/home/reunionwiki/`.
-- Accès SSH uniquement par clé, port personnalisé, Fail2Ban actif.
+`migrate.py` est idempotent et gère notamment:
 
----
-
-## 📈 Observabilité
-
-- Tableau GoAccess public : `http://reunionwiki.re/static/report.html`
-- Logs applicatifs : `journalctl -u reunionwiki`
-- Logs Nginx : `/var/log/nginx/reunionwiki_access.log` (trafic) et `_error.log`
-- Notifications système par msmtp (liées au compte Gmail).
+- création/mise à jour des tables (`sites`, `site_clicks`, `categories`, `villes`);
+- ajout des colonnes manquantes (`click_count`, `en_vedette`, `ville_id`);
+- index SQLite;
+- normalisation de la table `villes` (liste canonique);
+- backfill de `sites.ville_id`.
 
 ---
 
-## 🤝 Contribution & roadmap
+## 💾 Backups
 
-- Travail sur branches, PR revues avant merge.
-- Idées prioritaires : carousel avec visuels, moteur de recherche + tris, interface admin de modération, statistiques par site, système d’avis/commentaires, logo officiel.
-- Toute nouvelle feature doit respecter :
-  1. pas de styles inline (tout dans `static/style.css`);
-  2. pas d’accents/emoji dans les commandes bash pour éviter les soucis d’encodage ;
-  3. tests locaux avant déploiement (et `python3 -m compileall`).
+Le projet utilise un script de backup DB (prod) dans `script/backup_db.sh`.
+
+Principe:
+
+- backup de `/data/base.db` depuis le conteneur web,
+- sortie dans `backups/`,
+- compression `.gz`,
+- rotation automatique (ex: 30 jours).
+
+Exemple cron (VPS):
+
+```cron
+5 * * * * /var/www/reunion-wiki-app/script/backup_db.sh >> /var/www/reunion-wiki-app/logs/backup_db.log 2>&1
+```
 
 ---
 
-## 📜 Changelog & licence
+## 🤝 Workflow conseillé
 
-- Historique détaillé : voir [`CHANGELOG.md`](CHANGELOG.md).
-- Licence : privée (usage interne au projet Réunion Wiki). Contacte `reunionwiki974@gmail.com` pour toute demande.
+- Travailler sur `dev`
+- Tester
+- Merge vers `main`
+- Pull + redeploy sur VPS
 
 ---
 
-## 🙌 Remerciements
+## 📌 Notes
 
-Le projet est né grâce à la communauté réunionnaise très active sur les réseaux et soutenu par la formation ExperNet / EDF Réunion.  
-Lancement officiel : 10 juin 2024.
+- Les dossiers runtime (`data/`, `backups/`, `logs/`, `certbot/`, `static/reports/`) ne sont pas faits pour être versionnés.
+- Le projet évolue en continu: focus sur qualité data locale, UX mobile, sécurité admin, et valeur SEO.
+
+---
+
+## 🙌
+
+Merci à toutes les personnes qui proposent des sites et font vivre l’écosystème local.
+La Réunion lé la. 🌋
+
+```
+
+```
