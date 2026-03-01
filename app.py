@@ -1805,7 +1805,7 @@ def website_submission_form():
         conn = get_db_connection()
         if not conn:
             flash("Erreur technique. Veuillez réessayer plus tard.", "error")
-            return render_template("formulaire.html", form=form)
+            return render_template("website-submission-form.html", form=form)
         
         try:
             cur = conn.cursor()
