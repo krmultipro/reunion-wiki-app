@@ -1532,6 +1532,16 @@ h1 {
   white-space: nowrap;
 }
 
+.nav-more-panel[hidden] {
+  display: none !important;
+}
+
+.nav-more-links {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
 /* Mobile: navbar en grille 3x3 (sans slide), style homogène avec .category */
 @media (max-width: 768px) {
   .main-nav {
@@ -1544,50 +1554,83 @@ h1 {
     border-bottom: 1px solid rgba(0, 0, 0, 0.08);
   }
 
-  .nav-scroll {
-    overflow: visible;
-  }
-
   .main-nav ul,
   .nav-links {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 0.4rem;
-    width: 100%;
-    min-width: 0;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-auto-rows: 2.55rem;
+    gap: 0.45rem;
     padding: 0;
     margin: 0;
-    list-style: none;
-    scroll-snap-type: none;
+    min-width: 0;
   }
 
   .main-nav li {
     min-width: 0;
     width: 100%;
-    margin: 0;
-    flex: none;
-    scroll-snap-align: none;
+    height: 2.55rem;
   }
 
-  .main-nav a {
-    box-sizing: border-box;
+  .main-nav a,
+  .nav-more-btn {
     display: flex;
     align-items: center;
     justify-content: center;
     width: 100%;
-    min-height: 2.35rem;
-    padding: 0.35rem 0.45rem;
+    height: 100%;
+    min-height: 0;
+    padding: 0 0.45rem;
     border-radius: 0.5rem;
-    white-space: normal;
-    word-break: break-word;
+    font-size: 0.8rem;
+    line-height: 1.05;
     text-align: center;
-    line-height: 1.1;
-    font-size: 0.82rem;
-    transform: none;
+    border: 0;
+    box-sizing: border-box;
   }
 
-  .main-nav a:hover,
-  .main-nav a.active {
-    transform: none;
+  .nav-more-btn {
+    background: var(--vert-fougere);
+    color: var(--blanc);
+    font-weight: 600;
+  }
+
+  .nav-more-panel {
+    margin-top: 0.45rem;
+  }
+
+  .nav-more-links {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-rows: 2.45rem;
+    gap: 0.45rem;
+  }
+
+  .nav-more-links li {
+    margin: 0;
+    width: 100%;
+    height: 2.45rem;
+    min-width: 0;
+  }
+
+  .nav-more-panel a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    background: #fff;
+    color: var(--vert-fougere);
+    text-decoration: none;
+    padding: 0.2rem 0.55rem;
+    border-radius: 0.5rem;
+    text-align: center;
+    font-weight: 600;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    line-height: 1.15;
+    font-size: 0.76rem;
+    box-sizing: border-box;
   }
 }

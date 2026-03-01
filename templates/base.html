@@ -110,41 +110,52 @@
               class="{{ 'active' if request.path == url_for('most_visited_sites') else '' }}"
               aria-current="{{ 'page' if request.path == url_for('most_visited_sites') else '' }}"
             >
-              Sites les + visités
+              + visités
             </a>
           </li>
           <li>
-  <a
-    href="{{ url_for('trends') }}"
-    class="{{ 'active' if request.path == url_for('trends') else '' }}"
-    aria-current="{{ 'page' if request.path == url_for('trends') else '' }}"
-  >
-    Tendances
-  </a>
-</li>
+            <a
+              href="{{ url_for('trends') }}"
+              class="{{ 'active' if request.path == url_for('trends') else '' }}"
+              aria-current="{{ 'page' if request.path == url_for('trends') else '' }}"
+            >
+              Tendances
+            </a>
+          </li>
+          <li class="nav-more-item">
+            <button
+              class="nav-more-btn"
+              type="button"
+              aria-expanded="false"
+              aria-controls="nav-more-panel"
+            >
+              Plus
+            </button>
+          </li>
+        </ul>
+      </div>
 
-<li>
-  <a
-    href="{{ url_for('most_visited_categories') }}"
-    class="{{ 'active' if request.path == url_for('most_visited_categories') else '' }}"
-    aria-current="{{ 'page' if request.path == url_for('most_visited_categories') else '' }}"
-  >
-    Catégories les + visitées
-  </a>
-</li>
-<!--<li>
-  <a
-    href="{{ url_for('villes_index') }}"
-    class="{{ 'active' if request.path == url_for('villes_index') else '' }}"
-    aria-current="{{ 'page' if request.path == url_for('villes_index') else '' }}"
-  >
-    Villes
-  </a>
-</li>
--->
-
-
-
+      <div id="nav-more-panel" class="nav-more-panel" hidden>
+        <ul class="nav-more-links">
+          <li>
+            <a
+              href="{{ url_for('most_visited_categories') }}"
+              class="{{ 'active' if request.path == url_for('most_visited_categories') else '' }}"
+              aria-current="{{ 'page' if request.path == url_for('most_visited_categories') else '' }}"
+            >
+              Catégories les + visitées
+            </a>
+          </li>
+          <!--<li>
+            <a
+              href="{{ url_for('villes_index') }}"
+              class="{{ 'active' if request.path == url_for('villes_index') else '' }}"
+              aria-current="{{ 'page' if request.path == url_for('villes_index') else '' }}"
+            >
+              Villes
+            </a>
+          </li>
+          -->
           <li>
             <a
               href="{{ url_for('recently_added_sites') }}"
@@ -183,6 +194,8 @@
         </ul>
       </div>
     </nav>
+
+
     <div class="search-row">
       <form
         action="{{ url_for('search') }}"
@@ -312,5 +325,19 @@
         window.addEventListener("resize", updateShadows);
       });
     </script>
+    <script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const btn = document.querySelector(".nav-more-btn");
+    const panel = document.getElementById("nav-more-panel");
+    if (!btn || !panel) return;
+
+    btn.addEventListener("click", function () {
+      const expanded = btn.getAttribute("aria-expanded") === "true";
+      btn.setAttribute("aria-expanded", String(!expanded));
+      panel.hidden = expanded;
+    });
+  });
+</script>
+
   </body>
 </html>
