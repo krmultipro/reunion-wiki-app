@@ -1535,7 +1535,13 @@ h1 {
 /* Mobile: navbar en grille 3x3 (sans slide), style homogène avec .category */
 @media (max-width: 768px) {
   .main-nav {
-    margin: 0.8rem 0;
+    position: sticky;
+    top: 0;
+    z-index: 999;
+    background: var(--fond);
+    padding: 0.35rem 0;
+    margin: 0.4rem 0 0.8rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
   }
 
   .nav-scroll {
