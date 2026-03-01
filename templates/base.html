@@ -79,19 +79,18 @@
 
     <!-- Navigation principale -->
     <nav class="main-nav">
+      <div class="main-nav__row">
+      <a
+        href="{{ url_for('accueil') }}"
+        class="nav-home-link {{ 'active' if request.path == url_for('accueil') else '' }}"
+        aria-current="{{ 'page' if request.path == url_for('accueil') else '' }}"
+        aria-label="Accueil"
+      >
+        🏠
+      </a>
       <div class="nav-scroll" data-scrollable>
         <!-- Liste des liens -->
         <ul class="nav-links" id="main-nav-links">
-          <li>
-            <a
-              href="{{ url_for('accueil') }}"
-              class="{{ 'active' if request.path == url_for('accueil') else '' }}"
-              aria-current="{{ 'page' if request.path == url_for('accueil') else '' }}"
-            >
-              Accueil
-            </a>
-          </li>
-
           <!--{% for cat in categories %} {% set slug = categories_slug[cat] %} {%
           set cat_url = url_for('voir_categorie', slug=slug) %}
           <li>
@@ -122,6 +121,15 @@
               Tendances
             </a>
           </li>
+          <li>
+            <a
+              href="{{ url_for('website_submission_form') }}"
+              class="{{ 'active' if request.path == url_for('website_submission_form') else '' }}"
+              aria-current="{{ 'page' if request.path == url_for('website_submission_form') else '' }}"
+            >
+              Proposer
+            </a>
+          </li>
           <li class="nav-more-item">
             <button
               class="nav-more-btn"
@@ -133,6 +141,7 @@
             </button>
           </li>
         </ul>
+      </div>
       </div>
 
       <div id="nav-more-panel" class="nav-more-panel" hidden>
@@ -163,15 +172,6 @@
               aria-current="{{ 'page' if request.path == url_for('recently_added_sites') else '' }}"
             >
               Derniers sites ajoutés
-            </a>
-          </li>
-          <li>
-            <a
-              href="{{ url_for('website_submission_form') }}"
-              class="{{ 'active' if request.path == url_for('website_submission_form') else '' }}"
-              aria-current="{{ 'page' if request.path == url_for('website_submission_form') else '' }}"
-            >
-              Proposer un site
             </a>
           </li>
           <li><a href="{{ url_for('faq') }}"  class="{{ 'active' if request.path == url_for('faq') else '' }}"               aria-current="{{ 'page' if request.path == url_for('faq') else '' }}"

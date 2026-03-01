@@ -1542,8 +1542,41 @@ h1 {
   padding: 0;
 }
 
+.main-nav__row {
+  display: block;
+}
+
+.nav-home-link {
+  display: none;
+}
+
 /* Mobile: navbar en grille 3x3 (sans slide), style homogène avec .category */
 @media (max-width: 768px) {
+  .main-nav__row {
+    display: grid;
+    grid-template-columns: 2.55rem 1fr;
+    gap: 0.45rem;
+    align-items: center;
+  }
+
+  .nav-home-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.55rem;
+    height: 2.55rem;
+    border-radius: 0.5rem;
+    text-decoration: none;
+    background: var(--vert-fougere);
+    color: var(--blanc);
+    font-size: 1rem;
+    line-height: 1;
+  }
+
+  .nav-home-link.active {
+    background: var(--lava);
+  }
+
   .main-nav {
     position: sticky;
     top: 0;
@@ -1586,6 +1619,9 @@ h1 {
     text-align: center;
     border: 0;
     box-sizing: border-box;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
   }
 
   .nav-more-btn {
