@@ -1,0 +1,33 @@
+{% extends "base.html" %} {% block seo_title %}Recherche "{{ q }}" - Réunion
+Wiki{% endblock %} {% block seo_description %}Résultats de recherche pour "{{ q
+}}" sur Réunion Wiki.{% endblock %} {% block content %}
+<div class="category_page">
+  <h2>Résultats pour "{{ q }}"</h2>
+
+  {% if sites %}
+  <ul>
+    {% for site in sites %}
+    <li>
+      <a
+        href="{{ url_for('redirect_site', site_id=site['id']) }}"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        <strong>{{ site['nom'] }}</strong>{% if site['ville'] %} - 📍 {{
+        site['ville'] }}{% endif %} ↗
+      </a>
+      :
+      <span>{{ site['description']|truncate(80, True, '...') }}</span>
+    </li>
+
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p>Aucun résultat trouvé.</p>
+  {% endif %}
+
+  <div id="bouton_plus">
+    <a href="{{ url_for('accueil') }}">← Retour à l'accueil</a>
+  </div>
+</div>
+{% endblock %}

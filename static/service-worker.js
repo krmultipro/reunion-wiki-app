@@ -1,8 +1,7 @@
-const CACHE_NAME = "reunionwiki-cache-v6";
+const CACHE_NAME = "reunionwiki-cache-v7";
 
 // Liste des fichiers à mettre en cache
 const urlsToCache = [
-  "/static/style.css", // ton fichier CSS principal
   "/static/icons/icon-192x192.png", // corriger le nom
   "/static/icons/icon-512x512.png", // corriger le nom
 ];
@@ -14,7 +13,7 @@ self.addEventListener("install", (event) => {
     caches.open(CACHE_NAME).then((cache) => {
       console.log("[SW] Mise en cache initiale...");
       return cache.addAll(urlsToCache);
-    })
+    }),
   );
   // Force l’activation immédiate du nouveau SW
   self.skipWaiting();
@@ -31,9 +30,9 @@ self.addEventListener("activate", (event) => {
           .map((name) => {
             console.log("[SW] Suppression du cache :", name);
             return caches.delete(name);
-          })
-      )
-    )
+          }),
+      ),
+    ),
   );
   // Prend immédiatement le contrôle des pages ouvertes
   self.clients.claim();
@@ -51,7 +50,7 @@ self.addEventListener("fetch", (event) => {
           });
           return response;
         })
-        .catch(() => caches.match(event.request))
+        .catch(() => caches.match(event.request)),
     );
     return;
   }
@@ -64,6 +63,6 @@ self.addEventListener("fetch", (event) => {
           // Optionnel : fallback si la requête échoue (ex : offline)
         })
       );
-    })
+    }),
   );
 });

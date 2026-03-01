@@ -1,0 +1,31 @@
+{% extends "base.html" %} {% block content %}
+<div class="category_page ranking_page">
+  <h2>🏆 Catégories les plus visitées</h2>
+
+  <ul>
+    {% for cat in categories_rank %}
+    <li class="ranking-item">
+      <div class="ranking-top-line">
+        <span class="ranking-badge">
+          {% if loop.index == 1 %}🥇 {% elif loop.index == 2 %}🥈 {% elif
+          loop.index == 3 %}🥉 {% else %}#{{ loop.index }} {% endif %}
+        </span>
+        <a
+          href="/categorie/{{ categories_slug[cat['categorie']] }}"
+          class="ranking-title"
+        >
+          {{ cat['categorie'] }}
+        </a>
+      </div>
+      <div class="ranking-stats">
+        {{ cat['total_clicks'] }} clic{{ '' if cat['total_clicks'] == 1 else 's'
+        }} • {{ cat['site_count'] }} site{{ '' if cat['site_count'] == 1 else
+        's' }}
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+
+  <div id="bouton_plus"><a href="/">← Retour à l'accueil</a></div>
+</div>
+{% endblock %}

@@ -7,8 +7,7 @@ Votre suggestion sera vérifiée avant publication.{% endblock %} {% block conte
     <h1 id="form-page-title">Proposer un site</h1>
     <p>
       Merci de contribuer à Réunion Wiki&nbsp;! Remplis le formulaire ci-dessous
-      pour nous suggérer un site fiable et utile pour les habitants de La
-      Réunion.
+      pour me suggérer un site fiable et utile pour les habitants de La Réunion.
     </p>
     <ul class="form-checklist">
       <li>
@@ -29,7 +28,7 @@ Votre suggestion sera vérifiée avant publication.{% endblock %} {% block conte
 
   <form
     method="post"
-    action="{{ url_for('formulaire') }}"
+    action="{{ url_for('website_submission_form') }}"
     class="proposer-card proposer-card--full"
     autocomplete="off"
     novalidate
@@ -53,8 +52,8 @@ Votre suggestion sera vérifiée avant publication.{% endblock %} {% block conte
 
       <div class="form-field">
         {{ form.lien.label(class="form-label") }} {{
-        form.lien(class="form-input", placeholder="https://example.com") }} {%
-        if form.lien.errors %}
+        form.lien(class="form-input", placeholder="example.com") }} {% if
+        form.lien.errors %}
         <div class="form-errors" id="{{ form.lien.id }}-errors">
           {% for error in form.lien.errors %}
           <span class="error-item">{{ error }}</span>
@@ -76,8 +75,7 @@ Votre suggestion sera vérifiée avant publication.{% endblock %} {% block conte
 
       <div class="form-field">
         {{ form.ville.label(class="form-label") }} {{
-        form.ville(class="form-input", placeholder="Ex : Saint-Denis
-        (optionnel)") }} {% if form.ville.errors %}
+        form.ville(class="form-select") }} {% if form.ville.errors %}
         <div class="form-errors" id="{{ form.ville.id }}-errors">
           {% for error in form.ville.errors %}
           <span class="error-item">{{ error }}</span>
@@ -88,9 +86,7 @@ Votre suggestion sera vérifiée avant publication.{% endblock %} {% block conte
 
       <div class="form-field form-field--wide">
         {{ form.description.label(class="form-label") }} {{
-        form.description(class="form-textarea", rows="5", placeholder="Décris le
-        site, ses fonctionnalités clés et pourquoi il est utile pour La
-        Réunion.") }} {% if form.description.errors %}
+        form.description(class="form-textarea", rows="5", placeholder="Décris le site, ses fonctionnalités clés et pourquoi il est utile pour La Réunion.") }} {% if form.description.errors %}
         <div class="form-errors" id="{{ form.description.id }}-errors">
           {% for error in form.description.errors %}
           <span class="error-item">{{ error }}</span>

@@ -12,14 +12,71 @@
     </div>
     <div class="admin-dashboard__actions">
       <a class="btn btn-primary" href="{{ url_for('admin_create_site') }}">+ Ajouter un site</a>
+      <a class="btn btn-secondary" href="{{ url_for('admin_clicks') }}">Clics</a>
       <a class="btn btn-secondary" href="{{ url_for('admin_categories') }}">Catégories</a>
       <a class="btn btn-secondary" href="{{ url_for('admin_dashboard') }}">Tableau de bord</a>
+      <form method="post" action="{{ url_for('admin_logout') }}" class="admin-inline-form">
+        {{ admin_logout_form.hidden_tag() }}
+        <button type="submit" class="btn btn-secondary">Déconnexion</button>
+      </form>
     </div>
   </header>
 
+  <form method="get" class="admin-filters">
+    <div class="admin-filters__row">
+      <div class="admin-filters__field">
+        <label for="status">Statut</label>
+        <select id="status" name="status" class="admin-form__input">
+          <option value="all" {% if status_filter == 'all' %}selected{% endif %}>Tous</option>
+          <option value="valide" {% if status_filter == 'valide' %}selected{% endif %}>Publié</option>
+          <option value="en_attente" {% if status_filter == 'en_attente' %}selected{% endif %}>En attente</option>
+          <option value="refuse" {% if status_filter == 'refuse' %}selected{% endif %}>Refusé</option>
+        </select>
+      </div>
+      <div class="admin-filters__field">
+        <label for="city">Ville</label>
+        <select id="city" name="city" class="admin-form__input">
+          <option value="all" {% if city_filter == 'all' %}selected{% endif %}>Toutes</option>
+          {% for city in cities %}
+          <option value="{{ city['slug'] }}" {% if city_filter == city['slug'] %}selected{% endif %}>{{ city['nom'] }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="admin-filters__field">
+        <label for="sort">Tri</label>
+        <select id="sort" name="sort" class="admin-form__input">
+          <option value="date_desc" {% if sort_filter == 'date_desc' %}selected{% endif %}>Plus récents</option>
+          <option value="date_asc" {% if sort_filter == 'date_asc' %}selected{% endif %}>Plus anciens</option>
+          <option value="clicks_desc" {% if sort_filter == 'clicks_desc' %}selected{% endif %}>Plus cliqués</option>
+          <option value="clicks_asc" {% if sort_filter == 'clicks_asc' %}selected{% endif %}>Moins cliqués</option>
+          <option value="name_asc" {% if sort_filter == 'name_asc' %}selected{% endif %}>Nom A-Z</option>
+          <option value="name_desc" {% if sort_filter == 'name_desc' %}selected{% endif %}>Nom Z-A</option>
+        </select>
+      </div>
+      <div class="admin-filters__field admin-filters__field--search">
+        <label for="q">Recherche</label>
+        <input
+          id="q"
+          name="q"
+          class="admin-form__input"
+          type="search"
+          maxlength="120"
+          value="{{ query_text }}"
+          placeholder="Nom, catégorie, ville, lien..."
+        />
+      </div>
+      <div class="admin-filters__actions">
+        <button type="submit" class="btn btn-secondary">Filtrer</button>
+        <a class="btn btn-secondary" href="{{ url_for('admin_sites') }}">Réinitialiser</a>
+      </div>
+    </div>
+  </form>
+
+  <p class="admin-filters__meta">{{ total_sites }} site{{ '' if total_sites == 1 else 's' }} trouvé{{ '' if total_sites == 1 else 's' }}.</p>
+
   {% if sites %}
   <div class="admin-table-wrapper">
-    <table class="admin-table">
+    <table class="admin-table admin-table--sites">
       <thead>
         <tr>
           <th>Nom</th>
@@ -28,6 +85,7 @@
           <th>Lien</th>
           <th>Statut</th>
           <th>En vedette</th>
+          <th>Clics</th>
           <th>Ajouté le</th>
           <th>Actions</th>
         </tr>
@@ -35,16 +93,17 @@
       <tbody>
         {% for site in sites %}
         <tr>
-          <td class="admin-table__cell--title">{{ site['nom'] }}</td>
-          <td>{{ site['categorie'] }}</td>
-          <td>{{ site['ville'] or "—" }}</td>
-          <td>
+          <td class="admin-table__cell--title" data-label="Nom">{{ site['nom'] }}</td>
+          <td data-label="Catégorie">{{ site['categorie'] }}</td>
+          <td data-label="Ville">{{ site['ville_display'] or "—" }}</td>
+          <td data-label="Lien">
             <a href="{{ site['lien'] }}" target="_blank" rel="noopener noreferrer">Ouvrir ↗</a>
           </td>
-          <td>
+          <td data-label="Statut">
             <form method="post" action="{{ url_for('admin_update_site', site_id=site['id']) }}" class="admin-table__form">
               {{ action_forms[site['id']].csrf_token }}
               {{ action_forms[site['id']].site_id(value=site['id']) }}
+              {{ action_forms[site['id']].return_to(value=request.full_path.rstrip('?')) }}
               <select name="action" class="admin-form__input">
                 <option value="approve" {% if site['status'] == 'valide' %}selected{% endif %}>Publié</option>
                 <option value="pending" {% if site['status'] == 'en_attente' %}selected{% endif %}>En attente</option>
@@ -53,15 +112,17 @@
               <button type="submit" class="btn btn-secondary">Mettre à jour</button>
             </form>
           </td>
-          <td>
+          <td data-label="En vedette">
             {{ "Oui" if site['en_vedette'] else "Non" }}
           </td>
-          <td>{{ site['date_ajout']|format_date("%d/%m/%Y %H:%M") }}</td>
-          <td class="admin-table__cell--actions">
+          <td data-label="Clics">{{ site['click_count'] }}</td>
+          <td data-label="Ajouté le">{{ site['date_ajout']|format_date("%d/%m/%Y %H:%M") }}</td>
+          <td class="admin-table__cell--actions admin-table__cell--actions--compact" data-label="Actions">
             <a class="btn btn-edit" href="{{ url_for('admin_edit_site', site_id=site['id']) }}">Modifier</a>
             <form method="post" action="{{ url_for('admin_update_site', site_id=site['id']) }}" class="admin-table__form" onsubmit="return confirm('Supprimer définitivement ce site ?');">
               {{ action_forms[site['id']].csrf_token }}
               {{ action_forms[site['id']].site_id(value=site['id']) }}
+              {{ action_forms[site['id']].return_to(value=request.full_path.rstrip('?')) }}
               <input type="hidden" name="action" value="delete" />
               <button type="submit" class="btn btn-delete">Supprimer</button>
             </form>
@@ -73,6 +134,34 @@
   </div>
   {% else %}
   <p class="admin-empty">Aucun site enregistré pour le moment.</p>
+  {% endif %}
+
+  {% if total_pages > 1 %}
+  <nav class="admin-pagination" aria-label="Pagination sites admin">
+    {% set prev_page = page - 1 %}
+    {% set next_page = page + 1 %}
+    <a
+      class="btn btn-secondary {% if page <= 1 %}is-disabled{% endif %}"
+      {% if page > 1 %}
+      href="{{ url_for('admin_sites', status=status_filter, city=city_filter, sort=sort_filter, q=query_text, page=prev_page) }}"
+      {% else %}
+      aria-disabled="true"
+      {% endif %}
+    >
+      ← Précédent
+    </a>
+    <span>Page {{ page }} / {{ total_pages }}</span>
+    <a
+      class="btn btn-secondary {% if page >= total_pages %}is-disabled{% endif %}"
+      {% if page < total_pages %}
+      href="{{ url_for('admin_sites', status=status_filter, city=city_filter, sort=sort_filter, q=query_text, page=next_page) }}"
+      {% else %}
+      aria-disabled="true"
+      {% endif %}
+    >
+      Suivant →
+    </a>
+  </nav>
   {% endif %}
 </section>
 {% endblock %}

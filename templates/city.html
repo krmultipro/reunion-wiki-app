@@ -1,0 +1,52 @@
+{% extends "base.html" %} {% block seo_title %}{{ ville['nom'] }} - Sites utiles
+à La Réunion | Réunion Wiki{% endblock %} {% block seo_description %}Découvrez
+les sites utiles de {{ ville['nom'] }} : services, infos pratiques, ressources
+locales et adresses incontournables.{% endblock %} {% block content %}
+<div class="category_page recent_page">
+  <h1>📍 {{ ville['nom'] }}</h1>
+
+  <p class="intro">
+    {{ sites|length }} site{{ '' if sites|length == 1 else 's' }} référencé{{ ''
+    if sites|length == 1 else 's' }} • {{ total_clicks }} visite{{ '' if
+    total_clicks == 1 else 's' }} au total
+  </p>
+
+  <ul class="recent-list">
+    {% for site in sites %}
+    <li class="recent-item">
+      <div class="recent-datebox">
+        <span class="recent-day">{{ site['date_ajout'][8:10] }}</span>
+        <span class="recent-month">{{ site['date_ajout']|month_name }}</span>
+        <span class="recent-year">{{ site['date_ajout'][0:4] }}</span>
+      </div>
+
+      <div class="recent-content">
+        <a
+          href="{{ url_for('redirect_site', site_id=site['id']) }}"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="recent-title"
+        >
+          {{ site['nom'] }}
+        </a>
+
+        <div class="recent-meta">
+          <a href="/categorie/{{ categories_slug[site['categorie']] }}">
+            <em>{{ site['categorie'] }}</em>
+          </a>
+          <span>• {{ site['click_count'] }} visites</span>
+        </div>
+
+        <p class="recent-description">
+          {{ site['description']|truncate(120, True, '...') }}
+        </p>
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+
+  <div id="bouton_plus">
+    <a href="{{ url_for('accueil') }}">← Retour à l'accueil</a>
+  </div>
+</div>
+{% endblock %}

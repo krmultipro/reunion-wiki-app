@@ -17,12 +17,24 @@
       <a class="btn btn-secondary" href="{{ url_for('admin_sites') }}">
         Tous les sites
       </a>
+      <a class="btn btn-secondary" href="{{ url_for('admin_clicks') }}">
+        Clics
+      </a>
       <a class="btn btn-secondary" href="{{ url_for('admin_categories') }}">
         Catégories
       </a>
-      <a class="btn btn-secondary" href="{{ url_for('admin_logout') }}">
-        Déconnexion
+      <a
+        class="btn btn-secondary"
+        href="https://docs.google.com/forms/d/1tmiz_GY5H1FMSb2w1Ho_3XrHs864aTk_zjoADXcMDoU/edit#responses"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        Contacts (Google Forms)
       </a>
+      <form method="post" action="{{ url_for('admin_logout') }}" class="admin-inline-form">
+        {{ admin_logout_form.hidden_tag() }}
+        <button type="submit" class="btn btn-secondary">Déconnexion</button>
+      </form>
     </div>
   </header>
   <ul class="admin-dashboard__stats">
@@ -35,7 +47,7 @@
     <h2>Propositions en attente</h2>
     {% if pending_sites %}
     <div class="admin-table-wrapper">
-      <table class="admin-table">
+      <table class="admin-table admin-table--sites">
         <thead>
           <tr>
             <th>Nom</th>
@@ -50,17 +62,17 @@
         <tbody>
           {% for site in pending_sites %}
           <tr>
-            <td class="admin-table__cell--title">{{ site['nom'] }}</td>
-            <td>{{ site['categorie'] }}</td>
-            <td>{{ site['ville'] or "—" }}</td>
-            <td>
+            <td class="admin-table__cell--title" data-label="Nom">{{ site['nom'] }}</td>
+            <td data-label="Catégorie">{{ site['categorie'] }}</td>
+            <td data-label="Ville">{{ site['ville'] or "—" }}</td>
+            <td data-label="Lien">
               <a href="{{ site['lien'] }}" target="_blank" rel="noopener noreferrer">
                 Ouvrir ↗
               </a>
             </td>
-            <td class="admin-table__cell--description">{{ site['description'] }}</td>
-            <td>{{ site['date_ajout']|format_date("%d/%m/%Y %H:%M") }}</td>
-            <td class="admin-table__cell--actions">
+            <td class="admin-table__cell--description" data-label="Description">{{ site['description'] }}</td>
+            <td data-label="Soumis le">{{ site['date_ajout']|format_date("%d/%m/%Y %H:%M") }}</td>
+            <td class="admin-table__cell--actions admin-table__cell--actions--compact" data-label="Actions">
               <a
                 class="btn btn-edit"
                 href="{{ url_for('admin_edit_site', site_id=site['id']) }}"
@@ -74,6 +86,7 @@
               >
                 {{ action_forms[site['id']].csrf_token }}
                 {{ action_forms[site['id']].site_id(value=site['id']) }}
+                {{ action_forms[site['id']].return_to(value=request.full_path.rstrip('?')) }}
                 <input type="hidden" name="action" value="approve" />
                 <button type="submit" class="btn btn-approve">Valider</button>
               </form>
@@ -84,6 +97,7 @@
               >
                 {{ action_forms[site['id']].csrf_token }}
                 {{ action_forms[site['id']].site_id(value=site['id']) }}
+                {{ action_forms[site['id']].return_to(value=request.full_path.rstrip('?')) }}
                 <input type="hidden" name="action" value="reject" />
                 <button type="submit" class="btn btn-reject">Refuser</button>
               </form>
@@ -95,6 +109,7 @@
               >
                 {{ action_forms[site['id']].csrf_token }}
                 {{ action_forms[site['id']].site_id(value=site['id']) }}
+                {{ action_forms[site['id']].return_to(value=request.full_path.rstrip('?')) }}
                 <input type="hidden" name="action" value="delete" />
                 <button type="submit" class="btn btn-delete">Supprimer</button>
               </form>

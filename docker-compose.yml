@@ -1,21 +1,38 @@
-version: "3.8"
+version: "3.8" #version docker compose
 
 services:
+  # Service Redis (utilisé ici pour le rate limiting)
   redis:
     image: redis:7-alpine
-    ports:
-      - "6379:6379"
+    container_name: redis_dev
+    restart: always #si le conteneur plante, docker relance automatiquement
+    volumes:
+      - redis_dev_data:/data #redis stocke ses données dans /data dans le conteneur
+    networks:
+      - reunionwiki_net
 
+  # Application Flask
   web:
-    build: .
-    ports:
-      - "8000:8000"
+    build: . # Construit l'image depuis le Dockerfile
+    container_name: web_dev
+    volumes:
+      - ./data:/app/data # Monte le dossier data pour la persistance des données
+    restart: always
     env_file:
       - .env # Charge automatiquement vos variables SECRET_KEY, DATABASE_PATH, etc.
     environment:
-      - FLASK_ENV=development
-      - RATELIMIT_STORAGE_URL=redis://redis:6379/0
+      - FLASK_ENV=production #désactive débug
+      - RATELIMIT_STORAGE_URL=redis://redis_dev:6379/0 # parle au service redis pour le nom interne
     depends_on:
-      - redis
-    volumes:
-      - .:/app
+      - redis # Assure que Redis démarre avant l’application Flask
+    expose:
+      - "8000" # Expose le port 8000 pour la communication interne entre conteneurs
+    networks:
+      - reunionwiki_net
+
+volumes:
+  redis_dev_data: {}
+
+networks:
+  reunionwiki_net:
+    external: true

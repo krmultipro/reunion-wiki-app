@@ -13,7 +13,11 @@ seo_description }}{% endblock %} {% block canonical %}{{ canonical }}{% endblock
   <ul>
     {% for site in sites %}
     <li>
-      <a href="{{ site['lien'] }}" target="_blank" rel="noopener noreferrer">
+      <a
+        href="{{ url_for('redirect_site', site_id=site['id']) }}"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
         <strong>{{ site['nom'] }}</strong>
         {% if site['ville'] %} – {{ site['ville'] }}{% endif %} ↗
       </a>
@@ -46,7 +50,7 @@ block head %}
         "item": {
           "@type": "WebSite",
           "name": {{ site['nom']|tojson }},
-          "url": {{ site['lien']|tojson }}
+          "url": {{ url_for('redirect_site', site_id=site['id'])|tojson }}
         }
       }{% if not loop.last %},{% endif %}
       {% endfor %}

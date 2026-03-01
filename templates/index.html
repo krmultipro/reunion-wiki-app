@@ -1,90 +1,48 @@
 <!-- templates/index.html -->
 {% extends "base.html" %} {% block title %}Réunion Wiki - Les meilleurs sites
-internet utiles de La Réunion.{% endblock %} {% block header_content %}
-<p>
-  Bienvenue sur <strong>Réunion Wiki 🌴</strong><br />
-  Un répertoire <em>simple, rapide et local</em> pour accéder facilement aux
-  sites essentiels de La Réunion.
-</p>
-{% endblock %} {% block content %}
+internet utiles de La Réunion.{% endblock %} {% block header_content %} {%
+endblock %} {% block content %}
 
-<div class="categories">
-  {% for categorie, sites in data.items() %}
-  <div class="category">
-    <h2>
-      <a href="/categorie/{{ categories_slug[categorie] }}">{{categorie}}</a>
-    </h2>
-    <ul>
-      {% for site in sites %}
-      <li>
-        <a href="{{site['lien']}}" target="_blank" rel="noopener noreferrer">
-          <strong>{{ site['nom'] }}</strong>{% if site['ville'] %} - 📍 {{
-          site['ville'] }}{% endif %} ↗
-        </a>
-        : {{ site['description']|truncate(80, True, '...') }}
-      </li>
-      {% endfor %}
-      <li>
-        <div id="bouton_plus">
-          <a href="/categorie/{{ categories_slug[categorie] }}"
-            >Découvrir plus de sites</a
-          >
-        </div>
-      </li>
-    </ul>
-  </div>
-  {% endfor %}
-  <div class="recent-sites-section">
-    <div class="section-header">
+<div class="page-content">
+  <div class="categories">
+    {% for categorie, sites in data.items() %}
+    <div class="category">
       <h2>
-        <span class="section-icon">🆕</span>
-        <a href="/nouveaux-sites">Derniers sites ajoutés</a>
+        <a href="/categorie/{{ categories_slug[categorie] }}">{{categorie}}</a>
       </h2>
-      <p class="section-subtitle">Les dernières découvertes de la communauté</p>
-    </div>
 
-    <div class="recent-sites-grid">
-      {% for site in derniers_sites %}
-      <div class="recent-site-card">
-        <div class="recent-site-header">
+      <ul>
+        {% for site in sites %}
+        <li>
           <a
-            href="{{ site['lien'] }}"
+            href="{{ url_for('redirect_site', site_id=site['id']) }}"
             target="_blank"
             rel="noopener noreferrer"
-            class="recent-site-title"
           >
-            {{ site['nom'] }}
+            <strong>{{ site['nom'] }}</strong> ↗
           </a>
-          <span class="recent-site-badge">Nouveau</span>
-        </div>
 
-        <div class="recent-site-meta">
-          <a
-            href="/categorie/{{ categories_slug[site['categorie']] }}"
-            class="recent-site-category"
+          {% if site['ville_slug'] %} - 📍
+          <a href="{{ url_for('voir_ville', slug=site['ville_slug']) }}"
+            >{{ site['ville_nom'] }}</a
           >
-            {{ site['categorie'] }}
-          </a>
-          <span class="recent-site-date"
-            >{{ site['date_ajout']|format_date }}</span
-          >
-        </div>
+          {% elif site['ville'] %} - 📍 {{ site['ville'] }} {% endif %} :
+          <span>{{ site['description']|truncate(80, True, '...') }}</span>
+        </li>
 
-        <p class="recent-site-description">
-          {{ site['description']| truncate(100, True, '...') }}
-        </p>
-      </div>
-      {% endfor %}
+        {% endfor %}
+        <li>
+          <div id="bouton_plus">
+            <a href="/categorie/{{ categories_slug[categorie] }}"
+              >Découvrir plus de sites</a
+            >
+          </div>
+        </li>
+      </ul>
     </div>
+    {% endfor %}
 
-    <div class="section-footer">
-      <a href="/nouveaux-sites" class="view-all-btn">
-        <span>Voir tous les nouveaux sites</span>
-        <span class="btn-arrow">→</span>
-      </a>
-    </div>
-  </div>
-  <section class="seo-top-sites">
+    <!--<section class="seo-top-sites">
     <h2>Les meilleurs sites internet de La Réunion</h2>
     <p>
       Réunion Wiki sélectionne les sites les plus utiles pour la vie quotidienne
@@ -110,12 +68,101 @@ internet utiles de La Réunion.{% endblock %} {% block header_content %}
       Ce portail est mis à jour régulièrement avec des sites fiables, faciles à
       utiliser et 100% réunionnais 🌴
     </p>
-  </section>
-</div>
+  </section>-->
+  </div>
 
-{% if form_inline %}
-<section id="proposer-un-site">
-  {% include "_proposer_form.html" with context %}
-</section>
-{% endif %}
-{% endblock %}
+  <!--Debut div top, recent, submit sites-->
+
+  <div class="top-recent">
+    <div class="category top-sites-category">
+      <h2>🔥 Les sites les plus consultés</h2>
+      <ul>
+        {% for site in top_sites %}
+        <li>
+          <span class="rank-number">{{ loop.index }}.</span>
+          <a
+            href="{{ url_for('redirect_site', site_id=site['id']) }}"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <strong>{{ site['nom'] }}</strong>
+          </a>
+
+          :
+          <span>{{ site['description']|truncate(80, True, '...') }}</span>
+
+          <span class="site-clicks"> ({{ site['click_count'] }} visites) </span>
+        </li>
+        {% endfor %}
+      </ul>
+      <div class="section-footer">
+        <a href="{{ url_for('most_visited_sites') }}" class="view-all-btn">
+          <span>Voir tous les sites les plus consultés</span>
+          <span class="btn-arrow">→</span>
+        </a>
+      </div>
+    </div>
+
+    <div class="recent-sites-section">
+      <div class="section-header">
+        <h2>
+          <span class="section-icon">🆕</span>
+          <a href="{{ url_for('recently_added_sites') }}"
+            >Derniers sites ajoutés</a
+          >
+        </h2>
+        <p class="section-subtitle">
+          Les dernières découvertes de la communauté
+        </p>
+      </div>
+
+      <div class="recent-sites-grid">
+        {% for site in derniers_sites %}
+        <div class="recent-site-card">
+          <div class="recent-site-header">
+            <a
+              href="{{ url_for('redirect_site', site_id=site['id']) }}"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="recent-site-title"
+            >
+              {{ site['nom'] }}
+            </a>
+
+            <span class="recent-site-badge">Nouveau</span>
+            <span class="recent-site-date">
+              {{ site['date_ajout'][8:10] }} {{ site['date_ajout']|month_name }}
+              {{ site['date_ajout'][0:4] }}
+            </span>
+          </div>
+
+          <div class="recent-site-meta">
+            <a
+              href="/categorie/{{ categories_slug[site['categorie']] }}"
+              class="recent-site-category"
+            >
+              {{ site['categorie'] }}
+            </a>
+          </div>
+
+          <p class="recent-site-description">
+            {{ site['description']| truncate(100, True, '...') }}
+          </p>
+        </div>
+        {% endfor %}
+      </div>
+
+      <div class="section-footer">
+        <a href="{{ url_for('recently_added_sites') }}" class="view-all-btn">
+          <span>Voir tous les nouveaux sites</span>
+          <span class="btn-arrow">→</span>
+        </a>
+      </div>
+    </div>
+  </div>
+  {% if form_inline %}
+  <div id="proposer-un-site">
+    {% include "_proposer_form.html" with context %}
+  </div>
+  {% endif %} {% endblock %}
+</div>
