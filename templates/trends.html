@@ -30,10 +30,7 @@ sûres du mois et nouveaux sites populaires.{% endblock %} {% block content %}
       </div>
       <div class="ranking-stats">
         {{ site['clicks_7d'] }} visite{{ '' if site['clicks_7d'] == 1 else 's'
-        }} cette semaine {% if site['growth_pct'] is not none %} • {% if
-        site['growth_pct'] > 0 %}en hausse de {{ site['growth_pct'] }}% {% elif
-        site['growth_pct'] < 0 %}en baisse de {{ (site['growth_pct']|abs) }}% {%
-        else %}stable {% endif %} {% endif %}
+        }} cette semaine
       </div>
     </li>
     {% endfor %}

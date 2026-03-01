@@ -457,10 +457,6 @@ footer a:hover {
   color: var(--lava);
 }
 
-.top-sites-category {
-  /*order: -1; /* si tu veux l'afficher en premier en desktop */
-}
-
 .rank-number {
   display: inline-block;
   min-width: 20px;
@@ -1527,4 +1523,65 @@ h1 {
   background: transparent;
   font-size: 0.95rem;
   color: var(--gris-texte);
+}
+
+/* Index > bloc "Sites les plus visités" */
+.top-sites-category .site-clicks {
+  display: inline-block;
+  margin-left: 0;
+  white-space: nowrap;
+}
+
+/* Mobile: navbar en grille 3x3 (sans slide), style homogène avec .category */
+@media (max-width: 768px) {
+  .main-nav {
+    margin: 0.8rem 0;
+  }
+
+  .nav-scroll {
+    overflow: visible;
+  }
+
+  .main-nav ul,
+  .nav-links {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.4rem;
+    width: 100%;
+    min-width: 0;
+    padding: 0;
+    margin: 0;
+    list-style: none;
+    scroll-snap-type: none;
+  }
+
+  .main-nav li {
+    min-width: 0;
+    width: 100%;
+    margin: 0;
+    flex: none;
+    scroll-snap-align: none;
+  }
+
+  .main-nav a {
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 2.35rem;
+    padding: 0.35rem 0.45rem;
+    border-radius: 0.5rem;
+    white-space: normal;
+    word-break: break-word;
+    text-align: center;
+    line-height: 1.1;
+    font-size: 0.82rem;
+    transform: none;
+  }
+
+  .main-nav a:hover,
+  .main-nav a.active {
+    transform: none;
+  }
 }
