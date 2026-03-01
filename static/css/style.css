@@ -190,6 +190,7 @@ footer a:hover {
   color: var(--vert-fougere);
   font-weight: bold;
   text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .category a:hover {
@@ -197,9 +198,14 @@ footer a:hover {
   color: var(--lava);
 }
 
-.category a:focus {
+.category a:focus-visible {
   outline: 0.125rem solid var(--vert-fougere);
-  outline-offset: 0.005rem;
+  outline-offset: 0.125rem;
+  border-radius: 0.35rem;
+}
+
+.category a:focus:not(:focus-visible) {
+  outline: none;
 }
 /* NAVIGATION PRINCIPALE */
 .main-nav {
@@ -1374,6 +1380,7 @@ form .button input:hover {
   color: var(--vert-fougere);
   font-weight: bold;
   text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .category_page a:hover {
@@ -1381,14 +1388,24 @@ form .button input:hover {
   color: var(--lava);
 }
 
-.category_page a:focus {
+.category_page a:focus-visible {
   outline: 0.125rem solid var(--vert-fougere);
-  outline-offset: 0.005rem;
+  outline-offset: 0.125rem;
+  border-radius: 0.35rem;
 }
 
-.faq a:focus {
+.category_page a:focus:not(:focus-visible) {
+  outline: none;
+}
+
+.faq a:focus-visible {
   outline: 0.125rem solid var(--vert-fougere);
-  outline-offset: 0.005rem;
+  outline-offset: 0.125rem;
+  border-radius: 0.35rem;
+}
+
+.faq a:focus:not(:focus-visible) {
+  outline: none;
 }
 /* ===== FAQ (details/summary) ===== */
 :root {
