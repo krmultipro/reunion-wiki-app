@@ -6,3 +6,9 @@ __pycache__
 .env
 *.db
 node_modules
+certbot/
+logs/
+static/reports/
+backups/
+data/
+EOF
