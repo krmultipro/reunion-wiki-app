@@ -25,4 +25,4 @@ Le projet suit un versionnement simple où chaque version majeure correspond à 
 - Architecture Flask minimale (routes, templates Jinja2, base SQLite, fichier `schema.sql`).
 - Mise en place de l’infrastructure OVH : Gunicorn + Nginx + HTTPS, sauvegardes cron, logs, système systemd.
 - Intégration du portail statique (HTML/CSS) avec ambiance réunionnaise et structure responsive de base.
-  test
+  t
