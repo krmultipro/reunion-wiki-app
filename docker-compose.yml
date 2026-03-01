@@ -16,7 +16,7 @@ services:
     build: . # Construit l'image depuis le Dockerfile
     container_name: web_dev
     volumes:
-      - ./data_dev:/app/data # Monte le dossier data pour la persistance des données
+      - ./data_dev:/data # Monte le dossier data pour la persistance des données
     restart: always
     env_file:
       - .env # Charge automatiquement vos variables SECRET_KEY, DATABASE_PATH, etc.

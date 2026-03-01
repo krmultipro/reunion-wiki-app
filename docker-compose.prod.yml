@@ -19,7 +19,7 @@ services:
     depends_on:
       - redis
     volumes:
-      - ./data_prod:/app/data
+      - ./data_prod:/data
     networks:
       - reunionwiki_prod_net
 
