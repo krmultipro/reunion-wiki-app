@@ -194,7 +194,3 @@ Exemple cron (VPS):
 
 Merci à toutes les personnes qui proposent des sites et font vivre l’écosystème local.
 La Réunion lé la. 🌋
-
-```
-
-```
