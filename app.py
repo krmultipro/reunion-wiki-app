@@ -453,8 +453,16 @@ def get_sites_en_vedette():
 
         for site in cur.fetchall():
             cat = site["categorie"]
-            if cat in data and len(data[cat]) < 3:
+            if cat in data:
                 data[cat].append(site)
+
+        for cat in data:
+            data[cat].sort(
+                key=lambda s: ((s["click_count"] or 0), (s["date_ajout"] or "")),
+                reverse=True,
+            )
+            data[cat] = data[cat][:3]
+
 
         return data, category_stats
 
