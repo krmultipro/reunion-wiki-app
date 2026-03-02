@@ -1554,7 +1554,7 @@ def voir_categorie(slug):
     cur.execute("""
        SELECT * FROM sites
        WHERE categorie = ? AND status = 'valide'
-       ORDER BY en_vedette DESC, date_ajout DESC 
+       ORDER BY click_count DESC, en_vedette DESC, date_ajout DESC, id DESC 
     """, (nom_categorie,))
     sites = cur.fetchall()
     conn.close()
