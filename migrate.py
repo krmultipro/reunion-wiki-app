@@ -77,6 +77,81 @@ def ensure_column(cur, table_name: str, column_name: str, definition: str) -> No
         cur.execute(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {definition}")
 
 
+def _next_available_category_slug(cur, base_slug: str) -> str:
+    base = base_slug or "categorie"
+    candidate = base
+    suffix = 1
+    while True:
+        cur.execute("SELECT 1 FROM categories WHERE slug = ?", (candidate,))
+        if not cur.fetchone():
+            return candidate
+        candidate = f"{base}-{suffix}"
+        suffix += 1
+
+
+def _ensure_category(cur, category_name: str):
+    normalized = (category_name or "").strip()
+    if not normalized:
+        return None, None
+
+    cur.execute("SELECT id, nom FROM categories WHERE nom = ?", (normalized,))
+    row = cur.fetchone()
+    if row:
+        return row[0], row[1]
+
+    # Fallback robuste si des variantes de casse/espaces existent déjà.
+    cur.execute(
+        "SELECT id, nom FROM categories WHERE LOWER(TRIM(nom)) = LOWER(?) ORDER BY id ASC LIMIT 1",
+        (normalized,),
+    )
+    row = cur.fetchone()
+    if row:
+        return row[0], row[1]
+
+    slug = _next_available_category_slug(cur, slugify(normalized))
+    cur.execute("INSERT INTO categories (nom, slug) VALUES (?, ?)", (normalized, slug))
+    return cur.lastrowid, normalized
+
+
+def _backfill_sites_category_id(cur) -> int:
+    cur.execute(
+        """
+        SELECT id, categorie, category_id
+        FROM sites
+        WHERE (category_id IS NOT NULL AND category_id != '')
+           OR (categorie IS NOT NULL AND TRIM(categorie) != '')
+        ORDER BY id ASC
+        """
+    )
+    rows = cur.fetchall()
+    updated = 0
+
+    for site_id, category_text, category_id in rows:
+        target_id = None
+        target_name = None
+
+        if category_id:
+            cur.execute("SELECT nom FROM categories WHERE id = ?", (category_id,))
+            existing = cur.fetchone()
+            if existing:
+                target_id = category_id
+                target_name = existing[0]
+
+        if not target_id:
+            target_id, target_name = _ensure_category(cur, category_text)
+
+        if not target_id:
+            continue
+
+        cur.execute(
+            "UPDATE sites SET category_id = ?, categorie = ? WHERE id = ?",
+            (target_id, target_name, site_id),
+        )
+        updated += 1
+
+    return updated
+
+
 def main():
     print("📂 DB cible:", DATABASE_PATH)
 
@@ -103,6 +178,7 @@ def main():
                 lien TEXT NOT NULL,
                 description TEXT,
                 categorie TEXT,
+                category_id INTEGER,
                 status TEXT DEFAULT 'en_attente',
                 date_ajout DATETIME,
                 en_vedette INTEGER DEFAULT 0,
@@ -117,6 +193,7 @@ def main():
         ensure_column(cur, "sites", "date_ajout", "DATETIME")
         ensure_column(cur, "sites", "en_vedette", "INTEGER DEFAULT 0")
         ensure_column(cur, "sites", "click_count", "INTEGER DEFAULT 0")
+        ensure_column(cur, "sites", "category_id", "INTEGER")
 
         # Table site_clicks
         cur.execute(
@@ -143,6 +220,10 @@ def main():
             """
         )
 
+        # Backfill category_id + alignement du nom texte (fallback temporaire).
+        sites_updated = _backfill_sites_category_id(cur)
+        print(f"🔁 Backfill category_id effectué sur {sites_updated} site(s)")
+
         # Table villes
         cur.execute(
             """
@@ -159,6 +240,7 @@ def main():
 
         # Normalisation canonique des villes:
         # désactive temporairement les FK pour permettre les remaps d'IDs.
+        conn.commit()
         cur.execute("PRAGMA foreign_keys = OFF")
 
         canonical_by_id = {city_id: (nom, slug) for city_id, nom, slug in CANONICAL_VILLES}
@@ -182,7 +264,11 @@ def main():
             old_slug = row[2]
             target_id = canonical_by_slug.get(old_slug) or canonical_by_norm_name.get(slugify(old_nom))
             if target_id and old_id != target_id:
-                cur.execute("UPDATE sites SET ville_id = ? WHERE ville_id = ?", (target_id, old_id))
+                cur.execute("SELECT 1 FROM villes WHERE id = ?", (target_id,))
+                if cur.fetchone():
+                    cur.execute("UPDATE sites SET ville_id = ? WHERE ville_id = ?", (target_id, old_id))
+                else:
+                    cur.execute("UPDATE sites SET ville_id = NULL WHERE ville_id = ?", (old_id,))
                 cur.execute("DELETE FROM villes WHERE id = ?", (old_id,))
 
         # 3) Applique strictement la table canonique (nom + slug + id)
@@ -212,9 +298,14 @@ def main():
                 continue
             normalized = slugify(ville_nom or "")
             target_id = canonical_by_slug.get(normalized)
+            if target_id:
+                cur.execute("SELECT 1 FROM villes WHERE id = ?", (target_id,))
+                exists = cur.fetchone() is not None
+            else:
+                exists = False
             cur.execute(
                 "UPDATE sites SET ville_id = ? WHERE id = ?",
-                (target_id, site_id),
+                (target_id if exists else None, site_id),
             )
 
         # 5) Backfill sites.ville_id à partir de sites.ville quand manquant
@@ -231,7 +322,9 @@ def main():
         for site_id, ville in rows:
             target_id = canonical_by_slug.get(slugify(ville))
             if target_id:
-                cur.execute("UPDATE sites SET ville_id = ? WHERE id = ?", (target_id, site_id))
+                cur.execute("SELECT 1 FROM villes WHERE id = ?", (target_id,))
+                if cur.fetchone():
+                    cur.execute("UPDATE sites SET ville_id = ? WHERE id = ?", (target_id, site_id))
 
         # 6) Nettoyage: supprime les villes non canoniques restantes
         cur.execute(
@@ -245,6 +338,7 @@ def main():
         # Index utiles
         cur.execute("CREATE INDEX IF NOT EXISTS idx_sites_status ON sites(status)")
         cur.execute("CREATE INDEX IF NOT EXISTS idx_sites_categorie ON sites(categorie)")
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_sites_category_id ON sites(category_id)")
         cur.execute("CREATE INDEX IF NOT EXISTS idx_sites_click_count ON sites(click_count)")
         cur.execute("CREATE INDEX IF NOT EXISTS idx_sites_ville_id ON sites(ville_id)")
         cur.execute("CREATE INDEX IF NOT EXISTS idx_site_clicks_site_id ON site_clicks(site_id)")
