@@ -255,6 +255,7 @@ def init_db_schema(conn):
             lien TEXT NOT NULL,
             description TEXT,
             categorie TEXT,
+            category_id INTEGER,
             status TEXT DEFAULT 'en_attente',
             date_ajout DATETIME,
             en_vedette INTEGER DEFAULT 0,
@@ -276,6 +277,9 @@ def init_db_schema(conn):
 
     if "ville_id" not in columns:
         cur.execute("ALTER TABLE sites ADD COLUMN ville_id INTEGER")
+
+    if "category_id" not in columns:
+        cur.execute("ALTER TABLE sites ADD COLUMN category_id INTEGER")
 
     # ======================
     # TABLE SITE_CLICKS
@@ -314,11 +318,32 @@ def init_db_schema(conn):
         )
     """)
 
+    # Backfill léger: aligne category_id depuis categorie pour préserver la compatibilité.
+    cur.execute(
+        """
+        SELECT id, categorie
+        FROM sites
+        WHERE (category_id IS NULL OR category_id = '')
+          AND categorie IS NOT NULL
+          AND TRIM(categorie) != ''
+        """
+    )
+    for row in cur.fetchall():
+        resolved = resolve_category(cur, row["categorie"])
+        if not resolved:
+            continue
+        resolved_id, resolved_name = resolved
+        cur.execute(
+            "UPDATE sites SET category_id = ?, categorie = ? WHERE id = ?",
+            (resolved_id, resolved_name, row["id"]),
+        )
+
     # ======================
     # INDEXES
     # ======================
     cur.execute("CREATE INDEX IF NOT EXISTS idx_sites_status ON sites(status)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_sites_categorie ON sites(categorie)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_sites_category_id ON sites(category_id)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_sites_click_count ON sites(click_count)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_sites_ville_id ON sites(ville_id)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_site_clicks_site_id ON site_clicks(site_id)")
@@ -645,6 +670,34 @@ def generate_unique_category_slug(cursor, nom, exclude_id=None):
             return candidate
         candidate = f"{base_slug}-{suffix}"
         suffix += 1
+
+
+def resolve_category(cursor, category_name):
+    """Retourne (id, nom) pour une catégorie, en la créant si nécessaire."""
+    normalized = (category_name or "").strip()
+    if not normalized:
+        return None
+
+    cursor.execute("SELECT id, nom FROM categories WHERE nom = ?", (normalized,))
+    row = cursor.fetchone()
+    if row:
+        return row["id"], row["nom"]
+
+    cursor.execute(
+        "SELECT id, nom FROM categories WHERE LOWER(TRIM(nom)) = LOWER(?) ORDER BY id ASC LIMIT 1",
+        (normalized,),
+    )
+    row = cursor.fetchone()
+    if row:
+        return row["id"], row["nom"]
+
+    slug = generate_unique_category_slug(cursor, normalized)
+    cursor.execute(
+        "INSERT INTO categories (nom, slug) VALUES (?, ?)",
+        (normalized, slug),
+    )
+    return cursor.lastrowid, normalized
+
 
 #obtenir le nom de la categorie depuis le slug 
 def get_nom_categorie_depuis_slug(slug):
@@ -1184,10 +1237,14 @@ def admin_edit_category(category_id):
                 "UPDATE categories SET nom = ?, slug = ? WHERE id = ?",
                 (form.nom.data, slug, category_id),
             )
-            # Mets à jour les sites qui pointaient vers l'ancien nom
+            # Mets à jour les sites liés à cette catégorie (id prioritaire + fallback texte)
             cur.execute(
-                "UPDATE sites SET categorie = ? WHERE categorie = ?",
-                (form.nom.data, old_nom),
+                """
+                UPDATE sites
+                SET categorie = ?, category_id = COALESCE(category_id, ?)
+                WHERE category_id = ? OR (category_id IS NULL AND categorie = ?)
+                """,
+                (form.nom.data, category_id, category_id, old_nom),
             )
             conn.commit()
             flash("Catégorie mise à jour.", "success")
@@ -1241,8 +1298,12 @@ def admin_delete_category(category_id):
             return redirect(url_for("admin_categories"))
 
         cur.execute(
-            "SELECT COUNT(*) as total FROM sites WHERE categorie = ?",
-            (row["nom"],),
+            """
+            SELECT COUNT(*) as total
+            FROM sites
+            WHERE category_id = ? OR (category_id IS NULL AND categorie = ?)
+            """,
+            (category_id, row["nom"]),
         )
         usage = cur.fetchone()["total"]
         if usage > 0:
@@ -1344,9 +1405,20 @@ def admin_edit_site(site_id):
         cur = conn.cursor()
         cur.execute(
             """
-            SELECT id, nom, categorie, ville, lien, description, status, en_vedette
-            FROM sites
-            WHERE id = ?
+            SELECT
+                s.id,
+                s.nom,
+                s.categorie,
+                s.category_id,
+                s.ville,
+                s.lien,
+                s.description,
+                s.status,
+                s.en_vedette,
+                c.nom AS category_nom
+            FROM sites s
+            LEFT JOIN categories c ON c.id = s.category_id
+            WHERE s.id = ?
             """,
             (site_id,),
         )
@@ -1384,9 +1456,10 @@ def admin_edit_site(site_id):
         form.description.data = site["description"]
         form.status.data = site["status"]
         form.en_vedette.data = bool(site["en_vedette"])
-        if site["categorie"] not in categories_list:
-            form.categorie.choices.append((site["categorie"], site["categorie"]))
-        form.categorie.data = site["categorie"]
+        current_category = site["category_nom"] or site["categorie"] or ""
+        if current_category and current_category not in categories_list:
+            form.categorie.choices.append((current_category, current_category))
+        form.categorie.data = current_category
     elif form.validate_on_submit():
         conn_to_update = get_db_connection()
         if not conn_to_update:
@@ -1401,10 +1474,18 @@ def admin_edit_site(site_id):
             return redirect(url_for("admin_dashboard"))
         try:
             cur_update = conn_to_update.cursor()
+            resolved = resolve_category(cur_update, form.categorie.data)
+            if not resolved:
+                flash("Catégorie non valide.", "error")
+                conn_to_update.rollback()
+                conn_to_update.close()
+                conn.close()
+                return redirect(url_for("admin_dashboard"))
+            resolved_category_id, resolved_category_name = resolved
             cur_update.execute(
                 """
                 UPDATE sites
-                SET nom = ?, ville = ?, lien = ?, description = ?, categorie = ?, status = ?, en_vedette = ?
+                SET nom = ?, ville = ?, lien = ?, description = ?, categorie = ?, category_id = ?, status = ?, en_vedette = ?
                 WHERE id = ?
                 """,
                 (
@@ -1412,7 +1493,8 @@ def admin_edit_site(site_id):
                     form.ville.data or None,
                     form.lien.data,
                     form.description.data,
-                    form.categorie.data,
+                    resolved_category_name,
+                    resolved_category_id,
                     form.status.data,
                     1 if form.en_vedette.data else 0,
                     site_id,
@@ -1476,17 +1558,23 @@ def admin_create_site():
             return redirect(url_for("admin_dashboard"))
         try:
             cur = conn.cursor()
+            resolved = resolve_category(cur, form.categorie.data)
+            if not resolved:
+                flash("Catégorie non valide.", "error")
+                return redirect(url_for("admin_create_site"))
+            resolved_category_id, resolved_category_name = resolved
             cur.execute(
                 """
-                INSERT INTO sites (nom, ville, lien, description, categorie, status, date_ajout, en_vedette)
-                VALUES (?, ?, ?, ?, ?, ?, DATETIME('now'), ?)
+                INSERT INTO sites (nom, ville, lien, description, categorie, category_id, status, date_ajout, en_vedette)
+                VALUES (?, ?, ?, ?, ?, ?, ?, DATETIME('now'), ?)
                 """,
                 (
                     form.nom.data,
                     form.ville.data or None,
                     form.lien.data,
                     form.description.data,
-                    form.categorie.data,
+                    resolved_category_name,
+                    resolved_category_id,
                     form.status.data or "valide",
                     1 if form.en_vedette.data else 0,
                 ),
@@ -1550,12 +1638,17 @@ def voir_categorie(slug):
     if not conn:
         return render_template("500.html"), 500
     cur = conn.cursor()
+    cur.execute("SELECT id FROM categories WHERE nom = ?", (nom_categorie,))
+    category_row = cur.fetchone()
+    category_id = category_row["id"] if category_row else None
+
     #recupere tous les sites de la categorie par ordre decroissant
     cur.execute("""
        SELECT * FROM sites
-       WHERE categorie = ? AND status = 'valide'
+       WHERE status = 'valide'
+         AND (category_id = ? OR (category_id IS NULL AND categorie = ?))
        ORDER BY click_count DESC, en_vedette DESC, date_ajout DESC, id DESC 
-    """, (nom_categorie,))
+    """, (category_id, nom_categorie))
     sites = cur.fetchall()
     conn.close()
 
@@ -1827,17 +1920,23 @@ def website_submission_form():
         
         try:
             cur = conn.cursor()
+            resolved = resolve_category(cur, categorie)
+            if not resolved:
+                flash("Catégorie non valide.", "error")
+                return render_template("website-submission-form.html", form=form)
+            resolved_category_id, resolved_category_name = resolved
 
             # SÉCURITÉ : Insertion avec paramètres liés (protection contre SQL injection)
             cur.execute("""
-                INSERT INTO sites (nom, ville, lien, description, categorie, status, date_ajout)
-                VALUES (?, ?, ?, ?, ?, 'en_attente', DATETIME('now'))
+                INSERT INTO sites (nom, ville, lien, description, categorie, category_id, status, date_ajout)
+                VALUES (?, ?, ?, ?, ?, ?, 'en_attente', DATETIME('now'))
             """, (
                 nom,
                 ville,
                 lien,
                 description,
-                categorie
+                resolved_category_name,
+                resolved_category_id
             ))
             
             conn.commit()
