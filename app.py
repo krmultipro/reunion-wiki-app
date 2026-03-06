@@ -254,7 +254,6 @@ def init_db_schema(conn):
             ville TEXT,
             lien TEXT NOT NULL,
             description TEXT,
-            categorie TEXT,
             category_id INTEGER,
             status TEXT DEFAULT 'en_attente',
             date_ajout DATETIME,
@@ -318,31 +317,32 @@ def init_db_schema(conn):
         )
     """)
 
-    # Backfill léger: aligne category_id depuis categorie pour préserver la compatibilité.
-    cur.execute(
-        """
-        SELECT id, categorie
-        FROM sites
-        WHERE (category_id IS NULL OR category_id = '')
-          AND categorie IS NOT NULL
-          AND TRIM(categorie) != ''
-        """
-    )
-    for row in cur.fetchall():
-        resolved = resolve_category(cur, row["categorie"])
-        if not resolved:
-            continue
-        resolved_id, resolved_name = resolved
+    # Backfill léger pour les anciennes BDD qui ont encore sites.categorie.
+    if "categorie" in columns:
         cur.execute(
-            "UPDATE sites SET category_id = ?, categorie = ? WHERE id = ?",
-            (resolved_id, resolved_name, row["id"]),
+            """
+            SELECT id, categorie
+            FROM sites
+            WHERE (category_id IS NULL OR category_id = '')
+              AND categorie IS NOT NULL
+              AND TRIM(categorie) != ''
+            """
         )
+        for row in cur.fetchall():
+            resolved = resolve_category(cur, row["categorie"])
+            if not resolved:
+                continue
+            resolved_id, _resolved_name = resolved
+            cur.execute(
+                "UPDATE sites SET category_id = ? WHERE id = ?",
+                (resolved_id, row["id"]),
+            )
 
     # ======================
     # INDEXES
     # ======================
     cur.execute("CREATE INDEX IF NOT EXISTS idx_sites_status ON sites(status)")
-    cur.execute("CREATE INDEX IF NOT EXISTS idx_sites_categorie ON sites(categorie)")
+    cur.execute("DROP INDEX IF EXISTS idx_sites_categorie")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_sites_category_id ON sites(category_id)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_sites_click_count ON sites(click_count)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_sites_ville_id ON sites(ville_id)")
@@ -440,15 +440,14 @@ def get_sites_en_vedette():
         cur.execute(
             """
             SELECT
-                categorie,
+                c.nom AS categorie,
                 COUNT(*) AS site_count,
-                COALESCE(SUM(click_count), 0) AS total_clicks
-            FROM sites
-            WHERE status = 'valide'
-              AND categorie IS NOT NULL
-              AND TRIM(categorie) != ''
-            GROUP BY categorie
-            ORDER BY total_clicks DESC, site_count DESC, categorie COLLATE NOCASE ASC
+                COALESCE(SUM(s.click_count), 0) AS total_clicks
+            FROM sites s
+            JOIN categories c ON c.id = s.category_id
+            WHERE s.status = 'valide'
+            GROUP BY c.id, c.nom
+            ORDER BY total_clicks DESC, site_count DESC, c.nom COLLATE NOCASE ASC
             """
         )
         cat_rows = cur.fetchall()
@@ -467,12 +466,14 @@ def get_sites_en_vedette():
             """
             SELECT
                 s.*,
+                c.nom AS categorie,
                 v.nom AS ville_nom,
                 v.slug AS ville_slug
             FROM sites s
+            JOIN categories c ON c.id = s.category_id
             LEFT JOIN villes v ON v.id = s.ville_id
             WHERE s.status = 'valide' AND s.en_vedette = 1
-            ORDER BY s.categorie ASC, s.click_count DESC, s.date_ajout DESC
+            ORDER BY c.nom ASC, s.click_count DESC, s.date_ajout DESC
             """
         )
 
@@ -508,10 +509,17 @@ def get_derniers_sites_global(limit=3):
         cur = conn.cursor()
         # Récupère les derniers sites ajoutés par date d'ajout pour la page index
         cur.execute("""
-            SELECT id, nom, lien, categorie, description, date_ajout
-            FROM sites
-            WHERE status = 'valide'
-            ORDER BY date_ajout DESC
+            SELECT
+                s.id,
+                s.nom,
+                s.lien,
+                c.nom AS categorie,
+                s.description,
+                s.date_ajout
+            FROM sites s
+            LEFT JOIN categories c ON c.id = s.category_id
+            WHERE s.status = 'valide'
+            ORDER BY s.date_ajout DESC
             LIMIT ?
         """, (limit,))
 
@@ -532,10 +540,17 @@ def get_top_sites(limit=5):
     try:
         cur = conn.cursor()
         cur.execute("""
-            SELECT id, nom, lien, categorie, description, click_count
-            FROM sites
-            WHERE status = 'valide'
-            ORDER BY click_count DESC
+            SELECT
+                s.id,
+                s.nom,
+                s.lien,
+                c.nom AS categorie,
+                s.description,
+                s.click_count
+            FROM sites s
+            LEFT JOIN categories c ON c.id = s.category_id
+            WHERE s.status = 'valide'
+            ORDER BY s.click_count DESC
             LIMIT ?
         """, (limit,))
         return cur.fetchall()
@@ -560,7 +575,7 @@ def get_categories():
     
     try:
         cur = conn.cursor()
-        # Utilise la table categories si elle existe, sinon fallback sur les sites valides
+        # Utilise la table categories si elle existe, sinon fallback depuis les liens sites -> categories.
         cur.execute(
             "SELECT name FROM sqlite_master WHERE type='table' AND name='categories'"
         )
@@ -570,28 +585,22 @@ def get_categories():
             cur.execute("SELECT nom FROM categories ORDER BY nom COLLATE NOCASE ASC")
             results = cur.fetchall()
             categories = [row[0] for row in results if row[0]]
-
-            # Synchronise les catégories manquantes depuis la table sites
-            cur.execute("SELECT DISTINCT categorie FROM sites WHERE categorie IS NOT NULL AND TRIM(categorie) != ''")
-            site_categories = [row[0] for row in cur.fetchall() if row[0]]
-            missing = [cat for cat in site_categories if cat not in categories]
-            for cat in missing:
-                slug = generate_unique_category_slug(cur, cat)
-                cur.execute(
-                    "INSERT OR IGNORE INTO categories (nom, slug) VALUES (?, ?)",
-                    (cat, slug),
-                )
-            if missing:
-                conn.commit()
-                categories.extend(missing)
-
-            # Si aucune catégorie n'est encore enregistrée, fallback pour éviter de casser le front
-            if not categories:
-                cur.execute("SELECT DISTINCT categorie FROM sites WHERE status = 'valide'")
-                results = cur.fetchall()
-                categories = [row[0] for row in results if row[0]]
         else:
-            cur.execute("SELECT DISTINCT categorie FROM sites WHERE status = 'valide'")
+            categories = []
+
+        # Fallback: reconstruit la liste depuis les sites valides reliés à categories.
+        if not categories and has_table:
+            cur.execute(
+                """
+                SELECT DISTINCT c.nom
+                FROM sites s
+                JOIN categories c ON c.id = s.category_id
+                WHERE s.status = 'valide'
+                  AND c.nom IS NOT NULL
+                  AND TRIM(c.nom) != ''
+                ORDER BY c.nom COLLATE NOCASE ASC
+                """
+            )
             results = cur.fetchall()
             categories = [row[0] for row in results if row[0]]
 
@@ -754,10 +763,19 @@ def admin_dashboard():
         cur = conn.cursor()
         cur.execute(
             """
-            SELECT id, nom, categorie, ville, lien, description, status, date_ajout
-            FROM sites
-            WHERE status = 'en_attente'
-            ORDER BY date_ajout DESC, id DESC
+            SELECT
+                s.id,
+                s.nom,
+                c.nom AS categorie,
+                s.ville,
+                s.lien,
+                s.description,
+                s.status,
+                s.date_ajout
+            FROM sites s
+            LEFT JOIN categories c ON c.id = s.category_id
+            WHERE s.status = 'en_attente'
+            ORDER BY s.date_ajout DESC, s.id DESC
             """
         )
         pending_sites = cur.fetchall()
@@ -851,7 +869,7 @@ def admin_sites():
                 """
                 (
                     s.nom LIKE ?
-                    OR s.categorie LIKE ?
+                    OR COALESCE(c.nom, '') LIKE ?
                     OR s.description LIKE ?
                     OR s.lien LIKE ?
                     OR COALESCE(v.nom, s.ville, '') LIKE ?
@@ -866,6 +884,7 @@ def admin_sites():
         count_sql = f"""
             SELECT COUNT(*) AS total
             FROM sites s
+            LEFT JOIN categories c ON c.id = s.category_id
             LEFT JOIN villes v ON v.id = s.ville_id
             WHERE {where_sql}
         """
@@ -881,7 +900,7 @@ def admin_sites():
             SELECT
                 s.id,
                 s.nom,
-                s.categorie,
+                c.nom AS categorie,
                 COALESCE(v.nom, s.ville) AS ville_display,
                 v.slug AS ville_slug,
                 s.lien,
@@ -891,6 +910,7 @@ def admin_sites():
                 s.en_vedette,
                 s.click_count
             FROM sites s
+            LEFT JOIN categories c ON c.id = s.category_id
             LEFT JOIN villes v ON v.id = s.ville_id
             WHERE {where_sql}
             ORDER BY {sort_sql}
@@ -967,7 +987,7 @@ def admin_clicks():
                 """
                 (
                     s.nom LIKE ?
-                    OR s.categorie LIKE ?
+                    OR COALESCE(c.nom, '') LIKE ?
                     OR COALESCE(v.nom, s.ville, '') LIKE ?
                     OR s.lien LIKE ?
                     OR sc.user_agent LIKE ?
@@ -984,6 +1004,7 @@ def admin_clicks():
             SELECT COUNT(*) AS total
             FROM site_clicks sc
             JOIN sites s ON s.id = sc.site_id
+            LEFT JOIN categories c ON c.id = s.category_id
             LEFT JOIN villes v ON v.id = s.ville_id
             WHERE {where_sql}
             """,
@@ -1004,11 +1025,12 @@ def admin_clicks():
                 sc.user_agent,
                 sc.clicked_at,
                 s.nom AS site_nom,
-                s.categorie,
+                c.nom AS categorie,
                 COALESCE(v.nom, s.ville) AS ville,
                 s.status
             FROM site_clicks sc
             JOIN sites s ON s.id = sc.site_id
+            LEFT JOIN categories c ON c.id = s.category_id
             LEFT JOIN villes v ON v.id = s.ville_id
             WHERE {where_sql}
             ORDER BY {sort_sql}
@@ -1232,19 +1254,9 @@ def admin_edit_category(category_id):
                 return redirect(url_for("admin_categories"))
 
             slug = generate_unique_category_slug(cur, form.nom.data, exclude_id=category_id)
-            old_nom = category["nom"]
             cur.execute(
                 "UPDATE categories SET nom = ?, slug = ? WHERE id = ?",
                 (form.nom.data, slug, category_id),
-            )
-            # Mets à jour les sites liés à cette catégorie (id prioritaire + fallback texte)
-            cur.execute(
-                """
-                UPDATE sites
-                SET categorie = ?, category_id = COALESCE(category_id, ?)
-                WHERE category_id = ? OR (category_id IS NULL AND categorie = ?)
-                """,
-                (form.nom.data, category_id, category_id, old_nom),
             )
             conn.commit()
             flash("Catégorie mise à jour.", "success")
@@ -1301,9 +1313,9 @@ def admin_delete_category(category_id):
             """
             SELECT COUNT(*) as total
             FROM sites
-            WHERE category_id = ? OR (category_id IS NULL AND categorie = ?)
+            WHERE category_id = ?
             """,
-            (category_id, row["nom"]),
+            (category_id,),
         )
         usage = cur.fetchone()["total"]
         if usage > 0:
@@ -1408,14 +1420,13 @@ def admin_edit_site(site_id):
             SELECT
                 s.id,
                 s.nom,
-                s.categorie,
                 s.category_id,
                 s.ville,
                 s.lien,
                 s.description,
                 s.status,
                 s.en_vedette,
-                c.nom AS category_nom
+                c.nom AS categorie
             FROM sites s
             LEFT JOIN categories c ON c.id = s.category_id
             WHERE s.id = ?
@@ -1456,7 +1467,7 @@ def admin_edit_site(site_id):
         form.description.data = site["description"]
         form.status.data = site["status"]
         form.en_vedette.data = bool(site["en_vedette"])
-        current_category = site["category_nom"] or site["categorie"] or ""
+        current_category = site["categorie"] or ""
         if current_category and current_category not in categories_list:
             form.categorie.choices.append((current_category, current_category))
         form.categorie.data = current_category
@@ -1481,11 +1492,11 @@ def admin_edit_site(site_id):
                 conn_to_update.close()
                 conn.close()
                 return redirect(url_for("admin_dashboard"))
-            resolved_category_id, resolved_category_name = resolved
+            resolved_category_id, _resolved_category_name = resolved
             cur_update.execute(
                 """
                 UPDATE sites
-                SET nom = ?, ville = ?, lien = ?, description = ?, categorie = ?, category_id = ?, status = ?, en_vedette = ?
+                SET nom = ?, ville = ?, lien = ?, description = ?, category_id = ?, status = ?, en_vedette = ?
                 WHERE id = ?
                 """,
                 (
@@ -1493,7 +1504,6 @@ def admin_edit_site(site_id):
                     form.ville.data or None,
                     form.lien.data,
                     form.description.data,
-                    resolved_category_name,
                     resolved_category_id,
                     form.status.data,
                     1 if form.en_vedette.data else 0,
@@ -1562,18 +1572,17 @@ def admin_create_site():
             if not resolved:
                 flash("Catégorie non valide.", "error")
                 return redirect(url_for("admin_create_site"))
-            resolved_category_id, resolved_category_name = resolved
+            resolved_category_id, _resolved_category_name = resolved
             cur.execute(
                 """
-                INSERT INTO sites (nom, ville, lien, description, categorie, category_id, status, date_ajout, en_vedette)
-                VALUES (?, ?, ?, ?, ?, ?, ?, DATETIME('now'), ?)
+                INSERT INTO sites (nom, ville, lien, description, category_id, status, date_ajout, en_vedette)
+                VALUES (?, ?, ?, ?, ?, ?, DATETIME('now'), ?)
                 """,
                 (
                     form.nom.data,
                     form.ville.data or None,
                     form.lien.data,
                     form.description.data,
-                    resolved_category_name,
                     resolved_category_id,
                     form.status.data or "valide",
                     1 if form.en_vedette.data else 0,
@@ -1644,11 +1653,13 @@ def voir_categorie(slug):
 
     #recupere tous les sites de la categorie par ordre decroissant
     cur.execute("""
-       SELECT * FROM sites
-       WHERE status = 'valide'
-         AND (category_id = ? OR (category_id IS NULL AND categorie = ?))
+       SELECT s.*, c.nom AS categorie
+       FROM sites s
+       JOIN categories c ON c.id = s.category_id
+       WHERE s.status = 'valide'
+         AND s.category_id = ?
        ORDER BY click_count DESC, en_vedette DESC, date_ajout DESC, id DESC 
-    """, (category_id, nom_categorie))
+    """, (category_id,))
     sites = cur.fetchall()
     conn.close()
 
@@ -1768,10 +1779,17 @@ def recently_added_sites():
     cur = conn.cursor()
 #recupere tous les sites par ordre descroissant d'ajout
     cur.execute("""
-        SELECT id, nom, lien, categorie, description, date_ajout
-        FROM sites
-        WHERE status = 'valide'
-        ORDER BY date_ajout DESC
+        SELECT
+            s.id,
+            s.nom,
+            s.lien,
+            c.nom AS categorie,
+            s.description,
+            s.date_ajout
+        FROM sites s
+        LEFT JOIN categories c ON c.id = s.category_id
+        WHERE s.status = 'valide'
+        ORDER BY s.date_ajout DESC
     """)
     
     sites = cur.fetchall()
@@ -1793,10 +1811,17 @@ def most_visited_sites():
         return render_template("500.html"), 500
     cur = conn.cursor()
     cur.execute("""
-        SELECT id, nom, lien, categorie, description, click_count
-        FROM sites
-        WHERE status = 'valide'
-        ORDER BY click_count DESC
+        SELECT
+            s.id,
+            s.nom,
+            s.lien,
+            c.nom AS categorie,
+            s.description,
+            s.click_count
+        FROM sites s
+        LEFT JOIN categories c ON c.id = s.category_id
+        WHERE s.status = 'valide'
+        ORDER BY s.click_count DESC
     """)
     sites = cur.fetchall()
     conn.close()
@@ -1840,28 +1865,37 @@ def search():
 
     cur.execute(
         """
-        SELECT id, nom, lien, ville, categorie, description, click_count, date_ajout
-        FROM sites
-        WHERE status = 'valide'
+        SELECT
+            s.id,
+            s.nom,
+            s.lien,
+            s.ville,
+            c.nom AS categorie,
+            s.description,
+            s.click_count,
+            s.date_ajout
+        FROM sites s
+        LEFT JOIN categories c ON c.id = s.category_id
+        WHERE s.status = 'valide'
           AND (
-            nom LIKE ?
-            OR categorie LIKE ?
-            OR description LIKE ?
-            OR lien LIKE ?
-            OR ville LIKE ?
-            OR LOWER(REPLACE(COALESCE(ville, ''), '-', ' ')) LIKE ?
+            s.nom LIKE ?
+            OR COALESCE(c.nom, '') LIKE ?
+            OR s.description LIKE ?
+            OR s.lien LIKE ?
+            OR s.ville LIKE ?
+            OR LOWER(REPLACE(COALESCE(s.ville, ''), '-', ' ')) LIKE ?
           )
         ORDER BY
           CASE
-            WHEN nom LIKE ? THEN 0
-            WHEN categorie LIKE ? THEN 1
-            WHEN description LIKE ? THEN 2
-            WHEN ville LIKE ? OR LOWER(REPLACE(COALESCE(ville, ''), '-', ' ')) LIKE ? THEN 3
-            WHEN lien LIKE ? THEN 4
+            WHEN s.nom LIKE ? THEN 0
+            WHEN COALESCE(c.nom, '') LIKE ? THEN 1
+            WHEN s.description LIKE ? THEN 2
+            WHEN s.ville LIKE ? OR LOWER(REPLACE(COALESCE(s.ville, ''), '-', ' ')) LIKE ? THEN 3
+            WHEN s.lien LIKE ? THEN 4
             ELSE 5
           END,
-          click_count DESC,
-          date_ajout DESC
+          s.click_count DESC,
+          s.date_ajout DESC
         LIMIT 100
         """,
         (
@@ -1928,14 +1962,13 @@ def website_submission_form():
 
             # SÉCURITÉ : Insertion avec paramètres liés (protection contre SQL injection)
             cur.execute("""
-                INSERT INTO sites (nom, ville, lien, description, categorie, category_id, status, date_ajout)
-                VALUES (?, ?, ?, ?, ?, ?, 'en_attente', DATETIME('now'))
+                INSERT INTO sites (nom, ville, lien, description, category_id, status, date_ajout)
+                VALUES (?, ?, ?, ?, ?, 'en_attente', DATETIME('now'))
             """, (
                 nom,
                 ville,
                 lien,
                 description,
-                resolved_category_name,
                 resolved_category_id
             ))
             
@@ -1945,7 +1978,7 @@ def website_submission_form():
                 "ville": ville,
                 "lien": lien,
                 "description": description,
-                "categorie": categorie,
+                "categorie": resolved_category_name,
                 "date_submission": datetime.utcnow().strftime("%d/%m/%Y %H:%M"),
                 "remote_addr": request.remote_addr or "IP inconnue",
             })
@@ -2066,8 +2099,9 @@ def voir_ville(slug):
         return render_template("404.html"), 404
 
     cur.execute("""
-        SELECT s.*
+        SELECT s.*, c.nom AS categorie
         FROM sites s
+        LEFT JOIN categories c ON c.id = s.category_id
         WHERE s.status = 'valide' AND s.ville_id = ?
         ORDER BY s.en_vedette DESC, s.date_ajout DESC
     """, (ville["id"],))
@@ -2096,15 +2130,14 @@ def most_visited_categories():
         cur.execute(
             """
             SELECT
-                categorie,
+                c.nom AS categorie,
                 COUNT(*) AS site_count,
-                COALESCE(SUM(click_count), 0) AS total_clicks
-            FROM sites
-            WHERE status = 'valide'
-              AND categorie IS NOT NULL
-              AND TRIM(categorie) != ''
-            GROUP BY categorie
-            ORDER BY total_clicks DESC, site_count DESC, categorie COLLATE NOCASE ASC
+                COALESCE(SUM(s.click_count), 0) AS total_clicks
+            FROM sites s
+            JOIN categories c ON c.id = s.category_id
+            WHERE s.status = 'valide'
+            GROUP BY c.id, c.nom
+            ORDER BY total_clicks DESC, site_count DESC, c.nom COLLATE NOCASE ASC
             """
         )
         categories_rank = cur.fetchall()
@@ -2140,7 +2173,7 @@ def trends():
             SELECT
                 s.id,
                 s.nom,
-                s.categorie,
+                c.nom AS categorie,
                 COALESCE(c7.c7, 0) AS clicks_7d,
                 COALESCE(cp.cprev, 0) AS clicks_prev_7d,
                 CASE
@@ -2148,6 +2181,7 @@ def trends():
                     ELSE ROUND((COALESCE(c7.c7, 0) - cp.cprev) * 100.0 / cp.cprev, 1)
                 END AS growth_pct
             FROM sites s
+            LEFT JOIN categories c ON c.id = s.category_id
             LEFT JOIN clicks_7 c7 ON c7.site_id = s.id
             LEFT JOIN clicks_prev7 cp ON cp.site_id = s.id
             WHERE s.status = 'valide'
@@ -2163,14 +2197,15 @@ def trends():
             SELECT
                 s.id,
                 s.nom,
-                s.categorie,
+                c.nom AS categorie,
                 COUNT(sc.id) AS clicks_30d
             FROM sites s
+            LEFT JOIN categories c ON c.id = s.category_id
             LEFT JOIN site_clicks sc
               ON sc.site_id = s.id
              AND sc.clicked_at >= datetime('now', '-30 days')
             WHERE s.status = 'valide'
-            GROUP BY s.id, s.nom, s.categorie
+            GROUP BY s.id, s.nom, c.nom
             ORDER BY clicks_30d DESC
             LIMIT 10
             """
@@ -2181,23 +2216,29 @@ def trends():
         cur.execute(
             """
             WITH c7 AS (
-                SELECT s.categorie, COUNT(sc.id) AS clicks_7d
+                SELECT c.nom AS categorie, COUNT(sc.id) AS clicks_7d
                 FROM sites s
+                LEFT JOIN categories c ON c.id = s.category_id
                 LEFT JOIN site_clicks sc
                   ON sc.site_id = s.id
                  AND sc.clicked_at >= datetime('now', '-7 days')
                 WHERE s.status = 'valide'
-                GROUP BY s.categorie
+                  AND c.nom IS NOT NULL
+                  AND TRIM(c.nom) != ''
+                GROUP BY c.nom
             ),
             cp AS (
-                SELECT s.categorie, COUNT(sc.id) AS clicks_prev_7d
+                SELECT c.nom AS categorie, COUNT(sc.id) AS clicks_prev_7d
                 FROM sites s
+                LEFT JOIN categories c ON c.id = s.category_id
                 LEFT JOIN site_clicks sc
                   ON sc.site_id = s.id
                  AND sc.clicked_at >= datetime('now', '-14 days')
                  AND sc.clicked_at < datetime('now', '-7 days')
                 WHERE s.status = 'valide'
-                GROUP BY s.categorie
+                  AND c.nom IS NOT NULL
+                  AND TRIM(c.nom) != ''
+                GROUP BY c.nom
             )
             SELECT
                 c7.categorie,
@@ -2222,15 +2263,16 @@ def trends():
             SELECT
                 s.id,
                 s.nom,
-                s.categorie,
+                c.nom AS categorie,
                 COUNT(sc.id) AS clicks_7d
             FROM sites s
+            LEFT JOIN categories c ON c.id = s.category_id
             LEFT JOIN site_clicks sc
               ON sc.site_id = s.id
              AND sc.clicked_at >= datetime('now', '-7 days')
             WHERE s.status = 'valide'
               AND s.date_ajout >= datetime('now', '-30 days')
-            GROUP BY s.id, s.nom, s.categorie
+            GROUP BY s.id, s.nom, c.nom
             ORDER BY clicks_7d DESC
             LIMIT 10
             """

@@ -114,42 +114,99 @@ def _ensure_category(cur, category_name: str):
 
 
 def _backfill_sites_category_id(cur) -> int:
-    cur.execute(
-        """
-        SELECT id, categorie, category_id
-        FROM sites
-        WHERE (category_id IS NOT NULL AND category_id != '')
-           OR (categorie IS NOT NULL AND TRIM(categorie) != '')
-        ORDER BY id ASC
-        """
-    )
+    has_legacy_category = column_exists(cur, "sites", "categorie")
+
+    if has_legacy_category:
+        cur.execute(
+            """
+            SELECT id, categorie, category_id
+            FROM sites
+            WHERE (category_id IS NOT NULL AND category_id != '')
+               OR (categorie IS NOT NULL AND TRIM(categorie) != '')
+            ORDER BY id ASC
+            """
+        )
+    else:
+        cur.execute(
+            """
+            SELECT id, NULL AS categorie, category_id
+            FROM sites
+            WHERE category_id IS NOT NULL AND category_id != ''
+            ORDER BY id ASC
+            """
+        )
     rows = cur.fetchall()
     updated = 0
 
     for site_id, category_text, category_id in rows:
         target_id = None
-        target_name = None
 
         if category_id:
             cur.execute("SELECT nom FROM categories WHERE id = ?", (category_id,))
             existing = cur.fetchone()
             if existing:
                 target_id = category_id
-                target_name = existing[0]
 
-        if not target_id:
-            target_id, target_name = _ensure_category(cur, category_text)
+        if not target_id and has_legacy_category:
+            target_id, _target_name = _ensure_category(cur, category_text)
 
         if not target_id:
             continue
 
         cur.execute(
-            "UPDATE sites SET category_id = ?, categorie = ? WHERE id = ?",
-            (target_id, target_name, site_id),
+            "UPDATE sites SET category_id = ? WHERE id = ?",
+            (target_id, site_id),
         )
         updated += 1
 
     return updated
+
+
+def _drop_sites_categorie_column(cur) -> bool:
+    if not column_exists(cur, "sites", "categorie"):
+        return False
+
+    print("🧹 Suppression de la colonne legacy sites.categorie")
+    cur.execute(
+        """
+        CREATE TABLE sites_new (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nom TEXT NOT NULL,
+            ville TEXT,
+            lien TEXT NOT NULL,
+            description TEXT,
+            category_id INTEGER,
+            status TEXT DEFAULT 'en_attente',
+            date_ajout DATETIME,
+            en_vedette INTEGER DEFAULT 0,
+            click_count INTEGER DEFAULT 0,
+            ville_id INTEGER REFERENCES villes(id)
+        )
+        """
+    )
+    cur.execute(
+        """
+        INSERT INTO sites_new (
+            id, nom, ville, lien, description, category_id, status, date_ajout, en_vedette, click_count, ville_id
+        )
+        SELECT
+            id,
+            nom,
+            ville,
+            lien,
+            description,
+            category_id,
+            COALESCE(status, 'en_attente'),
+            date_ajout,
+            COALESCE(en_vedette, 0),
+            COALESCE(click_count, 0),
+            ville_id
+        FROM sites
+        """
+    )
+    cur.execute("DROP TABLE sites")
+    cur.execute("ALTER TABLE sites_new RENAME TO sites")
+    return True
 
 
 def main():
@@ -177,7 +234,6 @@ def main():
                 ville TEXT,
                 lien TEXT NOT NULL,
                 description TEXT,
-                categorie TEXT,
                 category_id INTEGER,
                 status TEXT DEFAULT 'en_attente',
                 date_ajout DATETIME,
@@ -220,10 +276,6 @@ def main():
             """
         )
 
-        # Backfill category_id + alignement du nom texte (fallback temporaire).
-        sites_updated = _backfill_sites_category_id(cur)
-        print(f"🔁 Backfill category_id effectué sur {sites_updated} site(s)")
-
         # Table villes
         cur.execute(
             """
@@ -238,10 +290,17 @@ def main():
         # Colonne FK ville_id sur sites
         ensure_column(cur, "sites", "ville_id", "INTEGER REFERENCES villes(id)")
 
+        # Backfill category_id depuis la colonne legacy si encore présente.
+        sites_updated = _backfill_sites_category_id(cur)
+        print(f"🔁 Backfill category_id effectué sur {sites_updated} site(s)")
+
         # Normalisation canonique des villes:
         # désactive temporairement les FK pour permettre les remaps d'IDs.
         conn.commit()
         cur.execute("PRAGMA foreign_keys = OFF")
+
+        # Supprime définitivement la colonne legacy sites.categorie.
+        _drop_sites_categorie_column(cur)
 
         canonical_by_id = {city_id: (nom, slug) for city_id, nom, slug in CANONICAL_VILLES}
         canonical_by_slug = {slug: city_id for city_id, _nom, slug in CANONICAL_VILLES}
@@ -337,7 +396,7 @@ def main():
 
         # Index utiles
         cur.execute("CREATE INDEX IF NOT EXISTS idx_sites_status ON sites(status)")
-        cur.execute("CREATE INDEX IF NOT EXISTS idx_sites_categorie ON sites(categorie)")
+        cur.execute("DROP INDEX IF EXISTS idx_sites_categorie")
         cur.execute("CREATE INDEX IF NOT EXISTS idx_sites_category_id ON sites(category_id)")
         cur.execute("CREATE INDEX IF NOT EXISTS idx_sites_click_count ON sites(click_count)")
         cur.execute("CREATE INDEX IF NOT EXISTS idx_sites_ville_id ON sites(ville_id)")
