@@ -251,7 +251,6 @@ def init_db_schema(conn):
         CREATE TABLE IF NOT EXISTS sites (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             nom TEXT NOT NULL,
-            ville TEXT,
             lien TEXT NOT NULL,
             description TEXT,
             category_id INTEGER,
@@ -338,11 +337,33 @@ def init_db_schema(conn):
                 (resolved_id, row["id"]),
             )
 
+    # Backfill léger pour les anciennes BDD qui ont encore sites.ville.
+    if "ville" in columns:
+        cur.execute(
+            """
+            SELECT id, ville
+            FROM sites
+            WHERE (ville_id IS NULL OR ville_id = '')
+              AND ville IS NOT NULL
+              AND TRIM(ville) != ''
+            """
+        )
+        for row in cur.fetchall():
+            resolved = resolve_city(cur, row["ville"])
+            if not resolved:
+                continue
+            resolved_id, _resolved_name = resolved
+            cur.execute(
+                "UPDATE sites SET ville_id = ? WHERE id = ?",
+                (resolved_id, row["id"]),
+            )
+
     # ======================
     # INDEXES
     # ======================
     cur.execute("CREATE INDEX IF NOT EXISTS idx_sites_status ON sites(status)")
     cur.execute("DROP INDEX IF EXISTS idx_sites_categorie")
+    cur.execute("DROP INDEX IF EXISTS idx_sites_ville")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_sites_category_id ON sites(category_id)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_sites_click_count ON sites(click_count)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_sites_ville_id ON sites(ville_id)")
@@ -467,6 +488,7 @@ def get_sites_en_vedette():
             SELECT
                 s.*,
                 c.nom AS categorie,
+                v.nom AS ville,
                 v.nom AS ville_nom,
                 v.slug AS ville_slug
             FROM sites s
@@ -708,6 +730,38 @@ def resolve_category(cursor, category_name):
     return cursor.lastrowid, normalized
 
 
+def resolve_city(cursor, city_name):
+    """Retourne (id, nom) pour une ville existante."""
+    normalized = (city_name or "").strip()
+    if not normalized:
+        return None
+
+    cursor.execute("SELECT id, nom FROM villes WHERE nom = ?", (normalized,))
+    row = cursor.fetchone()
+    if row:
+        return row["id"], row["nom"]
+
+    cursor.execute(
+        "SELECT id, nom FROM villes WHERE LOWER(TRIM(nom)) = LOWER(?) ORDER BY id ASC LIMIT 1",
+        (normalized,),
+    )
+    row = cursor.fetchone()
+    if row:
+        return row["id"], row["nom"]
+
+    city_slug = slugify_ville(normalized)
+    if city_slug:
+        cursor.execute(
+            "SELECT id, nom FROM villes WHERE slug = ? ORDER BY id ASC LIMIT 1",
+            (city_slug,),
+        )
+        row = cursor.fetchone()
+        if row:
+            return row["id"], row["nom"]
+
+    return None
+
+
 #obtenir le nom de la categorie depuis le slug 
 def get_nom_categorie_depuis_slug(slug):
     categories_slug = get_categories_slug()
@@ -767,13 +821,14 @@ def admin_dashboard():
                 s.id,
                 s.nom,
                 c.nom AS categorie,
-                s.ville,
+                v.nom AS ville,
                 s.lien,
                 s.description,
                 s.status,
                 s.date_ajout
             FROM sites s
             LEFT JOIN categories c ON c.id = s.category_id
+            LEFT JOIN villes v ON v.id = s.ville_id
             WHERE s.status = 'en_attente'
             ORDER BY s.date_ajout DESC, s.id DESC
             """
@@ -872,7 +927,7 @@ def admin_sites():
                     OR COALESCE(c.nom, '') LIKE ?
                     OR s.description LIKE ?
                     OR s.lien LIKE ?
-                    OR COALESCE(v.nom, s.ville, '') LIKE ?
+                    OR COALESCE(v.nom, '') LIKE ?
                 )
                 """
             )
@@ -901,7 +956,7 @@ def admin_sites():
                 s.id,
                 s.nom,
                 c.nom AS categorie,
-                COALESCE(v.nom, s.ville) AS ville_display,
+                v.nom AS ville_display,
                 v.slug AS ville_slug,
                 s.lien,
                 s.description,
@@ -988,7 +1043,7 @@ def admin_clicks():
                 (
                     s.nom LIKE ?
                     OR COALESCE(c.nom, '') LIKE ?
-                    OR COALESCE(v.nom, s.ville, '') LIKE ?
+                    OR COALESCE(v.nom, '') LIKE ?
                     OR s.lien LIKE ?
                     OR sc.user_agent LIKE ?
                 )
@@ -1026,7 +1081,7 @@ def admin_clicks():
                 sc.clicked_at,
                 s.nom AS site_nom,
                 c.nom AS categorie,
-                COALESCE(v.nom, s.ville) AS ville,
+                v.nom AS ville,
                 s.status
             FROM site_clicks sc
             JOIN sites s ON s.id = sc.site_id
@@ -1421,7 +1476,7 @@ def admin_edit_site(site_id):
                 s.id,
                 s.nom,
                 s.category_id,
-                s.ville,
+                v.nom AS ville,
                 s.lien,
                 s.description,
                 s.status,
@@ -1429,6 +1484,7 @@ def admin_edit_site(site_id):
                 c.nom AS categorie
             FROM sites s
             LEFT JOIN categories c ON c.id = s.category_id
+            LEFT JOIN villes v ON v.id = s.ville_id
             WHERE s.id = ?
             """,
             (site_id,),
@@ -1493,15 +1549,23 @@ def admin_edit_site(site_id):
                 conn.close()
                 return redirect(url_for("admin_dashboard"))
             resolved_category_id, _resolved_category_name = resolved
+            resolved_city = resolve_city(cur_update, form.ville.data)
+            if (form.ville.data or "").strip() and not resolved_city:
+                flash("Ville non valide.", "error")
+                conn_to_update.rollback()
+                conn_to_update.close()
+                conn.close()
+                return redirect(url_for("admin_dashboard"))
+            resolved_city_id = resolved_city[0] if resolved_city else None
             cur_update.execute(
                 """
                 UPDATE sites
-                SET nom = ?, ville = ?, lien = ?, description = ?, category_id = ?, status = ?, en_vedette = ?
+                SET nom = ?, ville_id = ?, lien = ?, description = ?, category_id = ?, status = ?, en_vedette = ?
                 WHERE id = ?
                 """,
                 (
                     form.nom.data,
-                    form.ville.data or None,
+                    resolved_city_id,
                     form.lien.data,
                     form.description.data,
                     resolved_category_id,
@@ -1573,14 +1637,19 @@ def admin_create_site():
                 flash("Catégorie non valide.", "error")
                 return redirect(url_for("admin_create_site"))
             resolved_category_id, _resolved_category_name = resolved
+            resolved_city = resolve_city(cur, form.ville.data)
+            if (form.ville.data or "").strip() and not resolved_city:
+                flash("Ville non valide.", "error")
+                return redirect(url_for("admin_create_site"))
+            resolved_city_id = resolved_city[0] if resolved_city else None
             cur.execute(
                 """
-                INSERT INTO sites (nom, ville, lien, description, category_id, status, date_ajout, en_vedette)
+                INSERT INTO sites (nom, ville_id, lien, description, category_id, status, date_ajout, en_vedette)
                 VALUES (?, ?, ?, ?, ?, ?, DATETIME('now'), ?)
                 """,
                 (
                     form.nom.data,
-                    form.ville.data or None,
+                    resolved_city_id,
                     form.lien.data,
                     form.description.data,
                     resolved_category_id,
@@ -1653,9 +1722,10 @@ def voir_categorie(slug):
 
     #recupere tous les sites de la categorie par ordre decroissant
     cur.execute("""
-       SELECT s.*, c.nom AS categorie
+       SELECT s.*, c.nom AS categorie, v.nom AS ville
        FROM sites s
        JOIN categories c ON c.id = s.category_id
+       LEFT JOIN villes v ON v.id = s.ville_id
        WHERE s.status = 'valide'
          AND s.category_id = ?
        ORDER BY click_count DESC, en_vedette DESC, date_ajout DESC, id DESC 
@@ -1869,28 +1939,29 @@ def search():
             s.id,
             s.nom,
             s.lien,
-            s.ville,
+            v.nom AS ville,
             c.nom AS categorie,
             s.description,
             s.click_count,
             s.date_ajout
         FROM sites s
         LEFT JOIN categories c ON c.id = s.category_id
+        LEFT JOIN villes v ON v.id = s.ville_id
         WHERE s.status = 'valide'
           AND (
             s.nom LIKE ?
             OR COALESCE(c.nom, '') LIKE ?
             OR s.description LIKE ?
             OR s.lien LIKE ?
-            OR s.ville LIKE ?
-            OR LOWER(REPLACE(COALESCE(s.ville, ''), '-', ' ')) LIKE ?
+            OR COALESCE(v.nom, '') LIKE ?
+            OR LOWER(REPLACE(COALESCE(v.nom, ''), '-', ' ')) LIKE ?
           )
         ORDER BY
           CASE
             WHEN s.nom LIKE ? THEN 0
             WHEN COALESCE(c.nom, '') LIKE ? THEN 1
             WHEN s.description LIKE ? THEN 2
-            WHEN s.ville LIKE ? OR LOWER(REPLACE(COALESCE(s.ville, ''), '-', ' ')) LIKE ? THEN 3
+            WHEN COALESCE(v.nom, '') LIKE ? OR LOWER(REPLACE(COALESCE(v.nom, ''), '-', ' ')) LIKE ? THEN 3
             WHEN s.lien LIKE ? THEN 4
             ELSE 5
           END,
@@ -1959,14 +2030,20 @@ def website_submission_form():
                 flash("Catégorie non valide.", "error")
                 return render_template("website-submission-form.html", form=form)
             resolved_category_id, resolved_category_name = resolved
+            resolved_city = resolve_city(cur, ville)
+            if (ville or "").strip() and not resolved_city:
+                flash("Ville non valide.", "error")
+                return render_template("website-submission-form.html", form=form)
+            resolved_city_id = resolved_city[0] if resolved_city else None
+            resolved_city_name = resolved_city[1] if resolved_city else None
 
             # SÉCURITÉ : Insertion avec paramètres liés (protection contre SQL injection)
             cur.execute("""
-                INSERT INTO sites (nom, ville, lien, description, category_id, status, date_ajout)
+                INSERT INTO sites (nom, ville_id, lien, description, category_id, status, date_ajout)
                 VALUES (?, ?, ?, ?, ?, 'en_attente', DATETIME('now'))
             """, (
                 nom,
-                ville,
+                resolved_city_id,
                 lien,
                 description,
                 resolved_category_id
@@ -1975,7 +2052,7 @@ def website_submission_form():
             conn.commit()
             send_submission_notification({
                 "nom": nom,
-                "ville": ville,
+                "ville": resolved_city_name,
                 "lien": lien,
                 "description": description,
                 "categorie": resolved_category_name,
@@ -2099,9 +2176,10 @@ def voir_ville(slug):
         return render_template("404.html"), 404
 
     cur.execute("""
-        SELECT s.*, c.nom AS categorie
+        SELECT s.*, c.nom AS categorie, v.nom AS ville
         FROM sites s
         LEFT JOIN categories c ON c.id = s.category_id
+        LEFT JOIN villes v ON v.id = s.ville_id
         WHERE s.status = 'valide' AND s.ville_id = ?
         ORDER BY s.en_vedette DESC, s.date_ajout DESC
     """, (ville["id"],))
