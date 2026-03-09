@@ -449,7 +449,7 @@ app.jinja_env.filters["format_date"] = format_date
 
 # SÉCURITÉ : Récupère les sites pré-sélectionnés avec gestion d'erreurs
 def get_sites_en_vedette():
-    """Récupère les catégories triées par clics + sites en vedette triés par clics."""
+    """Récupère les catégories triées par clics + sites vedette (sinon top clics)."""
     conn = get_db_connection()
     if not conn:
         return {}, {}
@@ -482,7 +482,7 @@ def get_sites_en_vedette():
             for row in cat_rows
         }
 
-        # Sites en vedette: triés d'abord par clics
+        # 1) Sites en vedette (si présents dans la catégorie)
         cur.execute(
             """
             SELECT
@@ -498,18 +498,49 @@ def get_sites_en_vedette():
             ORDER BY c.nom ASC, s.click_count DESC, s.date_ajout DESC
             """
         )
-
+        featured_by_category = {cat: [] for cat in data}
         for site in cur.fetchall():
             cat = site["categorie"]
-            if cat in data:
-                data[cat].append(site)
+            if cat in featured_by_category:
+                featured_by_category[cat].append(site)
+
+        # 2) Fallback: sites les plus cliqués par catégorie (tous les sites valides)
+        cur.execute(
+            """
+            SELECT
+                s.*,
+                c.nom AS categorie,
+                v.nom AS ville,
+                v.nom AS ville_nom,
+                v.slug AS ville_slug
+            FROM sites s
+            JOIN categories c ON c.id = s.category_id
+            LEFT JOIN villes v ON v.id = s.ville_id
+            WHERE s.status = 'valide'
+            ORDER BY c.nom ASC, s.click_count DESC, s.date_ajout DESC
+            """
+        )
+        top_by_category = {cat: [] for cat in data}
+        for site in cur.fetchall():
+            cat = site["categorie"]
+            if cat in top_by_category:
+                top_by_category[cat].append(site)
 
         for cat in data:
-            data[cat].sort(
+            featured_sites = sorted(
+                featured_by_category[cat],
                 key=lambda s: ((s["click_count"] or 0), (s["date_ajout"] or "")),
                 reverse=True,
             )
-            data[cat] = data[cat][:3]
+            if featured_sites:
+                data[cat] = featured_sites[:3]
+                continue
+
+            data[cat] = sorted(
+                top_by_category[cat],
+                key=lambda s: ((s["click_count"] or 0), (s["date_ajout"] or "")),
+                reverse=True,
+            )[:3]
 
 
         return data, category_stats
@@ -1720,7 +1751,7 @@ def voir_categorie(slug):
     category_row = cur.fetchone()
     category_id = category_row["id"] if category_row else None
 
-    #recupere tous les sites de la categorie par ordre decroissant
+    # Règle d'affichage catégorie: vedettes d'abord, puis popularité.
     cur.execute("""
        SELECT s.*, c.nom AS categorie, v.nom AS ville
        FROM sites s
@@ -1728,7 +1759,7 @@ def voir_categorie(slug):
        LEFT JOIN villes v ON v.id = s.ville_id
        WHERE s.status = 'valide'
          AND s.category_id = ?
-       ORDER BY click_count DESC, en_vedette DESC, date_ajout DESC, id DESC 
+       ORDER BY en_vedette DESC, click_count DESC, date_ajout DESC, id DESC 
     """, (category_id,))
     sites = cur.fetchall()
     conn.close()
