@@ -2,194 +2,219 @@
 Réunion Wiki{% endblock %} {% block seo_description %}Découvrez les sites et
 catégories les plus consultés à La Réunion : tendances de la semaine, valeurs
 sûres du mois et nouveaux sites populaires.{% endblock %} {% block content %}
-<div class="category_page ranking_page">
-  <h2>Ce qui marche en ce moment</h2>
-  <p class="intro">
-    Cette page montre les sites et catégories les plus consultés sur Réunion
-    Wiki. Les chiffres sont mis à jour automatiquement.
-  </p>
+<section class="trends-page">
+  <header class="trends-page__hero">
+    <p class="trends-page__eyebrow">Tendances Réunion Wiki</p>
+    <h1 class="trends-page__title">Ce qui marche en ce moment</h1>
+    <p class="trends-page__intro">
+      Cette page montre les sites et catégories les plus consultés sur Réunion
+      Wiki. Les chiffres sont mis à jour automatiquement.
+    </p>
+  </header>
 
-  <h3>Les plus consultés cette semaine</h3>
-  <p class="intro">Les sites les plus regardés ces 7 derniers jours.</p>
-  <ul id="trending-week-list" class="js-load-more-list" data-step="5">
-    {% for site in trending_sites %}
-    <li class="ranking-item js-load-item">
-      <div class="ranking-top-line">
-        <span class="ranking-badge">
-          #{{ loop.index }}
-        </span>
-        <a
-          href="{{ url_for('redirect_site', site_id=site['id']) }}"
-          class="ranking-title"
-          target="_blank"
-          rel="noopener noreferrer"
+  <div class="trends-grid">
+    <section class="trends-section" aria-labelledby="trending-week-title">
+      <div class="trends-section__head">
+        <h2 id="trending-week-title" class="trends-section__title">
+          Les plus consultés cette semaine
+        </h2>
+        <p class="trends-section__intro">
+          Les sites les plus regardés ces 7 derniers jours.
+        </p>
+      </div>
+      <ul id="trending-week-list" class="trend-list js-load-more-list" data-step="5">
+        {% for site in trending_sites %}
+        <li class="trend-item js-load-item">
+          <div class="trend-item__top">
+            <span class="trend-item__rank">#{{ loop.index }}</span>
+            <a
+              href="{{ url_for('redirect_site', site_id=site['id']) }}"
+              class="trend-item__title"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {{ site['nom'] }}
+            </a>
+          </div>
+          <p class="trend-item__meta">
+            {{ site['clicks_7d'] }} visite{{ '' if site['clicks_7d'] == 1 else 's'
+            }} cette semaine
+          </p>
+        </li>
+        {% endfor %}
+      </ul>
+      <div class="load-more-wrap" id="trending-week-load-more-wrap">
+        <button
+          type="button"
+          id="trending-week-load-more-btn"
+          class="btn btn-secondary"
         >
-          {{ site['nom'] }}
-        </a>
+          Voir plus
+        </button>
+        <p
+          id="trending-week-load-more-status"
+          class="load-more-status"
+          aria-live="polite"
+        ></p>
       </div>
-      <div class="ranking-stats">
-        {{ site['clicks_7d'] }} visite{{ '' if site['clicks_7d'] == 1 else 's'
-        }} cette semaine
-      </div>
-    </li>
-    {% endfor %}
-  </ul>
-  <div class="load-more-wrap" id="trending-week-load-more-wrap">
-    <button
-      type="button"
-      id="trending-week-load-more-btn"
-      class="btn btn-secondary"
-    >
-      Voir plus
-    </button>
-    <p
-      id="trending-week-load-more-status"
-      class="load-more-status"
-      aria-live="polite"
-    ></p>
-  </div>
+    </section>
 
-  <h3>Les valeurs sûres du mois</h3>
-  <p class="intro">
-    Les sites les plus utiles et les plus réguliers sur les 30 derniers jours.
-  </p>
-  <ul id="stable-month-list" class="js-load-more-list" data-step="5">
-    {% for site in stable_sites %}
-    <li class="ranking-item js-load-item">
-      <div class="ranking-top-line">
-        <span class="ranking-badge">
-          #{{ loop.index }}
-        </span>
-        <a
-          href="{{ url_for('redirect_site', site_id=site['id']) }}"
-          class="ranking-title"
-          target="_blank"
-          rel="noopener noreferrer"
+    <section class="trends-section" aria-labelledby="stable-month-title">
+      <div class="trends-section__head">
+        <h2 id="stable-month-title" class="trends-section__title">
+          Les valeurs sûres du mois
+        </h2>
+        <p class="trends-section__intro">
+          Les sites les plus utiles et les plus réguliers sur les 30 derniers jours.
+        </p>
+      </div>
+      <ul id="stable-month-list" class="trend-list js-load-more-list" data-step="5">
+        {% for site in stable_sites %}
+        <li class="trend-item js-load-item">
+          <div class="trend-item__top">
+            <span class="trend-item__rank">#{{ loop.index }}</span>
+            <a
+              href="{{ url_for('redirect_site', site_id=site['id']) }}"
+              class="trend-item__title"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {{ site['nom'] }}
+            </a>
+          </div>
+          <p class="trend-item__meta">
+            {{ site['clicks_30d'] }} visite{{ '' if site['clicks_30d'] == 1 else 's'
+            }} ce mois-ci
+          </p>
+        </li>
+        {% endfor %}
+      </ul>
+      <div class="load-more-wrap" id="stable-month-load-more-wrap">
+        <button
+          type="button"
+          id="stable-month-load-more-btn"
+          class="btn btn-secondary"
         >
-          {{ site['nom'] }}
-        </a>
+          Voir plus
+        </button>
+        <p
+          id="stable-month-load-more-status"
+          class="load-more-status"
+          aria-live="polite"
+        ></p>
       </div>
-      <div class="ranking-stats">
-        {{ site['clicks_30d'] }} visite{{ '' if site['clicks_30d'] == 1 else 's'
-        }} ce mois-ci
-      </div>
-    </li>
-    {% endfor %}
-  </ul>
-  <div class="load-more-wrap" id="stable-month-load-more-wrap">
-    <button
-      type="button"
-      id="stable-month-load-more-btn"
-      class="btn btn-secondary"
-    >
-      Voir plus
-    </button>
-    <p
-      id="stable-month-load-more-status"
-      class="load-more-status"
-      aria-live="polite"
-    ></p>
-  </div>
+    </section>
 
-  <h3>Les catégories qui montent</h3>
-  <p class="intro">Les thèmes qui attirent le plus de monde en ce moment.</p>
-  <ul id="trending-categories-list" class="js-load-more-list" data-step="5">
-    {% for cat in trending_categories %}
-    <li class="ranking-item js-load-item">
-      <div class="ranking-top-line">
-        <span class="ranking-badge">
-          #{{ loop.index }}
-        </span>
-        <a
-          href="/categorie/{{ categories_slug[cat['categorie']] }}"
-          class="ranking-title"
-        >
-          {{ cat['categorie'] }}
-        </a>
+    <section class="trends-section" aria-labelledby="trending-categories-title">
+      <div class="trends-section__head">
+        <h2 id="trending-categories-title" class="trends-section__title">
+          Les catégories qui montent
+        </h2>
+        <p class="trends-section__intro">
+          Les thèmes qui attirent le plus de monde en ce moment.
+        </p>
       </div>
-      <div class="ranking-stats">
-        {{ cat['clicks_7d'] }} visite{{ '' if cat['clicks_7d'] == 1 else 's' }}
-        cette semaine
-      </div>
-    </li>
-    {% endfor %}
-  </ul>
-  <div class="load-more-wrap" id="trending-categories-load-more-wrap">
-    <button
-      type="button"
-      id="trending-categories-load-more-btn"
-      class="btn btn-secondary"
-    >
-      Voir plus
-    </button>
-    <p
-      id="trending-categories-load-more-status"
-      class="load-more-status"
-      aria-live="polite"
-    ></p>
-  </div>
-
-  <h3>Nouveaux sites qui plaisent déjà</h3>
-  <p class="intro">
-    Les nouveaux sites ajoutés récemment et déjà bien consultés.
-  </p>
-  <ul id="new-performers-list" class="js-load-more-list" data-step="5">
-    {% for site in new_performers %}
-    <li class="ranking-item js-load-item">
-      <div class="ranking-top-line">
-        <span class="ranking-badge">
-          #{{ loop.index }}
-        </span>
-        <a
-          href="{{ url_for('redirect_site', site_id=site['id']) }}"
-          class="ranking-title"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          {{ site['nom'] }}
-        </a>
-      </div>
-      <div class="ranking-stats">
-        {{ site['clicks_7d'] }} visite{{ '' if site['clicks_7d'] == 1 else 's'
-        }} cette semaine
-      </div>
-    </li>
-    {% endfor %}
-  </ul>
-  <div class="load-more-wrap" id="new-performers-load-more-wrap">
-    <button
-      type="button"
-      id="new-performers-load-more-btn"
-      class="btn btn-secondary"
-    >
-      Voir plus
-    </button>
-    <p
-      id="new-performers-load-more-status"
-      class="load-more-status"
-      aria-live="polite"
-    ></p>
-  </div>
-
-  <section class="next-steps" aria-label="À voir ensuite">
-    <h3>À voir ensuite</h3>
-    <p>Continue ta découverte de Réunion Wiki</p>
-
-    <div class="next-steps__links">
-      <a href="{{ url_for('most_visited_sites') }}">Sites les + visités</a>
-      <a href="{{ url_for('most_visited_categories') }}"
-        >Catégories les + visitées</a
+      <ul
+        id="trending-categories-list"
+        class="trend-list js-load-more-list"
+        data-step="5"
       >
-      <a href="{{ url_for('recently_added_sites') }}"
-        >Derniers sites ajoutés</a
-      >
-    </div>
-  </section>
+        {% for cat in trending_categories %}
+        <li class="trend-item js-load-item">
+          <div class="trend-item__top">
+            <span class="trend-item__rank">#{{ loop.index }}</span>
+            <a
+              href="/categorie/{{ categories_slug[cat['categorie']] }}"
+              class="trend-item__title"
+            >
+              {{ cat['categorie'] }}
+            </a>
+          </div>
+          <p class="trend-item__meta">
+            {{ cat['clicks_7d'] }} visite{{ '' if cat['clicks_7d'] == 1 else 's' }}
+            cette semaine
+          </p>
+        </li>
+        {% endfor %}
+      </ul>
+      <div class="load-more-wrap" id="trending-categories-load-more-wrap">
+        <button
+          type="button"
+          id="trending-categories-load-more-btn"
+          class="btn btn-secondary"
+        >
+          Voir plus
+        </button>
+        <p
+          id="trending-categories-load-more-status"
+          class="load-more-status"
+          aria-live="polite"
+        ></p>
+      </div>
+    </section>
+
+    <section class="trends-section" aria-labelledby="new-performers-title">
+      <div class="trends-section__head">
+        <h2 id="new-performers-title" class="trends-section__title">
+          Nouveaux sites qui plaisent déjà
+        </h2>
+        <p class="trends-section__intro">
+          Les nouveaux sites ajoutés récemment et déjà bien consultés.
+        </p>
+      </div>
+      <ul id="new-performers-list" class="trend-list js-load-more-list" data-step="5">
+        {% for site in new_performers %}
+        <li class="trend-item js-load-item">
+          <div class="trend-item__top">
+            <span class="trend-item__rank">#{{ loop.index }}</span>
+            <a
+              href="{{ url_for('redirect_site', site_id=site['id']) }}"
+              class="trend-item__title"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {{ site['nom'] }}
+            </a>
+          </div>
+          <p class="trend-item__meta">
+            {{ site['clicks_7d'] }} visite{{ '' if site['clicks_7d'] == 1 else 's'
+            }} cette semaine
+          </p>
+        </li>
+        {% endfor %}
+      </ul>
+      <div class="load-more-wrap" id="new-performers-load-more-wrap">
+        <button
+          type="button"
+          id="new-performers-load-more-btn"
+          class="btn btn-secondary"
+        >
+          Voir plus
+        </button>
+        <p
+          id="new-performers-load-more-status"
+          class="load-more-status"
+          aria-live="polite"
+        ></p>
+      </div>
+    </section>
+  </div>
+
+  <!--
+  <section class="trends-next" aria-label="À voir ensuite">
+    <h2 class="trends-next__title">À voir ensuite</h2>
+    <p class="trends-next__intro">Continue ta découverte de Réunion Wiki.</p>
+    <div class="trends-next__links">
+      <a href="{{ url_for('most_visited_sites') }}">Sites les + visités</a> 
+      <a href="{{ url_for('most_visited_categories') }}">Catégories les + visitées</a>
+       <a href="{{ url_for('recently_added_sites') }}">Derniers sites ajoutés</a> 
+    </div> 
+  </section> -->
 
   <div id="bouton_plus">
-    <a href="{{ url_for('accueil') }}">← Retour à l'accueil</a>
+    <a href="{{ url_for('accueil') }}">Retour à l'accueil</a>
   </div>
-</div>
+</section>
 <script>
   document.addEventListener("DOMContentLoaded", function () {
     function setupLoadMore(cfg) {

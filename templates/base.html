@@ -94,7 +94,7 @@
         Accueil
       </a>
       {% endblock %}
-      <div class="nav-scroll" data-scrollable>
+      <div class="nav-scroll">
         <!-- Liste des liens -->
         <ul class="nav-links" id="main-nav-links">
           <!--{% for cat in categories %} {% set slug = categories_slug[cat] %} {%
@@ -182,9 +182,9 @@
           <nav class="site-footer__col" aria-labelledby="footer-explore-title">
             <h2 id="footer-explore-title" class="site-footer__title">Explorer</h2>
             <ul class="site-footer__links">
-              <li><a href="{{ url_for('most_visited_categories') }}">Catégories</a></li>
-              <li><a href="{{ url_for('most_visited_sites') }}">Plus consultés</a></li>
-              <li><a href="{{ url_for('recently_added_sites') }}">Derniers ajoutés</a></li>
+          <li><a href="{{ url_for('trends') }}">Tendances</a></li>
+             <!--      <li><a href="{{ url_for('most_visited_sites') }}">Plus consultés</a></li>
+              <li><a href="{{ url_for('recently_added_sites') }}">Derniers ajoutés</a></li>--> 
               <li><a href="https://www.instagram.com/kery.rdd" target="_blank" rel="noopener noreferrer">Proposer un site</a></li>
             </ul>
           </nav>
@@ -262,38 +262,5 @@
         });
       }
     </script>
-    <script>
-      document.addEventListener("DOMContentLoaded", function () {
-        const scroller = document.querySelector("[data-scrollable]");
-        if (!scroller) return;
-
-        const updateShadows = () => {
-          const maxScroll = scroller.scrollWidth - scroller.clientWidth;
-          const atStart = scroller.scrollLeft <= 0;
-          const atEnd = scroller.scrollLeft >= maxScroll - 1;
-
-          scroller.classList.toggle("nav-scroll--shadow-left", !atStart);
-          scroller.classList.toggle("nav-scroll--shadow-right", !atEnd);
-        };
-
-        updateShadows();
-        scroller.addEventListener("scroll", updateShadows, { passive: true });
-        window.addEventListener("resize", updateShadows);
-      });
-    </script>
-    <script>
-  document.addEventListener("DOMContentLoaded", function () {
-    const btn = document.querySelector(".nav-more-btn");
-    const panel = document.getElementById("nav-more-panel");
-    if (!btn || !panel) return;
-
-    btn.addEventListener("click", function () {
-      const expanded = btn.getAttribute("aria-expanded") === "true";
-      btn.setAttribute("aria-expanded", String(!expanded));
-      panel.hidden = expanded;
-    });
-  });
-</script>
-
   </body>
 </html>
