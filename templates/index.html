@@ -18,8 +18,7 @@
     <p class="home-hero__eyebrow">Portail local · La Réunion 🌴</p>
     <h2 class="home-hero__title">Vos ressources locales,<br>en un clic</h2>
     <p class="home-hero__subtitle">
-      Emploi, transport, météo, culture, services publics — tout le web utile de La Réunion,
-      organisé pour vous.
+      Le portail péi pour retrouver rapidement les sites utiles de La Réunion.
     </p>
     <form
       action="{{ url_for('search') }}"
@@ -37,6 +36,14 @@
         autocomplete="off"
       />
     </form>
+    <nav class="hero-badge-strip" aria-label="Thèmes populaires">
+      <a href="{{ url_for('search', q='météo') }}" class="hero-badge">Météo locale</a>
+      <a href="{{ url_for('search', q='transports') }}" class="hero-badge">Transports</a>
+      <a href="{{ url_for('search', q='emploi') }}" class="hero-badge">Emploi</a>
+      <a href="{{ url_for('search', q='actualités') }}" class="hero-badge">Actualités</a>
+      <a href="{{ url_for('search', q='sorties') }}" class="hero-badge">Sorties</a>
+      <a href="{{ url_for('search', q='services publics') }}" class="hero-badge">Services publics</a>
+    </nav>
     <div class="home-hero__actions">
       <a href="{{ url_for('website_submission_form') }}" class="hero-cta-link">+ Proposer un site</a>
     </div>

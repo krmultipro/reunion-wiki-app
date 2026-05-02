@@ -236,24 +236,40 @@
     </div>
     {% endif %} {% endwith %}
 
-    <footer>
-      <!--<a
-        href="https://forms.gle/kimeZjk8TPQAhMCE6"
-        class="propos_site"
-        target="__blank"
-        >Proposez un site !</a
-      > -->
-      <p><strong>Réunion Wiki</strong> - Simplifions l'information locale.</p>
-      <nav>
-        <a href="{{ url_for('faq') }}">FAQ</a> |
-        <a href="{{ url_for('legal_notices') }}" target="_blank"
-          >Mentions légales</a
-        >
-        |
-        <a href="https://forms.gle/GScJkMiEZXVSted78" target="_blank"
-          >Contact</a
-        >
-      </nav>
+    <footer class="site-footer">
+      <div class="site-footer__inner">
+        <div class="site-footer__grid">
+          <section class="site-footer__col site-footer__col--brand" aria-labelledby="footer-brand-title">
+            <h2 id="footer-brand-title" class="site-footer__title">Réunion Wiki</h2>
+            <p class="site-footer__text">
+              Le portail péi pour retrouver rapidement les sites utiles de La Réunion.
+            </p>
+            <p class="site-footer__tagline">Simplifions l'information locale.</p>
+          </section>
+
+          <nav class="site-footer__col" aria-labelledby="footer-explore-title">
+            <h2 id="footer-explore-title" class="site-footer__title">Explorer</h2>
+            <ul class="site-footer__links">
+              <li><a href="{{ url_for('most_visited_categories') }}">Catégories</a></li>
+              <li><a href="{{ url_for('most_visited_sites') }}">Plus consultés</a></li>
+              <li><a href="{{ url_for('recently_added_sites') }}">Derniers ajoutés</a></li>
+              <li><a href="{{ url_for('website_submission_form') }}">Proposer un site</a></li>
+            </ul>
+          </nav>
+
+          <nav class="site-footer__col" aria-labelledby="footer-links-title">
+            <h2 id="footer-links-title" class="site-footer__title">Liens utiles</h2>
+            <ul class="site-footer__links">
+              <li><a href="{{ url_for('faq') }}">FAQ</a></li>
+              <li><a href="{{ url_for('legal_notices') }}" target="_blank">Mentions légales</a></li>
+              <li><a href="https://forms.gle/GScJkMiEZXVSted78" target="_blank">Contact</a></li>
+            </ul>
+          </nav>
+        </div>
+        <p class="site-footer__trust">
+          Sites utiles, ressources locales, contributions vérifiées avant publication.
+        </p>
+      </div>
     </footer>
 
     <script>

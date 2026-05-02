@@ -169,16 +169,116 @@ h3 {
   min-height: 70% !important;
 }
 
-footer {
-  border-top: 0.2rem solid var(--vert-fougere);
+.site-footer {
+  margin: 2rem -0.8em 0;
+  padding: 1.35rem 0 1rem;
+  background: linear-gradient(180deg, #f5f9f6 0%, #faf7f1 100%);
+  border-top: 2px solid rgba(11, 132, 87, 0.45);
 }
 
-footer a {
+.site-footer__inner {
+  width: min(1080px, calc(100% - 2rem));
+  margin: 0 auto;
+}
+
+.site-footer__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.15rem 2rem;
+}
+
+.site-footer__col {
+  min-width: 0;
+}
+
+.site-footer__title {
+  margin: 0 0 0.55rem;
+  font-size: 0.96rem;
+  line-height: 1.35;
+  color: var(--vert-fougere);
+  text-align: left;
+  font-family: "Montserrat", sans-serif;
+  font-weight: 900;
+}
+
+.site-footer__text,
+.site-footer__tagline,
+.site-footer__trust {
+  margin: 0;
+  color: #374045;
+  line-height: 1.55;
+}
+
+.site-footer__text {
+  font-size: 0.9rem;
+}
+
+.site-footer__tagline {
+  margin-top: 0.35rem;
+  font-size: 0.84rem;
+  color: #4f5c60;
+}
+
+.site-footer__links {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.site-footer__links a {
   color: var(--vert-fougere);
   text-decoration: none;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  border-radius: 0.3rem;
+  display: inline-block;
+  width: fit-content;
+  transition: color 0.15s ease, text-decoration-color 0.15s ease;
 }
-footer a:hover {
+
+.site-footer__links a:hover {
   color: var(--lava);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.site-footer__links a:focus-visible {
+  outline: 2px solid rgba(11, 132, 87, 0.45);
+  outline-offset: 2px;
+}
+
+.site-footer__trust {
+  margin-top: 0.95rem;
+  padding-top: 0.8rem;
+  border-top: 1px solid rgba(11, 132, 87, 0.18);
+  font-size: 0.8rem;
+  color: #556266;
+}
+
+@media (max-width: 768px) {
+  .site-footer {
+    padding: 1.15rem 0 0.85rem;
+  }
+
+  .site-footer__inner {
+    width: min(1080px, calc(100% - 1.4rem));
+  }
+
+  .site-footer__grid {
+    grid-template-columns: 1fr;
+    gap: 0.95rem;
+  }
+
+  .site-footer__title {
+    margin-bottom: 0.4rem;
+  }
+
+  .site-footer__trust {
+    margin-top: 0.75rem;
+    padding-top: 0.7rem;
+  }
 }
 
 .category {
@@ -2243,6 +2343,43 @@ h1 {
 
 .hero-cta-link:focus-visible {
   box-shadow: 0 0 0 3px rgba(11, 132, 87, 0.3);
+}
+
+/* ── Hero topic badges ───────────────────────────────────────── */
+
+.hero-badge-strip {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.45rem;
+  margin: 0 auto 0.95rem;
+  max-width: 520px;
+}
+
+.hero-badge {
+  display: inline-block;
+  padding: 0.28rem 0.75rem;
+  border-radius: 999px;
+  background: rgba(11, 132, 87, 0.07);
+  border: 1px solid rgba(11, 132, 87, 0.22);
+  color: #1a4d35;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-decoration: none;
+  letter-spacing: 0.01em;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  white-space: nowrap;
+}
+
+.hero-badge:hover {
+  background: rgba(11, 132, 87, 0.15);
+  border-color: rgba(11, 132, 87, 0.4);
+  color: var(--vert-fougere);
+}
+
+.hero-badge:focus-visible {
+  outline: 2px solid var(--vert-fougere);
+  outline-offset: 2px;
 }
 
 /* ── Section label ───────────────────────────────────────────── */
