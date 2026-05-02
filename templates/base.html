@@ -73,15 +73,18 @@
       <h1 class="site_title"><a href="/">Réunion Wiki</a></h1>
       {% block header_content %}{% endblock %}
     </header>
+    {% block intro_text %}
     <p>
       Bienvenue sur <strong>Réunion Wiki 🌴</strong><br />
       Un répertoire <em>simple, rapide et local</em> pour accéder facilement aux
       sites essentiels de La Réunion.
     </p>
+    {% endblock %}
 
     <!-- Navigation principale -->
     <nav class="main-nav">
       <div class="main-nav__row">
+      {% block nav_home %}
       <a
         href="{{ url_for('accueil') }}"
         class="nav-home-link {{ 'active' if request.path == url_for('accueil') else '' }}"
@@ -90,6 +93,7 @@
       >
         🏠
       </a>
+      {% endblock %}
       <div class="nav-scroll" data-scrollable>
         <!-- Liste des liens -->
         <ul class="nav-links" id="main-nav-links">
@@ -126,7 +130,7 @@
           <li>
             <a
               href="{{ url_for('website_submission_form') }}"
-              class="{{ 'active' if request.path == url_for('website_submission_form') else '' }}"
+              class="nav-link--cta {{ 'active' if request.path == url_for('website_submission_form') else '' }}"
               aria-current="{{ 'page' if request.path == url_for('website_submission_form') else '' }}"
             >
               Proposer
@@ -139,7 +143,7 @@
               aria-expanded="false"
               aria-controls="nav-more-panel"
             >
-              Plus
+              Plus ▾
             </button>
           </li>
         </ul>
@@ -198,6 +202,7 @@
     </nav>
 
 
+    {% block search_area %}
     <div class="search-row">
       <form
         action="{{ url_for('search') }}"
@@ -218,6 +223,7 @@
         />
       </form>
     </div>
+    {% endblock %}
 
     <main>{% block content %}{% endblock %}</main>
 
