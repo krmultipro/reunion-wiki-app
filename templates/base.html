@@ -75,7 +75,7 @@
     </header>
     {% block intro_text %}
     <p>
-      Bienvenue sur <strong>Réunion Wiki 🌴</strong><br />
+      Bienvenue sur <strong>Réunion Wiki</strong><br />
       Un répertoire <em>simple, rapide et local</em> pour accéder facilement aux
       sites essentiels de La Réunion.
     </p>
@@ -91,7 +91,7 @@
         aria-current="{{ 'page' if request.path == url_for('accueil') else '' }}"
         aria-label="Accueil"
       >
-        🏠
+        Accueil
       </a>
       {% endblock %}
       <div class="nav-scroll" data-scrollable>
@@ -129,7 +129,7 @@
           </li>
           <li>
             <a
-              href="https://www.instagram.com/"
+              href="https://www.instagram.com/kery.rdd"
               class="nav-link--cta"
               target="_blank"
               rel="noopener noreferrer"
@@ -212,7 +212,7 @@
         role="search"
       >
         <button type="submit" class="search-btn" aria-label="Rechercher">
-          🔍
+          Rechercher
         </button>
         <input
           name="q"
@@ -254,7 +254,7 @@
               <li><a href="{{ url_for('most_visited_categories') }}">Catégories</a></li>
               <li><a href="{{ url_for('most_visited_sites') }}">Plus consultés</a></li>
               <li><a href="{{ url_for('recently_added_sites') }}">Derniers ajoutés</a></li>
-              <li><a href="https://www.instagram.com/" target="_blank" rel="noopener noreferrer">Proposer un site</a></li>
+              <li><a href="https://www.instagram.com/kery.rdd" target="_blank" rel="noopener noreferrer">Proposer un site</a></li>
             </ul>
           </nav>
 
@@ -297,7 +297,7 @@
 
           // Création du bouton "Installer l'application"
           const installBtn = document.createElement("button");
-          installBtn.textContent = "Installer l'application 📲";
+          installBtn.textContent = "Installer l'application";
           installBtn.style = `
         position: fixed;
         bottom: 20px;

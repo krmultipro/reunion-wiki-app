@@ -15,7 +15,7 @@
 
 <section class="home-hero">
   <div class="home-hero__inner">
-    <p class="home-hero__eyebrow">Portail local · La Réunion 🌴</p>
+    <p class="home-hero__eyebrow">Portail local · La Réunion</p>
     <h2 class="home-hero__title">Vos ressources locales,<br>en un clic</h2>
     <p class="home-hero__subtitle">
       Le portail péi pour retrouver rapidement les sites utiles de La Réunion.
@@ -26,7 +26,7 @@
       class="home-hero__search"
       role="search"
     >
-      <button type="submit" class="home-hero__search-btn" aria-label="Rechercher">🔍</button>
+      <button type="submit" class="home-hero__search-btn" aria-label="Rechercher">Rechercher</button>
       <input
         name="q"
         type="search"
@@ -46,7 +46,7 @@
     </nav>
     <div class="home-hero__actions">
       <a
-        href="https://www.instagram.com/"
+        href="https://www.instagram.com/kery.rdd"
         target="_blank"
         rel="noopener noreferrer"
         class="hero-cta-link"
@@ -82,9 +82,9 @@
               class="cat-card__link"
             >{{ site['nom'] }}<span class="cat-card__arrow" aria-hidden="true">↗</span></a>
             {% if site['ville_slug'] %}
-            <a href="{{ url_for('voir_ville', slug=site['ville_slug']) }}" class="cat-card__city">📍 {{ site['ville_nom'] }}</a>
+            <a href="{{ url_for('voir_ville', slug=site['ville_slug']) }}" class="cat-card__city">{{ site['ville_nom'] }}</a>
             {% elif site['ville'] %}
-            <span class="cat-card__city">📍 {{ site['ville'] }}</span>
+            <span class="cat-card__city">{{ site['ville'] }}</span>
             {% endif %}
           </div>
           <p class="cat-card__desc">{{ site['description']|truncate(80, True, '...') }}</p>
@@ -105,7 +105,7 @@
 
     <section class="top-sites-panel">
       <div class="panel-head">
-        <h2 class="panel-title">🔥 Les plus consultés</h2>
+        <h2 class="panel-title">Les plus consultés</h2>
       </div>
       <ol class="top-sites-list">
         {% for site in top_sites %}
@@ -134,7 +134,7 @@
 
     <section class="recent-panel">
       <div class="panel-head">
-        <h2 class="panel-title">🆕 Derniers ajoutés</h2>
+        <h2 class="panel-title">Derniers ajoutés</h2>
         <p class="panel-subtitle">Les dernières découvertes de la communauté</p>
       </div>
 
@@ -183,7 +183,7 @@
     </p>
     <a
       class="contribution-cta__button"
-      href="https://www.instagram.com/"
+      href="https://www.instagram.com/kery.rdd"
       target="_blank"
       rel="noopener noreferrer"
       >Proposer sur Instagram</a

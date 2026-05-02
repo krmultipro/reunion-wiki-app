@@ -3,21 +3,20 @@ Réunion Wiki{% endblock %} {% block seo_description %}Découvrez les sites et
 catégories les plus consultés à La Réunion : tendances de la semaine, valeurs
 sûres du mois et nouveaux sites populaires.{% endblock %} {% block content %}
 <div class="category_page ranking_page">
-  <h2>📈 Ce qui marche en ce moment</h2>
+  <h2>Ce qui marche en ce moment</h2>
   <p class="intro">
     Cette page montre les sites et catégories les plus consultés sur Réunion
     Wiki. Les chiffres sont mis à jour automatiquement.
   </p>
 
-  <h3>🔥 Les plus consultés cette semaine</h3>
+  <h3>Les plus consultés cette semaine</h3>
   <p class="intro">Les sites les plus regardés ces 7 derniers jours.</p>
   <ul id="trending-week-list" class="js-load-more-list" data-step="5">
     {% for site in trending_sites %}
     <li class="ranking-item js-load-item">
       <div class="ranking-top-line">
         <span class="ranking-badge">
-          {% if loop.index == 1 %}🥇 {% elif loop.index == 2 %}🥈 {% elif
-          loop.index == 3 %}🥉 {% else %}#{{ loop.index }} {% endif %}
+          #{{ loop.index }}
         </span>
         <a
           href="{{ url_for('redirect_site', site_id=site['id']) }}"
@@ -50,7 +49,7 @@ sûres du mois et nouveaux sites populaires.{% endblock %} {% block content %}
     ></p>
   </div>
 
-  <h3>✅ Les valeurs sûres du mois</h3>
+  <h3>Les valeurs sûres du mois</h3>
   <p class="intro">
     Les sites les plus utiles et les plus réguliers sur les 30 derniers jours.
   </p>
@@ -59,8 +58,7 @@ sûres du mois et nouveaux sites populaires.{% endblock %} {% block content %}
     <li class="ranking-item js-load-item">
       <div class="ranking-top-line">
         <span class="ranking-badge">
-          {% if loop.index == 1 %}🥇 {% elif loop.index == 2 %}🥈 {% elif
-          loop.index == 3 %}🥉 {% else %}#{{ loop.index }} {% endif %}
+          #{{ loop.index }}
         </span>
         <a
           href="{{ url_for('redirect_site', site_id=site['id']) }}"
@@ -93,15 +91,14 @@ sûres du mois et nouveaux sites populaires.{% endblock %} {% block content %}
     ></p>
   </div>
 
-  <h3>⬆️ Les catégories qui montent</h3>
+  <h3>Les catégories qui montent</h3>
   <p class="intro">Les thèmes qui attirent le plus de monde en ce moment.</p>
   <ul id="trending-categories-list" class="js-load-more-list" data-step="5">
     {% for cat in trending_categories %}
     <li class="ranking-item js-load-item">
       <div class="ranking-top-line">
         <span class="ranking-badge">
-          {% if loop.index == 1 %}🥇 {% elif loop.index == 2 %}🥈 {% elif
-          loop.index == 3 %}🥉 {% else %}#{{ loop.index }} {% endif %}
+          #{{ loop.index }}
         </span>
         <a
           href="/categorie/{{ categories_slug[cat['categorie']] }}"
@@ -132,7 +129,7 @@ sûres du mois et nouveaux sites populaires.{% endblock %} {% block content %}
     ></p>
   </div>
 
-  <h3>🆕 Nouveaux sites qui plaisent déjà</h3>
+  <h3>Nouveaux sites qui plaisent déjà</h3>
   <p class="intro">
     Les nouveaux sites ajoutés récemment et déjà bien consultés.
   </p>
@@ -141,8 +138,7 @@ sûres du mois et nouveaux sites populaires.{% endblock %} {% block content %}
     <li class="ranking-item js-load-item">
       <div class="ranking-top-line">
         <span class="ranking-badge">
-          {% if loop.index == 1 %}🥇 {% elif loop.index == 2 %}🥈 {% elif
-          loop.index == 3 %}🥉 {% else %}#{{ loop.index }} {% endif %}
+          #{{ loop.index }}
         </span>
         <a
           href="{{ url_for('redirect_site', site_id=site['id']) }}"
@@ -177,15 +173,15 @@ sûres du mois et nouveaux sites populaires.{% endblock %} {% block content %}
 
   <section class="next-steps" aria-label="À voir ensuite">
     <h3>À voir ensuite</h3>
-    <p>Continue ta découverte de Réunion Wiki 👇</p>
+    <p>Continue ta découverte de Réunion Wiki</p>
 
     <div class="next-steps__links">
-      <a href="{{ url_for('most_visited_sites') }}">🏆 Sites les + visités</a>
+      <a href="{{ url_for('most_visited_sites') }}">Sites les + visités</a>
       <a href="{{ url_for('most_visited_categories') }}"
-        >📂 Catégories les + visitées</a
+        >Catégories les + visitées</a
       >
       <a href="{{ url_for('recently_added_sites') }}"
-        >📌 Derniers sites ajoutés</a
+        >Derniers sites ajoutés</a
       >
     </div>
   </section>

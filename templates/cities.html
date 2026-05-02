@@ -3,15 +3,14 @@ Wiki{% endblock %} {% block seo_description %}Explore les villes de La Réunion
 et découvre les sites utiles les plus consultés pour chaque commune.{% endblock
 %} {% block content %}
 <div class="category_page ranking_page">
-  <h2>🏙️ Villes de La Réunion</h2>
+  <h2>Villes de La Réunion</h2>
 
   <ul>
     {% for v in villes %}
     <li class="ranking-item">
       <div class="ranking-top-line">
         <span class="ranking-badge">
-          {% if loop.index == 1 %}🥇 {% elif loop.index == 2 %}🥈 {% elif
-          loop.index == 3 %}🥉 {% else %}#{{ loop.index }} {% endif %}
+          #{{ loop.index }}
         </span>
 
         <a

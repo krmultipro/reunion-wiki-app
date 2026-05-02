@@ -1,7 +1,7 @@
 {% extends "base.html" %} {% block title %}Derniers sites ajoutés - Réunion
 Wiki{% endblock %} {% block content %}
 <div class="category_page recent_page">
-  <h2>📌 Derniers sites ajoutés</h2>
+  <h2>Derniers sites ajoutés</h2>
 
   <ul id="recent-sites-list" class="recent-list js-load-more-list" data-step="5">
     {% for site in sites %}
@@ -52,13 +52,13 @@ Wiki{% endblock %} {% block content %}
 
   <section class="next-steps" aria-label="À voir ensuite">
     <h3>À voir ensuite</h3>
-    <p>Continue ta découverte de Réunion Wiki 👇</p>
+    <p>Continue ta découverte de Réunion Wiki</p>
 
     <div class="next-steps__links">
-      <a href="{{ url_for('trends') }}">🔥 Tendances</a>
-      <a href="{{ url_for('most_visited_sites') }}">🏆 Sites les + visités</a>
+      <a href="{{ url_for('trends') }}">Tendances</a>
+      <a href="{{ url_for('most_visited_sites') }}">Sites les + visités</a>
       <a href="{{ url_for('most_visited_categories') }}"
-        >📂 Catégories les + visitées</a
+        >Catégories les + visitées</a
       >
     </div>
   </section>

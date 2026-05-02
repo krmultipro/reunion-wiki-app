@@ -3,7 +3,7 @@
 les sites utiles de {{ ville['nom'] }} : services, infos pratiques, ressources
 locales et adresses incontournables.{% endblock %} {% block content %}
 <div class="category_page recent_page">
-  <h1>📍 {{ ville['nom'] }}</h1>
+  <h1>{{ ville['nom'] }}</h1>
 
   <p class="intro">
     {{ sites|length }} site{{ '' if sites|length == 1 else 's' }} référencé{{ ''
