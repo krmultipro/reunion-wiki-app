@@ -155,6 +155,14 @@ h3 {
   gap: 3rem;
 }
 
+@media (min-width: 1024px) {
+  .page-content {
+    max-width: 1240px;
+    margin: 0 auto;
+    gap: 3.25rem;
+  }
+}
+
 .top-recent {
   display: flex;
   flex-direction: row;
@@ -2469,6 +2477,24 @@ h1 {
   margin-bottom: 0.9rem;
 }
 
+.home-section-intro {
+  max-width: 780px;
+}
+
+.home-section-title {
+  margin: 0;
+  text-align: left;
+  color: var(--gris-texte);
+  text-shadow: none;
+}
+
+.home-section-subtitle {
+  margin: 0.45rem 0 0;
+  color: #4f5c60;
+  line-height: 1.6;
+  font-size: 0.98rem;
+}
+
 /* ── Category cards grid ─────────────────────────────────────── */
 
 .categories-grid {
@@ -2813,6 +2839,18 @@ a.cat-card__city:hover {
   vertical-align: middle;
 }
 
+.recent-site-date {
+  font-size: 0.76rem;
+  color: var(--texte-muet);
+}
+
+.recent-site-description {
+  margin: 0.45rem 0 0;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: #4f5c60;
+}
+
 /* ── Responsive tweaks for homepage ─────────────────────────── */
 
 @media (max-width: 599px) {
@@ -2842,6 +2880,227 @@ a.cat-card__city:hover {
 @media (min-width: 600px) and (max-width: 899px) {
   .home-hero__title {
     font-size: 2rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .home-hero {
+    margin-bottom: 2.35rem;
+    padding: 2.4rem 1.75rem 2rem;
+  }
+
+  .home-hero__inner {
+    max-width: 760px;
+  }
+
+  .home-hero__eyebrow {
+    font-size: 0.88rem;
+    margin-bottom: 0.65rem;
+  }
+
+  .home-hero__title {
+    font-size: clamp(2.35rem, 3.5vw, 3rem);
+    line-height: 1.08;
+    margin-bottom: 0.8rem;
+  }
+
+  .home-hero__subtitle {
+    font-size: 1.08rem;
+    max-width: 56ch;
+    margin-bottom: 1.35rem;
+  }
+
+  .home-hero__search {
+    max-width: 640px;
+    padding: 0.8rem 1.15rem;
+    gap: 0.7rem;
+    margin-bottom: 1rem;
+  }
+
+  .home-hero__search-btn {
+    font-size: 0.88rem;
+    padding: 0.48rem 0.85rem;
+  }
+
+  .home-hero__search-input {
+    font-size: 1.06rem;
+  }
+
+  .hero-badge-strip {
+    max-width: 640px;
+    gap: 0.55rem;
+    margin-bottom: 1.1rem;
+  }
+
+  .hero-badge {
+    font-size: 0.84rem;
+    padding: 0.35rem 0.82rem;
+  }
+
+  .hero-cta-link {
+    font-size: 0.98rem;
+    padding: 0.62rem 1.45rem;
+  }
+
+  .home-section-intro {
+    max-width: 860px;
+    margin-bottom: -0.55rem;
+  }
+
+  .section-label {
+    font-size: 0.8rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .home-section-title {
+    font-size: 1.75rem;
+    line-height: 1.15;
+  }
+
+  .home-section-subtitle {
+    font-size: 1.05rem;
+    max-width: 62ch;
+  }
+
+  .categories-grid {
+    gap: 1.25rem;
+  }
+
+  .cat-card {
+    padding: 1.45rem 1.55rem 1.2rem;
+    border-radius: 1.05rem;
+  }
+
+  .cat-card:hover {
+    transform: translateY(-1px);
+  }
+
+  .cat-card__head {
+    margin-bottom: 1rem;
+    padding-bottom: 0.85rem;
+  }
+
+  .cat-card__title {
+    font-size: 1.16rem;
+    line-height: 1.3;
+  }
+
+  .cat-card__count {
+    font-size: 0.8rem;
+    padding: 0.25rem 0.62rem;
+  }
+
+  .cat-card__list {
+    gap: 0.9rem;
+  }
+
+  .cat-card__item {
+    line-height: 1.5;
+  }
+
+  .cat-card__link {
+    font-size: 1rem;
+  }
+
+  .cat-card__city {
+    font-size: 0.82rem;
+  }
+
+  .cat-card__desc {
+    margin-top: 0.35rem;
+    font-size: 0.9rem;
+    line-height: 1.58;
+  }
+
+  .cat-card__foot {
+    margin-top: 1rem;
+    padding-top: 0.8rem;
+  }
+
+  .cat-card__more-link {
+    font-size: 0.92rem;
+  }
+
+  .home-bottom {
+    gap: 1.25rem;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .top-sites-panel,
+  .recent-panel {
+    padding: 1.4rem 1.5rem;
+  }
+
+  .panel-head {
+    margin-bottom: 1rem;
+    padding-bottom: 0.85rem;
+  }
+
+  .panel-title {
+    font-size: 1.16rem;
+  }
+
+  .panel-subtitle {
+    margin-top: 0.38rem;
+    font-size: 0.92rem;
+    line-height: 1.5;
+  }
+
+  .top-sites-list {
+    gap: 0.7rem;
+  }
+
+  .top-site-item {
+    gap: 0.9rem;
+    padding: 0.78rem 0.9rem;
+  }
+
+  .top-site-rank {
+    min-width: 1.7rem;
+    font-size: 1.06rem;
+  }
+
+  .top-site-name {
+    font-size: 1rem;
+  }
+
+  .top-site-desc {
+    margin-top: 0.18rem;
+    font-size: 0.88rem;
+    line-height: 1.45;
+    white-space: normal;
+  }
+
+  .top-site-clicks {
+    font-size: 0.8rem;
+    padding: 0.24rem 0.58rem;
+  }
+
+  .recent-site-card {
+    padding: 0.95rem 1rem;
+  }
+
+  .recent-site-title {
+    font-size: 1rem;
+    line-height: 1.4;
+  }
+
+  .recent-site-category {
+    font-size: 0.84rem;
+  }
+
+  .recent-site-date {
+    font-size: 0.8rem;
+  }
+
+  .recent-site-description {
+    font-size: 0.9rem;
+    line-height: 1.56;
+  }
+
+  .view-all-btn,
+  .contribution-cta__button {
+    font-size: 0.95rem;
   }
 }
 
@@ -3115,5 +3374,4 @@ a.cat-card__city:hover {
     margin-top: 1.4rem;
   }
 }
-
 
