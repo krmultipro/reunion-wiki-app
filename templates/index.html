@@ -45,7 +45,13 @@
       <a href="{{ url_for('search', q='services publics') }}" class="hero-badge">Services publics</a>
     </nav>
     <div class="home-hero__actions">
-      <a href="{{ url_for('website_submission_form') }}" class="hero-cta-link">+ Proposer un site</a>
+      <a
+        href="https://www.instagram.com/"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="hero-cta-link"
+        >Proposer</a
+      >
     </div>
   </div>
 </section>
@@ -168,11 +174,21 @@
 
   </div>
 
-  {% if form_inline %}
-  <div id="proposer-un-site">
-    {% include "_proposer_form.html" with context %}
-  </div>
-  {% endif %}
+  <section class="contribution-cta" aria-labelledby="home-contribution-title">
+    <h2 id="home-contribution-title" class="contribution-cta__title">
+      Un site utile à partager ?
+    </h2>
+    <p class="contribution-cta__text">
+      Propose-le-nous directement sur Instagram.
+    </p>
+    <a
+      class="contribution-cta__button"
+      href="https://www.instagram.com/"
+      target="_blank"
+      rel="noopener noreferrer"
+      >Proposer sur Instagram</a
+    >
+  </section>
 
 </div>
 

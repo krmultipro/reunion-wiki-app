@@ -1,40 +1,86 @@
 {% extends "base.html" %} {# --- SEO dynamique transmis par app.py --- #} {%
 block seo_title %}{{ seo_title }}{% endblock %} {% block seo_description %}{{
 seo_description }}{% endblock %} {% block canonical %}{{ canonical }}{% endblock
-%} {% block og_url %}{{ canonical }}{% endblock %} {% block content %}
-<div class="category_page">
-  <h1>{{ nom_categorie }} à La Réunion</h1>
+%} {% block og_url %}{{ canonical }}{% endblock %}
 
-  <p class="intro">
-    Retrouvez ici une sélection de sites {{ nom_categorie|lower }} pour toute
-    l'île : adresses utiles, informations pratiques et ressources locales.
-  </p>
+{% block intro_text %}{% endblock %}
 
-  <ul>
-    {% for site in sites %}
-    <li>
-      <a
-        href="{{ url_for('redirect_site', site_id=site['id']) }}"
-        target="_blank"
-        rel="noopener noreferrer"
+{% block content %}
+<section class="category-page">
+  <header class="category-page__hero">
+    <div class="category-page__hero-top">
+      <a class="category-page__back-link" href="{{ url_for('accueil') }}"
+        >Retour à l'accueil</a
       >
-        <strong>{{ site['nom'] }}</strong>
-        {% if site['ville'] %} – {{ site['ville'] }}{% endif %} ↗
-      </a>
-      : {{ site['description'] }}
-    </li>
-    {% endfor %}
-  </ul>
-  {% if form_inline %}
-  <div class="category-inline-form">
-    {% include "_proposer_form.html" with context %}
-  </div>
+      <a
+        class="category-page__back-link"
+        href="{{ url_for('most_visited_categories') }}"
+        >Voir les catégories</a
+      >
+    </div>
+    <h1 class="category-page__title">{{ nom_categorie }} à La Réunion</h1>
+    <p class="category-page__description">
+      Retrouvez ici une sélection de sites {{ nom_categorie|lower }} pour toute
+      l'île : adresses utiles, informations pratiques et ressources locales.
+    </p>
+    <p class="category-page__count">{{ sites|length }} site(s) référencé(s)</p>
+  </header>
+
+  {% if sites %}
+  <section class="category-page__sites" aria-labelledby="category-sites-title">
+    <h2 id="category-sites-title" class="category-page__section-title">
+      Sites utiles
+    </h2>
+    <ul class="category-sites-grid">
+      {% for site in sites %}
+      <li class="category-site-card">
+        <article class="category-site-card__inner">
+          <h3 class="category-site-card__title">{{ site['nom'] }}</h3>
+          <p class="category-site-card__description">{{ site['description'] }}</p>
+          {% if site['ville'] %}
+          <p class="category-site-card__meta">Ville : {{ site['ville'] }}</p>
+          {% endif %}
+          <a
+            class="category-site-card__link"
+            href="{{ url_for('redirect_site', site_id=site['id']) }}"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Visiter le site
+          </a>
+        </article>
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% else %}
+  <section class="category-page__empty" aria-live="polite">
+    <p>Aucun site disponible pour cette catégorie pour le moment.</p>
+    <p>Envoie-nous ta suggestion sur Instagram, on vérifiera avant publication.</p>
+  </section>
   {% endif %}
 
-  <div id="bouton_plus">
-    <a href="/">← Retour à l'accueil</a>
-  </div>
-</div>
+  <section class="category-page__proposal">
+    <section
+      class="contribution-cta contribution-cta--compact"
+      aria-labelledby="category-contribution-title"
+    >
+      <h2 id="category-contribution-title" class="contribution-cta__title">
+        Un site manque dans cette catégorie ?
+      </h2>
+      <p class="contribution-cta__text">
+        Envoie-nous ta suggestion sur Instagram, on vérifiera avant publication.
+      </p>
+      <a
+        class="contribution-cta__button"
+        href="https://www.instagram.com/"
+        target="_blank"
+        rel="noopener noreferrer"
+        >Proposer sur Instagram</a
+      >
+    </section>
+  </section>
+</section>
 {% endblock %} {# --- Option SEO bonus : JSON-LD pour liste de sites --- #} {%
 block head %}
 <script type="application/ld+json">

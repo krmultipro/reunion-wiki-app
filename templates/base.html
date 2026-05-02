@@ -129,9 +129,10 @@
           </li>
           <li>
             <a
-              href="{{ url_for('website_submission_form') }}"
-              class="nav-link--cta {{ 'active' if request.path == url_for('website_submission_form') else '' }}"
-              aria-current="{{ 'page' if request.path == url_for('website_submission_form') else '' }}"
+              href="https://www.instagram.com/"
+              class="nav-link--cta"
+              target="_blank"
+              rel="noopener noreferrer"
             >
               Proposer
             </a>
@@ -253,7 +254,7 @@
               <li><a href="{{ url_for('most_visited_categories') }}">Catégories</a></li>
               <li><a href="{{ url_for('most_visited_sites') }}">Plus consultés</a></li>
               <li><a href="{{ url_for('recently_added_sites') }}">Derniers ajoutés</a></li>
-              <li><a href="{{ url_for('website_submission_form') }}">Proposer un site</a></li>
+              <li><a href="https://www.instagram.com/" target="_blank" rel="noopener noreferrer">Proposer un site</a></li>
             </ul>
           </nav>
 
