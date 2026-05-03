@@ -15,13 +15,13 @@
 
 <section class="home-hero">
   <div class="home-hero__inner">
-    {% set quick_category_labels = {
-      '☁️ Météo & Alertes': 'Météo locale',
-      '🚌 Transport': 'Transports',
-      '💼 Emploi & Formation': 'Emploi',
-      '📰 Actualités': 'Actualités',
-      '🛒 Achats': 'Achats'
-    } %}
+    {% set quick_access_links = [
+      {'slug': 'meteo-et-alertes', 'label': 'Météo locale'},
+      {'slug': 'transport', 'label': 'Transports'},
+      {'slug': 'emploi-et-formation', 'label': 'Emploi'},
+      {'slug': 'actualites', 'label': 'Actualités'},
+      {'slug': 'achats', 'label': 'Achats'}
+    ] %}
     <p class="home-hero__eyebrow">Portail local · La Réunion</p>
     <h2 class="home-hero__title">Trouver un site utile à La Réunion</h2>
     <p class="home-hero__subtitle">
@@ -46,12 +46,11 @@
     <div class="quick-access" aria-labelledby="quick-access-label">
       <p id="quick-access-label" class="quick-access__label">Accès rapides</p>
       <nav class="quick-access__list" aria-label="Accès rapides">
-        {% for category_name, link_label in quick_category_labels.items() %}
-        {% set category_slug = categories_slug.get(category_name) %}
+        {% for quick_link in quick_access_links %}
         <a
-          href="{% if category_slug %}/categorie/{{ category_slug }}{% else %}#toutes-les-categories{% endif %}"
+          href="{% if quick_link.slug in categories_slug.values() %}{{ url_for('voir_categorie', slug=quick_link.slug) }}{% else %}#toutes-les-categories{% endif %}"
           class="quick-access__chip"
-        >{{ link_label }}</a>
+        >{{ quick_link.label }}</a>
         {% endfor %}
         <a href="#toutes-les-categories" class="quick-access__chip quick-access__chip--all">Toutes les catégories</a>
       </nav>
