@@ -16,9 +16,9 @@
 <section class="home-hero">
   <div class="home-hero__inner">
     <p class="home-hero__eyebrow">Portail local · La Réunion</p>
-    <h2 class="home-hero__title">Vos ressources locales,<br>en un clic</h2>
+    <h2 class="home-hero__title">Trouver un site utile à La Réunion</h2>
     <p class="home-hero__subtitle">
-      Le portail péi pour retrouver rapidement les sites utiles de La Réunion.
+      Recherchez directement ou explorez les catégories.
     </p>
     <form
       action="{{ url_for('search') }}"
@@ -44,15 +44,6 @@
       <a href="{{ url_for('search', q='sorties') }}" class="hero-badge">Sorties</a>
       <a href="{{ url_for('search', q='services publics') }}" class="hero-badge">Services publics</a>
     </nav>
-    <div class="home-hero__actions">
-      <a
-        href="https://www.instagram.com/kery.rdd"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="hero-cta-link"
-        >Proposer</a
-      >
-    </div>
   </div>
 </section>
 
