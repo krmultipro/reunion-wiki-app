@@ -1,27 +1,15 @@
 <!-- templates/index.html -->
-{% extends "base.html" %}
-
-{% block title %}Réunion Wiki - Les meilleurs sites internet utiles de La Réunion.{% endblock %}
-
-{% block intro_text %}{% endblock %}
-
-{% block search_area %}{% endblock %}
-
-{% block header_content %}{% endblock %}
-
-{% block nav_home %}{% endblock %}
-
-{% block content %}
+{% extends "base.html" %} {% block title %}Réunion Wiki - Les meilleurs sites
+internet utiles de La Réunion.{% endblock %} {% block intro_text %}{% endblock
+%} {% block search_area %}{% endblock %} {% block header_content %}{% endblock
+%} {% block nav_home %}{% endblock %} {% block content %}
 
 <section class="home-hero">
   <div class="home-hero__inner">
-    {% set quick_access_links = [
-      {'slug': 'meteo-et-alertes', 'label': 'Météo locale'},
-      {'slug': 'transport', 'label': 'Transports'},
-      {'slug': 'emploi-et-formation', 'label': 'Emploi'},
-      {'slug': 'actualites', 'label': 'Actualités'},
-      {'slug': 'achats', 'label': 'Achats'}
-    ] %}
+    {% set quick_access_links = [ {'slug': 'meteo-et-alertes', 'label': 'Météo
+    locale'}, {'slug': 'transport', 'label': 'Transports'}, {'slug':
+    'emploi-et-formation', 'label': 'Emploi'}, {'slug': 'actualites', 'label':
+    'Actualités'}, {'slug': 'achats', 'label': 'Achats'} ] %}
     <p class="home-hero__eyebrow">Portail local · La Réunion</p>
     <h2 class="home-hero__title">Trouver un site utile à La Réunion</h2>
     <p class="home-hero__subtitle">
@@ -33,7 +21,13 @@
       class="home-hero__search"
       role="search"
     >
-      <button type="submit" class="home-hero__search-btn" aria-label="Rechercher">Rechercher</button>
+      <button
+        type="submit"
+        class="home-hero__search-btn"
+        aria-label="Rechercher"
+      >
+        Rechercher
+      </button>
       <input
         name="q"
         type="search"
@@ -50,34 +44,32 @@
         <a
           href="{% if quick_link.slug in categories_slug.values() %}{{ url_for('voir_categorie', slug=quick_link.slug) }}{% else %}#toutes-les-categories{% endif %}"
           class="quick-access__chip"
-        >{{ quick_link.label }}</a>
+          >{{ quick_link.label }}</a
+        >
         {% endfor %}
-        <a href="#toutes-les-categories" class="quick-access__chip quick-access__chip--all">Toutes les catégories</a>
+        <a
+          href="#toutes-les-categories"
+          class="quick-access__chip quick-access__chip--all"
+          >Toutes les catégories</a
+        >
       </nav>
     </div>
   </div>
 </section>
 
 <div class="page-content">
-
   <div class="home-section-intro" id="toutes-les-categories">
     <div class="section-label">Explorer les ressources locales</div>
     <h2 class="home-section-title">Parcourir les sites par catégorie</h2>
-    <p class="home-section-subtitle">Retrouvez les ressources utiles selon vos besoins du quotidien.</p>
+    <p class="home-section-subtitle">
+      Retrouvez les ressources utiles selon vos besoins du quotidien.
+    </p>
   </div>
   <div class="categories-grid">
-    {% for categorie, sites in data.items() %}
-    {% set clean_categorie = categorie
-      |replace('☁️ ', '')
-      |replace('❤️ ', '')
-      |replace('🍲 ', '')
-      |replace('🎉 ', '')
-      |replace('🏢 ', '')
-      |replace('💼 ', '')
-      |replace('📰 ', '')
-      |replace('🚌 ', '')
-      |replace('🛒 ', '')
-    %}
+    {% for categorie, sites in data.items() %} {% set clean_categorie =
+    categorie |replace('☁️ ', '') |replace('❤️ ', '') |replace('🍲 ', '')
+    |replace('🎉 ', '') |replace('🏢 ', '') |replace('💼 ', '') |replace('📰 ',
+    '') |replace('🚌 ', '') |replace('🛒 ', '') %}
     <article class="cat-card">
       <div class="cat-card__head">
         <h3 class="cat-card__title">
@@ -86,12 +78,14 @@
               src="{{ url_for('static', filename='icons/' + ICON_MAP.get(categories_slug[categorie], 'map.svg')) }}"
               class="cat-icon"
               alt=""
-            >
+            />
             {{ clean_categorie }}
           </a>
         </h3>
         {% if category_stats and category_stats[categorie] %}
-        <span class="cat-card__count">{{ category_stats[categorie]['site_count'] }} sites</span>
+        <span class="cat-card__count"
+          >{{ category_stats[categorie]['site_count'] }} sites</span
+        >
         {% endif %}
       </div>
 
@@ -104,20 +98,32 @@
               target="_blank"
               rel="noopener noreferrer"
               class="cat-card__link"
-            >{{ site['nom'] }}<span class="cat-card__arrow" aria-hidden="true">↗</span></a>
+              >{{ site['nom'] }}<span class="cat-card__arrow" aria-hidden="true"
+                >↗</span
+              ></a
+            >
             {% if site['ville_slug'] %}
-            <a href="{{ url_for('voir_ville', slug=site['ville_slug']) }}" class="cat-card__city">{{ site['ville_nom'] }}</a>
+            <a
+              href="{{ url_for('voir_ville', slug=site['ville_slug']) }}"
+              class="cat-card__city"
+              >{{ site['ville_nom'] }}</a
+            >
             {% elif site['ville'] %}
             <span class="cat-card__city">{{ site['ville'] }}</span>
             {% endif %}
           </div>
-          <p class="cat-card__desc">{{ site['description']|truncate(80, True, '...') }}</p>
+          <p class="cat-card__desc">
+            {{ site['description']|truncate(80, True, '...') }}
+          </p>
         </li>
         {% endfor %}
       </ul>
 
       <div class="cat-card__foot">
-        <a href="/categorie/{{ categories_slug[categorie] }}" class="cat-card__more-link">
+        <a
+          href="/categorie/{{ categories_slug[categorie] }}"
+          class="cat-card__more-link"
+        >
           Découvrir plus de sites →
         </a>
       </div>
@@ -126,7 +132,6 @@
   </div>
 
   <div class="home-bottom">
-
     <section class="top-sites-panel">
       <div class="panel-head">
         <h2 class="panel-title">Les plus consultés</h2>
@@ -141,8 +146,11 @@
               target="_blank"
               rel="noopener noreferrer"
               class="top-site-name"
-            >{{ site['nom'] }}</a>
-            <p class="top-site-desc">{{ site['description']|truncate(80, True, '...') }}</p>
+              >{{ site['nom'] }}</a
+            >
+            <p class="top-site-desc">
+              {{ site['description']|truncate(80, True, '...') }}
+            </p>
           </div>
           <span class="top-site-clicks">{{ site['click_count'] }} visites</span>
         </li>
@@ -163,18 +171,10 @@
       </div>
 
       <div class="recent-sites-grid">
-        {% for site in derniers_sites %}
-        {% set clean_recent_category = site['categorie']
-          |replace('☁️ ', '')
-          |replace('❤️ ', '')
-          |replace('🍲 ', '')
-          |replace('🎉 ', '')
-          |replace('🏢 ', '')
-          |replace('💼 ', '')
-          |replace('📰 ', '')
-          |replace('🚌 ', '')
-          |replace('🛒 ', '')
-        %}
+        {% for site in derniers_sites %} {% set clean_recent_category =
+        site['categorie'] |replace('☁️ ', '') |replace('❤️ ', '') |replace('🍲
+        ', '') |replace('🎉 ', '') |replace('🏢 ', '') |replace('💼 ', '')
+        |replace('📰 ', '') |replace('🚌 ', '') |replace('🛒 ', '') %}
         <div class="recent-site-card">
           <div class="recent-site-header">
             <a
@@ -182,7 +182,8 @@
               target="_blank"
               rel="noopener noreferrer"
               class="recent-site-title"
-            >{{ site['nom'] }}</a>
+              >{{ site['nom'] }}</a
+            >
             <span class="recent-site-badge">Nouveau</span>
             <span class="recent-site-date">
               {{ site['date_ajout'][8:10] }} {{ site['date_ajout']|month_name }}
@@ -190,11 +191,16 @@
             </span>
           </div>
           <div class="recent-site-meta">
-            <a href="/categorie/{{ categories_slug[site['categorie']] }}" class="recent-site-category">
+            <a
+              href="/categorie/{{ categories_slug[site['categorie']] }}"
+              class="recent-site-category"
+            >
               {{ clean_recent_category }}
             </a>
           </div>
-          <p class="recent-site-description">{{ site['description']|truncate(100, True, '...') }}</p>
+          <p class="recent-site-description">
+            {{ site['description']|truncate(100, True, '...') }}
+          </p>
         </div>
         {% endfor %}
       </div>
@@ -206,7 +212,6 @@
         </a> -->
       </div>
     </section>
-
   </div>
 
   <section class="contribution-cta" aria-labelledby="home-contribution-title">
@@ -214,7 +219,7 @@
       Un site utile à partager ?
     </h2>
     <p class="contribution-cta__text">
-      Propose-le-nous directement sur Instagram.
+      Propose-le-moi directement sur Instagram.
     </p>
     <a
       class="contribution-cta__button"
@@ -224,7 +229,6 @@
       >Proposer sur Instagram</a
     >
   </section>
-
 </div>
 
 {% endblock %}
