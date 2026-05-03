@@ -73,24 +73,28 @@
       <h1 class="site_title"><a href="/">Réunion Wiki</a></h1>
       {% block header_content %}{% endblock %}
     </header>
+    {% block intro_text %}
     <p>
-      Bienvenue sur <strong>Réunion Wiki 🌴</strong><br />
+      Bienvenue sur <strong>Réunion Wiki</strong><br />
       Un répertoire <em>simple, rapide et local</em> pour accéder facilement aux
       sites essentiels de La Réunion.
     </p>
+    {% endblock %}
 
     <!-- Navigation principale -->
     <nav class="main-nav">
       <div class="main-nav__row">
+      {% block nav_home %}
       <a
         href="{{ url_for('accueil') }}"
         class="nav-home-link {{ 'active' if request.path == url_for('accueil') else '' }}"
         aria-current="{{ 'page' if request.path == url_for('accueil') else '' }}"
         aria-label="Accueil"
       >
-        🏠
+        Accueil
       </a>
-      <div class="nav-scroll" data-scrollable>
+      {% endblock %}
+      <div class="nav-scroll">
         <!-- Liste des liens -->
         <ul class="nav-links" id="main-nav-links">
           <!--{% for cat in categories %} {% set slug = categories_slug[cat] %} {%
@@ -107,15 +111,6 @@
           {% endfor %}-->
           <li>
             <a
-              href="{{ url_for('most_visited_sites') }}"
-              class="{{ 'active' if request.path == url_for('most_visited_sites') else '' }}"
-              aria-current="{{ 'page' if request.path == url_for('most_visited_sites') else '' }}"
-            >
-              + visités
-            </a>
-          </li>
-          <li>
-            <a
               href="{{ url_for('trends') }}"
               class="{{ 'active' if request.path == url_for('trends') else '' }}"
               aria-current="{{ 'page' if request.path == url_for('trends') else '' }}"
@@ -125,79 +120,21 @@
           </li>
           <li>
             <a
-              href="{{ url_for('website_submission_form') }}"
-              class="{{ 'active' if request.path == url_for('website_submission_form') else '' }}"
-              aria-current="{{ 'page' if request.path == url_for('website_submission_form') else '' }}"
+              href="https://www.instagram.com/kery.rdd"
+              class="nav-link--cta"
+              target="_blank"
+              rel="noopener noreferrer"
             >
               Proposer
             </a>
           </li>
-          <li class="nav-more-item">
-            <button
-              class="nav-more-btn"
-              type="button"
-              aria-expanded="false"
-              aria-controls="nav-more-panel"
-            >
-              Plus
-            </button>
-          </li>
         </ul>
       </div>
-      </div>
-
-      <div id="nav-more-panel" class="nav-more-panel" hidden>
-        <ul class="nav-more-links">
-          <li>
-            <a
-              href="{{ url_for('most_visited_categories') }}"
-              class="{{ 'active' if request.path == url_for('most_visited_categories') else '' }}"
-              aria-current="{{ 'page' if request.path == url_for('most_visited_categories') else '' }}"
-            >
-              Catégories les + visitées
-            </a>
-          </li>
-          <!--<li>
-            <a
-              href="{{ url_for('villes_index') }}"
-              class="{{ 'active' if request.path == url_for('villes_index') else '' }}"
-              aria-current="{{ 'page' if request.path == url_for('villes_index') else '' }}"
-            >
-              Villes
-            </a>
-          </li>
-          -->
-          <li>
-            <a
-              href="{{ url_for('recently_added_sites') }}"
-              class="{{ 'active' if request.path == url_for('recently_added_sites') else '' }}"
-              aria-current="{{ 'page' if request.path == url_for('recently_added_sites') else '' }}"
-            >
-              Derniers sites ajoutés
-            </a>
-          </li>
-          <li><a href="{{ url_for('faq') }}"  class="{{ 'active' if request.path == url_for('faq') else '' }}"               aria-current="{{ 'page' if request.path == url_for('faq') else '' }}"
->FAQ</a></li>
-
-          <li>
-            <a
-              href="{{ url_for('blog') }}"
-              class="{{ 'active' if request.path == url_for('blog') else '' }}"
-              aria-current="{{ 'page' if request.path == url_for('blog') else '' }}"
-            >
-              Blog
-            </a>
-          </li>
-          <li>
-            <a href="https://forms.gle/GScJkMiEZXVSted78" target="_blank"
-              >Contact</a
-            >
-          </li>
-        </ul>
       </div>
     </nav>
 
 
+    {% block search_area %}
     <div class="search-row">
       <form
         action="{{ url_for('search') }}"
@@ -206,7 +143,7 @@
         role="search"
       >
         <button type="submit" class="search-btn" aria-label="Rechercher">
-          🔍
+          Rechercher
         </button>
         <input
           name="q"
@@ -218,6 +155,7 @@
         />
       </form>
     </div>
+    {% endblock %}
 
     <main>{% block content %}{% endblock %}</main>
 
@@ -230,24 +168,40 @@
     </div>
     {% endif %} {% endwith %}
 
-    <footer>
-      <!--<a
-        href="https://forms.gle/kimeZjk8TPQAhMCE6"
-        class="propos_site"
-        target="__blank"
-        >Proposez un site !</a
-      > -->
-      <p><strong>Réunion Wiki</strong> - Simplifions l'information locale.</p>
-      <nav>
-        <a href="{{ url_for('faq') }}">FAQ</a> |
-        <a href="{{ url_for('legal_notices') }}" target="_blank"
-          >Mentions légales</a
-        >
-        |
-        <a href="https://forms.gle/GScJkMiEZXVSted78" target="_blank"
-          >Contact</a
-        >
-      </nav>
+    <footer class="site-footer">
+      <div class="site-footer__inner">
+        <div class="site-footer__grid">
+          <section class="site-footer__col site-footer__col--brand" aria-labelledby="footer-brand-title">
+            <h2 id="footer-brand-title" class="site-footer__title">Réunion Wiki</h2>
+            <p class="site-footer__text">
+              Le portail péi pour retrouver rapidement les sites utiles de La Réunion.
+            </p>
+            <p class="site-footer__tagline">Simplifions l'information locale.</p>
+          </section>
+
+          <nav class="site-footer__col" aria-labelledby="footer-explore-title">
+            <h2 id="footer-explore-title" class="site-footer__title">Explorer</h2>
+            <ul class="site-footer__links">
+          <li><a href="{{ url_for('trends') }}">Tendances</a></li>
+             <!--      <li><a href="{{ url_for('most_visited_sites') }}">Plus consultés</a></li>
+              <li><a href="{{ url_for('recently_added_sites') }}">Derniers ajoutés</a></li>--> 
+              <li><a href="https://www.instagram.com/kery.rdd" target="_blank" rel="noopener noreferrer">Proposer un site</a></li>
+            </ul>
+          </nav>
+
+          <nav class="site-footer__col" aria-labelledby="footer-links-title">
+            <h2 id="footer-links-title" class="site-footer__title">Liens utiles</h2>
+            <ul class="site-footer__links">
+              <li><a href="{{ url_for('faq') }}">FAQ</a></li>
+              <li><a href="{{ url_for('legal_notices') }}" target="_blank">Mentions légales</a></li>
+              <li><a href="https://forms.gle/GScJkMiEZXVSted78" target="_blank">Contact</a></li>
+            </ul>
+          </nav>
+        </div>
+        <p class="site-footer__trust">
+          Sites utiles, ressources locales, contributions vérifiées avant publication.
+        </p>
+      </div>
     </footer>
 
     <script>
@@ -274,7 +228,7 @@
 
           // Création du bouton "Installer l'application"
           const installBtn = document.createElement("button");
-          installBtn.textContent = "Installer l'application 📲";
+          installBtn.textContent = "Installer l'application";
           installBtn.style = `
         position: fixed;
         bottom: 20px;
@@ -308,38 +262,5 @@
         });
       }
     </script>
-    <script>
-      document.addEventListener("DOMContentLoaded", function () {
-        const scroller = document.querySelector("[data-scrollable]");
-        if (!scroller) return;
-
-        const updateShadows = () => {
-          const maxScroll = scroller.scrollWidth - scroller.clientWidth;
-          const atStart = scroller.scrollLeft <= 0;
-          const atEnd = scroller.scrollLeft >= maxScroll - 1;
-
-          scroller.classList.toggle("nav-scroll--shadow-left", !atStart);
-          scroller.classList.toggle("nav-scroll--shadow-right", !atEnd);
-        };
-
-        updateShadows();
-        scroller.addEventListener("scroll", updateShadows, { passive: true });
-        window.addEventListener("resize", updateShadows);
-      });
-    </script>
-    <script>
-  document.addEventListener("DOMContentLoaded", function () {
-    const btn = document.querySelector(".nav-more-btn");
-    const panel = document.getElementById("nav-more-panel");
-    if (!btn || !panel) return;
-
-    btn.addEventListener("click", function () {
-      const expanded = btn.getAttribute("aria-expanded") === "true";
-      btn.setAttribute("aria-expanded", String(!expanded));
-      panel.hidden = expanded;
-    });
-  });
-</script>
-
   </body>
 </html>

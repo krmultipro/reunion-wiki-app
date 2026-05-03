@@ -1,15 +1,14 @@
 {% extends "base.html" %} {% block title %} Sites les plus visités - Réunion
 Wiki {% endblock %} {% block content %}
 <div class="category_page ranking_page">
-  <h2>🏆 Classement des sites les plus visités</h2>
+  <h2>Classement des sites les plus visités</h2>
 
   <ul id="top-sites-list" class="js-load-more-list" data-step="5">
     {% for site in sites %}
     <li class="ranking-item js-load-item">
       <div class="ranking-top-line">
         <span class="ranking-badge">
-          {% if loop.index == 1 %}🥇 {% elif loop.index == 2 %}🥈 {% elif
-          loop.index == 3 %}🥉 {% else %}#{{ loop.index }} {% endif %}
+          #{{ loop.index }}
         </span>
 
         <a
@@ -42,14 +41,14 @@ Wiki {% endblock %} {% block content %}
 
   <section class="next-steps" aria-label="À voir ensuite">
     <h3>À voir ensuite</h3>
-    <p>Continue ta découverte de Réunion Wiki 👇</p>
+    <p>Continue ta découverte de Réunion Wiki</p>
 
     <div class="next-steps__links">
-      <a href="{{ url_for('trends') }}">🔥 Tendances</a>
+      <a href="{{ url_for('trends') }}">Tendances</a>
       <a href="{{ url_for('most_visited_categories') }}"
-        >📂 Catégories les + visitées</a
+        >Catégories les + visitées</a
       >
-      <a href="{{ url_for('recently_added_sites') }}">📌 Derniers sites ajoutés</a>
+      <a href="{{ url_for('recently_added_sites') }}">Derniers sites ajoutés</a>
     </div>
   </section>
 
