@@ -2168,7 +2168,7 @@ h1 {
       rgba(255, 255, 255, 0.68),
       rgba(250, 247, 241, 0.82)
     ),
-    url("/static/images/reunion-hero.jpg");
+    url("/static/images/reunion-hero.webp");
   background-size: cover;
   background-position: center 55%;
   background-repeat: no-repeat;
