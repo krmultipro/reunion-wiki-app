@@ -2339,9 +2339,23 @@ h1 {
   font-size: 0.88rem;
 }
 
-/* ── Hero topic badges ───────────────────────────────────────── */
+/* ── Quick access shortcuts ──────────────────────────────────── */
 
-.hero-badge-strip {
+.quick-access {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.quick-access__label {
+  margin: 0 0 0.45rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--texte-muet);
+}
+
+.quick-access__list {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
@@ -2350,7 +2364,7 @@ h1 {
   max-width: 600px;
 }
 
-.hero-badge {
+.quick-access__chip {
   display: inline-block;
   padding: 0.28rem 0.68rem;
   border-radius: 999px;
@@ -2365,15 +2379,22 @@ h1 {
   white-space: nowrap;
 }
 
-.hero-badge:hover {
+.quick-access__chip:hover {
   background: rgba(11, 132, 87, 0.15);
   border-color: rgba(11, 132, 87, 0.4);
   color: var(--vert-fougere);
 }
 
-.hero-badge:focus-visible {
+.quick-access__chip:focus-visible {
   outline: 2px solid var(--vert-fougere);
   outline-offset: 2px;
+}
+
+.quick-access__chip--all {
+  background: transparent;
+  border-color: rgba(11, 132, 87, 0.42);
+  color: var(--vert-fougere);
+  font-weight: 700;
 }
 
 /* ── Section label ───────────────────────────────────────────── */
@@ -2389,6 +2410,7 @@ h1 {
 
 .home-section-intro {
   max-width: 780px;
+  scroll-margin-top: 1.25rem;
 }
 
 .home-section-title {
@@ -2793,12 +2815,21 @@ a.cat-card__city:hover {
     font-size: 0.96rem;
   }
 
-  .hero-badge-strip {
+  .quick-access {
+    max-width: 100%;
+  }
+
+  .quick-access__label {
+    margin-bottom: 0.4rem;
+    text-align: left;
+  }
+
+  .quick-access__list {
     justify-content: flex-start;
     gap: 0.35rem;
   }
 
-  .hero-badge {
+  .quick-access__chip {
     font-size: 0.74rem;
     padding: 0.26rem 0.58rem;
   }
@@ -2858,13 +2889,18 @@ a.cat-card__city:hover {
     font-size: 1rem;
   }
 
-  .hero-badge-strip {
+  .quick-access__label {
+    font-size: 0.74rem;
+    margin-bottom: 0.42rem;
+  }
+
+  .quick-access__list {
     max-width: 620px;
     gap: 0.42rem;
     margin-bottom: 0;
   }
 
-  .hero-badge {
+  .quick-access__chip {
     font-size: 0.78rem;
     padding: 0.3rem 0.7rem;
   }
@@ -3435,12 +3471,12 @@ main {
   font-size: 0.96rem;
 }
 
-.hero-badge-strip {
+.quick-access__list {
   max-width: 100%;
   gap: 0.38rem;
 }
 
-.hero-badge {
+.quick-access__chip {
   padding: 0.28rem 0.62rem;
   font-size: 0.75rem;
 }
@@ -3861,7 +3897,7 @@ main {
     font-size: 0.98rem;
   }
 
-  .hero-badge {
+  .quick-access__chip {
     font-size: 0.77rem;
   }
 

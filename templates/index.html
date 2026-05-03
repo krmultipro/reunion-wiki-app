@@ -15,6 +15,13 @@
 
 <section class="home-hero">
   <div class="home-hero__inner">
+    {% set quick_category_labels = {
+      '☁️ Météo & Alertes': 'Météo locale',
+      '🚌 Transport': 'Transports',
+      '💼 Emploi & Formation': 'Emploi',
+      '📰 Actualités': 'Actualités',
+      '🛒 Achats': 'Achats'
+    } %}
     <p class="home-hero__eyebrow">Portail local · La Réunion</p>
     <h2 class="home-hero__title">Trouver un site utile à La Réunion</h2>
     <p class="home-hero__subtitle">
@@ -36,30 +43,46 @@
         autocomplete="off"
       />
     </form>
-    <nav class="hero-badge-strip" aria-label="Thèmes populaires">
-      <a href="{{ url_for('search', q='météo') }}" class="hero-badge">Météo locale</a>
-      <a href="{{ url_for('search', q='transports') }}" class="hero-badge">Transports</a>
-      <a href="{{ url_for('search', q='emploi') }}" class="hero-badge">Emploi</a>
-      <a href="{{ url_for('search', q='actualités') }}" class="hero-badge">Actualités</a>
-      <a href="{{ url_for('search', q='sorties') }}" class="hero-badge">Sorties</a>
-      <a href="{{ url_for('search', q='services publics') }}" class="hero-badge">Services publics</a>
-    </nav>
+    <div class="quick-access" aria-labelledby="quick-access-label">
+      <p id="quick-access-label" class="quick-access__label">Accès rapides</p>
+      <nav class="quick-access__list" aria-label="Accès rapides">
+        {% for category_name, link_label in quick_category_labels.items() %}
+        {% set category_slug = categories_slug.get(category_name) %}
+        <a
+          href="{% if category_slug %}/categorie/{{ category_slug }}{% else %}#toutes-les-categories{% endif %}"
+          class="quick-access__chip"
+        >{{ link_label }}</a>
+        {% endfor %}
+        <a href="#toutes-les-categories" class="quick-access__chip quick-access__chip--all">Toutes les catégories</a>
+      </nav>
+    </div>
   </div>
 </section>
 
 <div class="page-content">
 
-  <div class="home-section-intro">
+  <div class="home-section-intro" id="toutes-les-categories">
     <div class="section-label">Explorer les ressources locales</div>
     <h2 class="home-section-title">Parcourir les sites par catégorie</h2>
     <p class="home-section-subtitle">Retrouvez les ressources utiles selon vos besoins du quotidien.</p>
   </div>
   <div class="categories-grid">
     {% for categorie, sites in data.items() %}
+    {% set clean_categorie = categorie
+      |replace('☁️ ', '')
+      |replace('❤️ ', '')
+      |replace('🍲 ', '')
+      |replace('🎉 ', '')
+      |replace('🏢 ', '')
+      |replace('💼 ', '')
+      |replace('📰 ', '')
+      |replace('🚌 ', '')
+      |replace('🛒 ', '')
+    %}
     <article class="cat-card">
       <div class="cat-card__head">
         <h3 class="cat-card__title">
-          <a href="/categorie/{{ categories_slug[categorie] }}">{{ categorie }}</a>
+          <a href="/categorie/{{ categories_slug[categorie] }}">{{ clean_categorie }}</a>
         </h3>
         {% if category_stats and category_stats[categorie] %}
         <span class="cat-card__count">{{ category_stats[categorie]['site_count'] }} sites</span>
@@ -135,6 +158,17 @@
 
       <div class="recent-sites-grid">
         {% for site in derniers_sites %}
+        {% set clean_recent_category = site['categorie']
+          |replace('☁️ ', '')
+          |replace('❤️ ', '')
+          |replace('🍲 ', '')
+          |replace('🎉 ', '')
+          |replace('🏢 ', '')
+          |replace('💼 ', '')
+          |replace('📰 ', '')
+          |replace('🚌 ', '')
+          |replace('🛒 ', '')
+        %}
         <div class="recent-site-card">
           <div class="recent-site-header">
             <a
@@ -151,7 +185,7 @@
           </div>
           <div class="recent-site-meta">
             <a href="/categorie/{{ categories_slug[site['categorie']] }}" class="recent-site-category">
-              {{ site['categorie'] }}
+              {{ clean_recent_category }}
             </a>
           </div>
           <p class="recent-site-description">{{ site['description']|truncate(100, True, '...') }}</p>
