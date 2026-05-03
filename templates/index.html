@@ -82,7 +82,14 @@
     <article class="cat-card">
       <div class="cat-card__head">
         <h3 class="cat-card__title">
-          <a href="/categorie/{{ categories_slug[categorie] }}">{{ clean_categorie }}</a>
+          <a href="/categorie/{{ categories_slug[categorie] }}">
+            <img
+              src="{{ url_for('static', filename='icons/' + ICON_MAP.get(categories_slug[categorie], 'map.svg')) }}"
+              class="cat-icon"
+              alt=""
+            >
+            {{ clean_categorie }}
+          </a>
         </h3>
         {% if category_stats and category_stats[categorie] %}
         <span class="cat-card__count">{{ category_stats[categorie]['site_count'] }} sites</span>

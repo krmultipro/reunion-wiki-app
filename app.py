@@ -47,6 +47,18 @@ from werkzeug.security import check_password_hash
 
 app = Flask(__name__)
 
+ICON_MAP = {
+    "culture-et-loisirs": "map.svg",
+    "actualites": "newspaper.svg",
+    "achats": "shopping-cart.svg",
+    "transport": "bus.svg",
+    "emploi-et-formation": "briefcase.svg",
+    "meteo-et-alertes": "cloud-rain.svg",
+    "administratifs": "file-text.svg",
+    "nourriture": "utensils.svg",
+    "sante": "heart.svg",
+}
+
 
 
 # CONFIGURATION : Chargement selon l'environnement
@@ -2110,7 +2122,8 @@ def website_submission_form():
 def inject_categories():
     return {
         "categories": get_categories(),
-        "categories_slug": get_categories_slug()
+        "categories_slug": get_categories_slug(),
+        "ICON_MAP": ICON_MAP,
     }
 
 

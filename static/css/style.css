@@ -4200,3 +4200,23 @@ main {
     text-align: center;
   }
 }
+
+.cat-icon {
+  width: 16px;
+  height: 16px;
+  margin-right: 6px;
+  vertical-align: middle;
+  opacity: 0.9;
+  flex: 0 0 16px;
+  transition: transform 0.15s ease;
+}
+
+.cat-card__title a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cat-card__title a:hover .cat-icon {
+  transform: scale(1.1);
+}

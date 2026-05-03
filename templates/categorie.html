@@ -1,11 +1,8 @@
 {% extends "base.html" %} {# --- SEO dynamique transmis par app.py --- #} {%
 block seo_title %}{{ seo_title }}{% endblock %} {% block seo_description %}{{
 seo_description }}{% endblock %} {% block canonical %}{{ canonical }}{% endblock
-%} {% block og_url %}{{ canonical }}{% endblock %}
-
-{% block intro_text %}{% endblock %}
-
-{% block content %}
+%} {% block og_url %}{{ canonical }}{% endblock %} {% block intro_text %}{%
+endblock %} {% block content %}
 <section class="category-page">
   <header class="category-page__hero">
     <div class="category-page__hero-top">
@@ -18,7 +15,14 @@ seo_description }}{% endblock %} {% block canonical %}{{ canonical }}{% endblock
         >Voir les catégories</a
       >
     </div>
-    <h1 class="category-page__title">{{ nom_categorie }} à La Réunion</h1>
+    <h1 class="category-page__title">
+      <img
+        src="{{ url_for('static', filename='icons/' + ICON_MAP.get(slug, 'map.svg')) }}"
+        class="cat-icon"
+        alt=""
+      />
+      {{ nom_categorie }} à La Réunion
+    </h1>
     <p class="category-page__description">
       Retrouvez ici une sélection de sites {{ nom_categorie|lower }} pour toute
       l'île : adresses utiles, informations pratiques et ressources locales.
@@ -36,7 +40,9 @@ seo_description }}{% endblock %} {% block canonical %}{{ canonical }}{% endblock
       <li class="category-site-card">
         <article class="category-site-card__inner">
           <h3 class="category-site-card__title">{{ site['nom'] }}</h3>
-          <p class="category-site-card__description">{{ site['description'] }}</p>
+          <p class="category-site-card__description">
+            {{ site['description'] }}
+          </p>
           {% if site['ville'] %}
           <p class="category-site-card__meta">Ville : {{ site['ville'] }}</p>
           {% endif %}
@@ -56,7 +62,9 @@ seo_description }}{% endblock %} {% block canonical %}{{ canonical }}{% endblock
   {% else %}
   <section class="category-page__empty" aria-live="polite">
     <p>Aucun site disponible pour cette catégorie pour le moment.</p>
-    <p>Envoie-nous ta suggestion sur Instagram, on vérifiera avant publication.</p>
+    <p>
+      Envoie-moi ta suggestion sur Instagram, je vérifierai avant publication.
+    </p>
   </section>
   {% endif %}
 
@@ -69,7 +77,7 @@ seo_description }}{% endblock %} {% block canonical %}{{ canonical }}{% endblock
         Un site manque dans cette catégorie ?
       </h2>
       <p class="contribution-cta__text">
-        Envoie-nous ta suggestion sur Instagram, on vérifiera avant publication.
+        Envoie-moi ta suggestion sur Instagram, je vérifierai avant publication.
       </p>
       <a
         class="contribution-cta__button"
