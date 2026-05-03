@@ -257,7 +257,9 @@ h3 {
   border-radius: 0.3rem;
   display: inline-block;
   width: fit-content;
-  transition: color 0.15s ease, text-decoration-color 0.15s ease;
+  transition:
+    color 0.15s ease,
+    text-decoration-color 0.15s ease;
 }
 
 .site-footer__links a:hover {
@@ -1944,7 +1946,10 @@ h1 {
   font-weight: 700;
   line-height: 1;
   box-shadow: none;
-  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
 }
 
 .nav-home-link:hover {
@@ -2063,8 +2068,8 @@ h1 {
     min-width: 0;
   }
 
-.nav-more-panel a {
-  display: flex;
+  .nav-more-panel a {
+    display: flex;
     align-items: center;
     justify-content: center;
     width: 100%;
@@ -2082,20 +2087,20 @@ h1 {
     word-break: break-word;
     line-height: 1.15;
     font-size: 0.76rem;
-  box-sizing: border-box;
-}
+    box-sizing: border-box;
+  }
 
-.nav-more-panel a.active,
-.nav-more-panel a[aria-current="page"] {
-  background: var(--lava);
-  color: var(--blanc);
-}
+  .nav-more-panel a.active,
+  .nav-more-panel a[aria-current="page"] {
+    background: var(--lava);
+    color: var(--blanc);
+  }
 
-.nav-more-panel a.active:hover,
-.nav-more-panel a[aria-current="page"]:hover {
-  background: var(--lava);
-  color: var(--blanc);
-}
+  .nav-more-panel a.active:hover,
+  .nav-more-panel a[aria-current="page"]:hover {
+    background: var(--lava);
+    color: var(--blanc);
+  }
 }
 
 /* ============================================================
@@ -2157,7 +2162,11 @@ h1 {
 .home-hero {
   margin: 0 -0.8em 1.4rem;
   padding: 1.35rem 1.25rem 1.15rem;
-  background: linear-gradient(155deg, var(--hero-bg-from) 0%, var(--hero-bg-to) 65%);
+  background: linear-gradient(
+    155deg,
+    var(--hero-bg-from) 0%,
+    var(--hero-bg-to) 65%
+  );
   border-bottom-left-radius: 1.35rem;
   border-bottom-right-radius: 1.35rem;
   text-align: center;
@@ -2207,12 +2216,16 @@ h1 {
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.07);
   max-width: 600px;
   margin: 0 auto 0.7rem;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .home-hero__search:focus-within {
   border-color: var(--vert-fougere);
-  box-shadow: 0 0 0 3px rgba(11, 132, 87, 0.14), 0 4px 20px rgba(0, 0, 0, 0.06);
+  box-shadow:
+    0 0 0 3px rgba(11, 132, 87, 0.14),
+    0 4px 20px rgba(0, 0, 0, 0.06);
 }
 
 .home-hero__search-btn {
@@ -2257,7 +2270,9 @@ h1 {
   font-weight: 600;
   font-size: 0.93rem;
   text-decoration: none;
-  transition: background 0.15s ease, color 0.15s ease;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
 }
 
 .hero-cta-link:hover,
@@ -2375,7 +2390,10 @@ h1 {
   font-weight: 600;
   text-decoration: none;
   letter-spacing: 0.01em;
-  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
   white-space: nowrap;
 }
 
@@ -2455,7 +2473,10 @@ h1 {
   box-shadow: 0 1px 8px rgba(0, 0, 0, 0.04);
   display: flex;
   flex-direction: column;
-  transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+  transition:
+    box-shadow 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.15s ease;
 }
 
 .cat-card:hover {
@@ -2581,10 +2602,10 @@ a.cat-card__city:hover {
 }
 
 .cat-card__desc {
-  font-size: 0.83rem;
+  font-size: 0.88rem;
   color: var(--texte-muet);
   margin: 0.28rem 0 0;
-  line-height: 1.45;
+  line-height: 1.5;
 }
 
 .cat-card__foot {
@@ -2970,11 +2991,11 @@ a.cat-card__city:hover {
   }
 
   .cat-card__desc {
-    margin-top: 0.35rem;
-    font-size: 0.9rem;
-    line-height: 1.58;
+    font-size: 0.88rem;
+    color: var(--texte-muet);
+    margin: 0.28rem 0 0;
+    line-height: 1.5;
   }
-
   .cat-card__foot {
     margin-top: 1rem;
     padding-top: 0.8rem;
@@ -3091,7 +3112,11 @@ a.cat-card__city:hover {
 }
 
 .category-page__hero {
-  background: linear-gradient(155deg, var(--hero-bg-from) 0%, var(--hero-bg-to) 70%);
+  background: linear-gradient(
+    155deg,
+    var(--hero-bg-from) 0%,
+    var(--hero-bg-to) 70%
+  );
   border: 1px solid var(--sable-bord);
   border-radius: 1rem;
   padding: 1.2rem 1.3rem;
@@ -3202,7 +3227,10 @@ a.cat-card__city:hover {
   flex-direction: column;
   gap: 0.5rem;
   box-shadow: 0 1px 10px rgba(0, 0, 0, 0.045);
-  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
 }
 
 .category-site-card__inner:hover {
@@ -3644,7 +3672,11 @@ main {
 }
 
 .trends-page__hero {
-  background: linear-gradient(155deg, var(--hero-bg-from) 0%, var(--hero-bg-to) 70%);
+  background: linear-gradient(
+    155deg,
+    var(--hero-bg-from) 0%,
+    var(--hero-bg-to) 70%
+  );
   border: 1px solid var(--sable-bord);
   border-radius: 1rem;
   padding: 1rem;
