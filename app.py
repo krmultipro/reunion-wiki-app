@@ -44,6 +44,8 @@ from email.message import EmailMessage
 import secrets
 from functools import wraps
 from werkzeug.security import check_password_hash
+from flask import send_from_directory
+
 
 app = Flask(__name__)
 
@@ -2411,6 +2413,13 @@ def trends():
     finally:
         conn.close()
 
+@app.route('/robots.txt')
+def robots_txt():
+    return send_from_directory('static', 'robots.txt')
+
+@app.route('/sitemap.xml')
+def sitemap():
+    return send_from_directory('static', 'sitemap.xml')
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
