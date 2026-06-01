@@ -2,7 +2,6 @@
 
 from flask import (
     Flask,
-    current_app,
     render_template,
     make_response,
     send_from_directory,
@@ -15,8 +14,6 @@ from flask import (
     has_request_context,
     abort,
 )
-from dotenv import load_dotenv
-import locale
 from datetime import datetime, timedelta
 import sqlite3
 import os
