@@ -66,17 +66,6 @@ def get_valid_site_by_id(site_id):
     )
 
 
-def get_site_by_slug(slug):
-    return _fetchone(
-        """
-        SELECT s.*, c.nom AS categorie, v.nom AS ville
-        FROM sites s
-        LEFT JOIN categories c ON c.id = s.category_id
-        LEFT JOIN villes v ON v.id = s.ville_id
-        WHERE s.slug = ?
-        """,
-        (slug,),
-    )
 
 
 def get_latest_sites(limit=None):

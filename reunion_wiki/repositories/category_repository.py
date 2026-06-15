@@ -37,8 +37,6 @@ def _execute(query, params=()):
         conn.close()
 
 
-def get_category_by_slug(slug):
-    return _fetchone("SELECT id, nom, slug FROM categories WHERE slug = ?", (slug,))
 
 
 def get_category_by_id(category_id):
@@ -61,11 +59,6 @@ def get_all_categories():
         ORDER BY nom COLLATE NOCASE ASC
         """
     )
-
-
-def get_category_id_by_name(nom):
-    return _fetchone("SELECT id FROM categories WHERE nom = ?", (nom,))
-
 
 def get_categories_rank():
     return _fetchall(
