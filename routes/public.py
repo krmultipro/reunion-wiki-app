@@ -5,18 +5,18 @@ from flask import Blueprint, abort, current_app, flash, redirect, render_templat
 
 from extensions import limiter
 from forms import SiteForm
-from app import (
+from db import get_db_connection
+from mail import send_submission_notification
+from queries import get_derniers_sites_global, get_sites_en_vedette, get_top_sites
+from taxonomy import (
     get_categories,
     get_city_choices,
-    get_client_ip,
-    get_db_connection,
-    get_derniers_sites_global,
     get_nom_categorie_depuis_slug,
-    get_sites_en_vedette,
-    get_top_sites,
     resolve_category,
     resolve_city,
-    send_submission_notification,
+)
+from utils import (
+    get_client_ip,
     slugify,
 )
 
