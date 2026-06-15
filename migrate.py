@@ -257,12 +257,19 @@ def _drop_sites_ville_column(cur) -> bool:
 def main():
     print("📂 DB cible:", DATABASE_PATH)
 
+    db_dir = os.path.dirname(DATABASE_PATH)
+    if db_dir:
+        os.makedirs(db_dir, exist_ok=True)
+
     # Backup auto
     os.makedirs("backups", exist_ok=True)
-    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-    backup_path = os.path.join("backups", f"base_backup_{ts}.db")
-    shutil.copy2(DATABASE_PATH, backup_path)
-    print("💾 Backup créé:", backup_path)
+    if os.path.exists(DATABASE_PATH):
+        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+        backup_path = os.path.join("backups", f"base_backup_{ts}.db")
+        shutil.copy2(DATABASE_PATH, backup_path)
+        print("💾 Backup créé:", backup_path)
+    else:
+        print("ℹ️ Base absente, création au premier démarrage.")
 
     conn = sqlite3.connect(DATABASE_PATH)
     cur = conn.cursor()

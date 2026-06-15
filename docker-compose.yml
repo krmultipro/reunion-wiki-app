@@ -15,13 +15,13 @@ services:
   web:
     build: . # Construit l'image depuis le Dockerfile
     container_name: web_dev
+    user: "0:0" # Permet d'écrire dans le bind mount /data créé par Docker sur un clone propre
     volumes:
       - ./data_dev:/data # Monte le dossier data pour la persistance des données
     restart: always
-    env_file:
-      - .env # Charge automatiquement vos variables SECRET_KEY, DATABASE_PATH, etc.
     environment:
       - FLASK_ENV=production #désactive débug
+      - DATABASE_PATH=/data/base.db # Utilise le volume monté pour persister SQLite
       - RATELIMIT_STORAGE_URL=redis://redis_dev:6379/0 # parle au service redis pour le nom interne
     depends_on:
       - redis # Assure que Redis démarre avant l’application Flask
