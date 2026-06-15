@@ -4,31 +4,13 @@ import sqlite3
 
 from flask import current_app
 
-from .db import get_db_connection
+from .repositories import category_repository, site_repository
 
 
 def get_sites_en_vedette():
     """Récupère les catégories triées par clics + sites vedette (sinon top clics)."""
-    conn = get_db_connection()
-    if not conn:
-        return {}, {}
-
     try:
-        cur = conn.cursor()
-        cur.execute(
-            """
-            SELECT
-                c.nom AS categorie,
-                COUNT(*) AS site_count,
-                COALESCE(SUM(s.click_count), 0) AS total_clicks
-            FROM sites s
-            JOIN categories c ON c.id = s.category_id
-            WHERE s.status = 'valide'
-            GROUP BY c.id, c.nom
-            ORDER BY total_clicks DESC, site_count DESC, c.nom COLLATE NOCASE ASC
-            """
-        )
-        cat_rows = cur.fetchall()
+        cat_rows = category_repository.get_category_stats()
 
         data = {row["categorie"]: [] for row in cat_rows}
         category_stats = {
@@ -39,44 +21,14 @@ def get_sites_en_vedette():
             for row in cat_rows
         }
 
-        cur.execute(
-            """
-            SELECT
-                s.*,
-                c.nom AS categorie,
-                v.nom AS ville,
-                v.nom AS ville_nom,
-                v.slug AS ville_slug
-            FROM sites s
-            JOIN categories c ON c.id = s.category_id
-            LEFT JOIN villes v ON v.id = s.ville_id
-            WHERE s.status = 'valide' AND s.en_vedette = 1
-            ORDER BY c.nom ASC, s.click_count DESC, s.date_ajout DESC
-            """
-        )
         featured_by_category = {cat: [] for cat in data}
-        for site in cur.fetchall():
+        for site in site_repository.get_featured_valid_sites():
             cat = site["categorie"]
             if cat in featured_by_category:
                 featured_by_category[cat].append(site)
 
-        cur.execute(
-            """
-            SELECT
-                s.*,
-                c.nom AS categorie,
-                v.nom AS ville,
-                v.nom AS ville_nom,
-                v.slug AS ville_slug
-            FROM sites s
-            JOIN categories c ON c.id = s.category_id
-            LEFT JOIN villes v ON v.id = s.ville_id
-            WHERE s.status = 'valide'
-            ORDER BY c.nom ASC, s.click_count DESC, s.date_ajout DESC
-            """
-        )
         top_by_category = {cat: [] for cat in data}
-        for site in cur.fetchall():
+        for site in site_repository.get_all_valid_sites_by_category_order():
             cat = site["categorie"]
             if cat in top_by_category:
                 top_by_category[cat].append(site)
@@ -101,70 +53,20 @@ def get_sites_en_vedette():
     except sqlite3.Error as e:
         current_app.logger.error(f"Erreur lors de la récupération des sites en vedette: {e}")
         return {}, {}
-    finally:
-        conn.close()
 
 
 def get_derniers_sites_global(limit=3):
     """Récupère les derniers sites ajoutés."""
-    conn = get_db_connection()
-    if not conn:
-        return []
-
     try:
-        cur = conn.cursor()
-        cur.execute(
-            """
-            SELECT
-                s.id,
-                s.nom,
-                s.lien,
-                c.nom AS categorie,
-                s.description,
-                s.date_ajout
-            FROM sites s
-            LEFT JOIN categories c ON c.id = s.category_id
-            WHERE s.status = 'valide'
-            ORDER BY s.date_ajout DESC
-            LIMIT ?
-            """,
-            (limit,),
-        )
-        return cur.fetchall()
+        return site_repository.get_latest_sites(limit)
     except sqlite3.Error as e:
         current_app.logger.error(f"Erreur lors de la récupération des derniers sites: {e}")
         return []
-    finally:
-        conn.close()
 
 
 def get_top_sites(limit=5):
-    conn = get_db_connection()
-    if not conn:
-        return []
-
     try:
-        cur = conn.cursor()
-        cur.execute(
-            """
-            SELECT
-                s.id,
-                s.nom,
-                s.lien,
-                c.nom AS categorie,
-                s.description,
-                s.click_count
-            FROM sites s
-            LEFT JOIN categories c ON c.id = s.category_id
-            WHERE s.status = 'valide'
-            ORDER BY s.click_count DESC
-            LIMIT ?
-            """,
-            (limit,),
-        )
-        return cur.fetchall()
+        return site_repository.get_top_sites(limit)
     except sqlite3.Error as e:
         current_app.logger.error(f"Erreur top sites: {e}")
         return []
-    finally:
-        conn.close()

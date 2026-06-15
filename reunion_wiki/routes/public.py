@@ -8,6 +8,7 @@ from ..extensions import limiter
 from ..forms import SiteForm
 from ..mail import send_submission_notification
 from ..queries import get_derniers_sites_global, get_sites_en_vedette, get_top_sites
+from ..repositories import category_repository, click_repository, site_repository
 from ..taxonomy import (
     get_categories,
     get_city_choices,
@@ -68,26 +69,9 @@ def voir_categorie(slug):
     if slug != canonical_slug:
         return redirect(url_for('voir_categorie', slug=canonical_slug), code=301)
 
-    conn = get_db_connection()
-    if not conn:
-        return render_template("500.html"), 500
-    cur = conn.cursor()
-    cur.execute("SELECT id FROM categories WHERE nom = ?", (nom_categorie,))
-    category_row = cur.fetchone()
+    category_row = category_repository.get_category_by_name(nom_categorie)
     category_id = category_row["id"] if category_row else None
-
-    # Règle d'affichage catégorie: vedettes d'abord, puis popularité.
-    cur.execute("""
-       SELECT s.*, c.nom AS categorie, v.nom AS ville
-       FROM sites s
-       JOIN categories c ON c.id = s.category_id
-       LEFT JOIN villes v ON v.id = s.ville_id
-       WHERE s.status = 'valide'
-         AND s.category_id = ?
-       ORDER BY en_vedette DESC, click_count DESC, date_ajout DESC, id DESC 
-    """, (category_id,))
-    sites = cur.fetchall()
-    conn.close()
+    sites = site_repository.get_sites_by_category_id(category_id)
 
     # >>> AJOUT SEO : metas dynamiques (utilisées dans categorie.html via les blocks Jinja)
     seo_title = f"{nom_categorie} à La Réunion – Réunion Wiki"
@@ -123,20 +107,9 @@ def voir_categorie(slug):
 def redirect_site(site_id):
     current_app.logger.info(f"[GO] Tentative de redirection pour site_id={site_id}")
 
-    conn = get_db_connection()
-    if not conn:
-        current_app.logger.error("[GO] Connexion DB impossible")
-        abort(500)
-
     try:
-        cur = conn.cursor()
-
         # Vérifie que le site existe
-        cur.execute(
-            "SELECT lien, click_count FROM sites WHERE id = ? AND status = 'valide'",
-            (site_id,)
-        )
-        row = cur.fetchone()
+        row = site_repository.get_valid_site_by_id(site_id)
 
         if not row:
             current_app.logger.warning(f"[GO] Site introuvable ou non valide id={site_id}")
@@ -157,29 +130,10 @@ def redirect_site(site_id):
 
 
         # Vérifie si cette IP a cliqué ce site dans les 30 dernières minutes
-        cur.execute("""
-            SELECT id FROM site_clicks
-            WHERE site_id = ?
-            AND ip_address = ?
-            AND clicked_at >= datetime('now', '-30 minutes')
-        """, (site_id, ip))
-
-        recent_click = cur.fetchone()
+        recent_click = click_repository.get_click_by_ip_and_site(site_id, ip)
 
         if not recent_click:
-            # Incrémente compteur
-            cur.execute(
-                "UPDATE sites SET click_count = click_count + 1 WHERE id = ?",
-                (site_id,)
-            )
-
-            # Log clic
-            cur.execute("""
-                INSERT INTO site_clicks (site_id, ip_address, user_agent)
-                VALUES (?, ?, ?)
-            """, (site_id, ip, user_agent))
-
-            conn.commit()
+            click_repository.insert_click_and_increment_count(site_id, ip, user_agent)
 
             current_app.logger.info(f"[GO] Clic validé id={site_id} ip={ip}")
         else:
@@ -192,34 +146,13 @@ def redirect_site(site_id):
         abort(500)
 
     finally:
-        conn.close()
         current_app.logger.info(f"[GO] Connexion DB fermée pour site_id={site_id}")
 
 
 
 @public_bp.route("/sites-ajoutes-recemment")
 def recently_added_sites():
-    conn = get_db_connection()
-    if not conn:
-        return render_template("500.html"), 500
-    cur = conn.cursor()
-#recupere tous les sites par ordre descroissant d'ajout
-    cur.execute("""
-        SELECT
-            s.id,
-            s.nom,
-            s.lien,
-            c.nom AS categorie,
-            s.description,
-            s.date_ajout
-        FROM sites s
-        LEFT JOIN categories c ON c.id = s.category_id
-        WHERE s.status = 'valide'
-        ORDER BY s.date_ajout DESC
-    """)
-    
-    sites = cur.fetchall()
-    conn.close()
+    sites = site_repository.get_latest_sites()
 
     return render_template("recently-added-sites.html", sites=sites)
 
@@ -232,25 +165,7 @@ def legal_notices():
 
 @public_bp.route("/sites-les-plus-visites")
 def most_visited_sites():
-    conn = get_db_connection()
-    if not conn:
-        return render_template("500.html"), 500
-    cur = conn.cursor()
-    cur.execute("""
-        SELECT
-            s.id,
-            s.nom,
-            s.lien,
-            c.nom AS categorie,
-            s.description,
-            s.click_count
-        FROM sites s
-        LEFT JOIN categories c ON c.id = s.category_id
-        WHERE s.status = 'valide'
-        ORDER BY s.click_count DESC
-    """)
-    sites = cur.fetchall()
-    conn.close()
+    sites = site_repository.get_top_sites()
 
     return render_template("most-visited-sites.html", sites=sites)
 
@@ -260,62 +175,12 @@ def search():
     if not q:
         return redirect(url_for("accueil"))
 
-    conn = get_db_connection()
-    if not conn:
-        return render_template("500.html"), 500
-
-    cur = conn.cursor()
-
     like = f"%{q}%"
 
     # Normalisation "saint-denis" <-> "saint denis"
     q_city = " ".join(q.lower().replace("-", " ").split())
     like_city = f"%{q_city}%"
-
-    cur.execute(
-        """
-        SELECT
-            s.id,
-            s.nom,
-            s.lien,
-            v.nom AS ville,
-            c.nom AS categorie,
-            s.description,
-            s.click_count,
-            s.date_ajout
-        FROM sites s
-        LEFT JOIN categories c ON c.id = s.category_id
-        LEFT JOIN villes v ON v.id = s.ville_id
-        WHERE s.status = 'valide'
-          AND (
-            s.nom LIKE ?
-            OR COALESCE(c.nom, '') LIKE ?
-            OR s.description LIKE ?
-            OR s.lien LIKE ?
-            OR COALESCE(v.nom, '') LIKE ?
-            OR LOWER(REPLACE(COALESCE(v.nom, ''), '-', ' ')) LIKE ?
-          )
-        ORDER BY
-          CASE
-            WHEN s.nom LIKE ? THEN 0
-            WHEN COALESCE(c.nom, '') LIKE ? THEN 1
-            WHEN s.description LIKE ? THEN 2
-            WHEN COALESCE(v.nom, '') LIKE ? OR LOWER(REPLACE(COALESCE(v.nom, ''), '-', ' ')) LIKE ? THEN 3
-            WHEN s.lien LIKE ? THEN 4
-            ELSE 5
-          END,
-          s.click_count DESC,
-          s.date_ajout DESC
-        LIMIT 100
-        """,
-        (
-            like, like, like, like, like, like_city,
-            like, like, like, like, like_city, like
-        ),
-    )
-
-    sites = cur.fetchall()
-    conn.close()
+    sites = site_repository.search_sites(like, like_city)
 
     return render_template("search-results.html", q=q, sites=sites)
 
@@ -361,19 +226,16 @@ def website_submission_form():
             resolved_city_id = resolved_city[0] if resolved_city else None
             resolved_city_name = resolved_city[1] if resolved_city else None
 
-            # SÉCURITÉ : Insertion avec paramètres liés (protection contre SQL injection)
-            cur.execute("""
-                INSERT INTO sites (nom, ville_id, lien, description, category_id, status, date_ajout)
-                VALUES (?, ?, ?, ?, ?, 'en_attente', DATETIME('now'))
-            """, (
+            conn.commit()
+            site_repository.create_site(
                 nom,
                 resolved_city_id,
                 lien,
                 description,
-                resolved_category_id
-            ))
-            
-            conn.commit()
+                resolved_category_id,
+                status="en_attente",
+            )
+
             send_submission_notification({
                 "nom": nom,
                 "ville": resolved_city_name,
@@ -399,233 +261,40 @@ def website_submission_form():
 
 @public_bp.route("/villes")
 def villes_index():
-    conn = get_db_connection()
-    if not conn:
-        return render_template("500.html"), 500
-    cur = conn.cursor()
-
-    cur.execute("""
-        SELECT
-          v.id,
-          v.nom,
-          v.slug,
-          COUNT(s.id) AS nb_sites,
-          COALESCE(SUM(s.click_count), 0) AS total_clicks
-        FROM villes v
-        LEFT JOIN sites s
-          ON s.ville_id = v.id
-         AND s.status = 'valide'
-        GROUP BY v.id, v.nom, v.slug
-ORDER BY total_clicks DESC, nb_sites DESC, v.nom COLLATE NOCASE ASC
-
-    """)
-    villes = cur.fetchall()
-    conn.close()
+    villes = site_repository.get_city_stats()
 
     return render_template("cities.html", villes=villes)
 
 
 @public_bp.route("/ville/<slug>")
 def voir_ville(slug):
-    conn = get_db_connection()
-    if not conn:
-        return render_template("500.html"), 500
-    cur = conn.cursor()
-
-    cur.execute("SELECT id, nom, slug FROM villes WHERE slug = ?", (slug,))
-    ville = cur.fetchone()
+    ville = site_repository.get_city_by_slug(slug)
     if not ville:
-        conn.close()
         return render_template("404.html"), 404
 
-    cur.execute("""
-        SELECT s.*, c.nom AS categorie, v.nom AS ville
-        FROM sites s
-        LEFT JOIN categories c ON c.id = s.category_id
-        LEFT JOIN villes v ON v.id = s.ville_id
-        WHERE s.status = 'valide' AND s.ville_id = ?
-        ORDER BY s.en_vedette DESC, s.date_ajout DESC
-    """, (ville["id"],))
-    sites = cur.fetchall()
+    sites = site_repository.get_sites_by_city_id(ville["id"])
+    total_clicks = site_repository.get_total_clicks_by_city_id(ville["id"])["total_clicks"]
 
-    cur.execute("""
-        SELECT COALESCE(SUM(click_count), 0) AS total_clicks
-        FROM sites
-        WHERE status = 'valide' AND ville_id = ?
-    """, (ville["id"],))
-    total_clicks = cur.fetchone()["total_clicks"]
-
-    conn.close()
     return render_template("city.html", ville=ville, sites=sites, total_clicks=total_clicks)
 
 
 
 @public_bp.route("/categories-les-plus-visitees")
 def most_visited_categories():
-    conn = get_db_connection()
-    if not conn:
-        return render_template("500.html"), 500
-
-    try:
-        cur = conn.cursor()
-        cur.execute(
-            """
-            SELECT
-                c.nom AS categorie,
-                COUNT(*) AS site_count,
-                COALESCE(SUM(s.click_count), 0) AS total_clicks
-            FROM sites s
-            JOIN categories c ON c.id = s.category_id
-            WHERE s.status = 'valide'
-            GROUP BY c.id, c.nom
-            ORDER BY total_clicks DESC, site_count DESC, c.nom COLLATE NOCASE ASC
-            """
-        )
-        categories_rank = cur.fetchall()
-        return render_template("most-visited-categories.html", categories_rank=categories_rank)
-    finally:
-        conn.close()
+    categories_rank = category_repository.get_categories_rank()
+    return render_template("most-visited-categories.html", categories_rank=categories_rank)
 
 @public_bp.route("/tendances")
 def trends():
-    conn = get_db_connection()
-    if not conn:
-        return render_template("500.html"), 500
+    trending_sites = click_repository.get_trending_sites()
+    stable_sites = click_repository.get_stable_sites()
+    trending_categories = category_repository.get_trending_categories()
+    new_performers = site_repository.get_new_performers()
 
-    try:
-        cur = conn.cursor()
-
-        # Top en ce moment (7 jours) + variation vs 7 jours précédents
-        cur.execute(
-            """
-            WITH clicks_7 AS (
-                SELECT site_id, COUNT(*) AS c7
-                FROM site_clicks
-                WHERE clicked_at >= datetime('now', '-7 days')
-                GROUP BY site_id
-            ),
-            clicks_prev7 AS (
-                SELECT site_id, COUNT(*) AS cprev
-                FROM site_clicks
-                WHERE clicked_at >= datetime('now', '-14 days')
-                  AND clicked_at < datetime('now', '-7 days')
-                GROUP BY site_id
-            )
-            SELECT
-                s.id,
-                s.nom,
-                c.nom AS categorie,
-                COALESCE(c7.c7, 0) AS clicks_7d,
-                COALESCE(cp.cprev, 0) AS clicks_prev_7d,
-                CASE
-                    WHEN COALESCE(cp.cprev, 0) = 0 THEN NULL
-                    ELSE ROUND((COALESCE(c7.c7, 0) - cp.cprev) * 100.0 / cp.cprev, 1)
-                END AS growth_pct
-            FROM sites s
-            LEFT JOIN categories c ON c.id = s.category_id
-            LEFT JOIN clicks_7 c7 ON c7.site_id = s.id
-            LEFT JOIN clicks_prev7 cp ON cp.site_id = s.id
-            WHERE s.status = 'valide'
-            ORDER BY clicks_7d DESC, growth_pct DESC
-            LIMIT 10
-            """
-        )
-        trending_sites = cur.fetchall()
-
-        # Top stable (30 jours)
-        cur.execute(
-            """
-            SELECT
-                s.id,
-                s.nom,
-                c.nom AS categorie,
-                COUNT(sc.id) AS clicks_30d
-            FROM sites s
-            LEFT JOIN categories c ON c.id = s.category_id
-            LEFT JOIN site_clicks sc
-              ON sc.site_id = s.id
-             AND sc.clicked_at >= datetime('now', '-30 days')
-            WHERE s.status = 'valide'
-            GROUP BY s.id, s.nom, c.nom
-            ORDER BY clicks_30d DESC
-            LIMIT 10
-            """
-        )
-        stable_sites = cur.fetchall()
-
-        # Catégories en hausse (7j vs 7j précédents)
-        cur.execute(
-            """
-            WITH c7 AS (
-                SELECT c.nom AS categorie, COUNT(sc.id) AS clicks_7d
-                FROM sites s
-                LEFT JOIN categories c ON c.id = s.category_id
-                LEFT JOIN site_clicks sc
-                  ON sc.site_id = s.id
-                 AND sc.clicked_at >= datetime('now', '-7 days')
-                WHERE s.status = 'valide'
-                  AND c.nom IS NOT NULL
-                  AND TRIM(c.nom) != ''
-                GROUP BY c.nom
-            ),
-            cp AS (
-                SELECT c.nom AS categorie, COUNT(sc.id) AS clicks_prev_7d
-                FROM sites s
-                LEFT JOIN categories c ON c.id = s.category_id
-                LEFT JOIN site_clicks sc
-                  ON sc.site_id = s.id
-                 AND sc.clicked_at >= datetime('now', '-14 days')
-                 AND sc.clicked_at < datetime('now', '-7 days')
-                WHERE s.status = 'valide'
-                  AND c.nom IS NOT NULL
-                  AND TRIM(c.nom) != ''
-                GROUP BY c.nom
-            )
-            SELECT
-                c7.categorie,
-                COALESCE(c7.clicks_7d, 0) AS clicks_7d,
-                COALESCE(cp.clicks_prev_7d, 0) AS clicks_prev_7d,
-                CASE
-                    WHEN COALESCE(cp.clicks_prev_7d, 0) = 0 THEN NULL
-                    ELSE ROUND((COALESCE(c7.clicks_7d, 0) - cp.clicks_prev_7d) * 100.0 / cp.clicks_prev_7d, 1)
-                END AS growth_pct
-            FROM c7
-            LEFT JOIN cp ON cp.categorie = c7.categorie
-            WHERE c7.categorie IS NOT NULL AND TRIM(c7.categorie) != ''
-            ORDER BY clicks_7d DESC, growth_pct DESC
-            LIMIT 10
-            """
-        )
-        trending_categories = cur.fetchall()
-
-        # Nouveaux sites qui performent (ajoutés récemment + clics 7j)
-        cur.execute(
-            """
-            SELECT
-                s.id,
-                s.nom,
-                c.nom AS categorie,
-                COUNT(sc.id) AS clicks_7d
-            FROM sites s
-            LEFT JOIN categories c ON c.id = s.category_id
-            LEFT JOIN site_clicks sc
-              ON sc.site_id = s.id
-             AND sc.clicked_at >= datetime('now', '-7 days')
-            WHERE s.status = 'valide'
-              AND s.date_ajout >= datetime('now', '-30 days')
-            GROUP BY s.id, s.nom, c.nom
-            ORDER BY clicks_7d DESC
-            LIMIT 10
-            """
-        )
-        new_performers = cur.fetchall()
-
-        return render_template(
-            "trends.html",
-            trending_sites=trending_sites,
-            stable_sites=stable_sites,
-            trending_categories=trending_categories,
-            new_performers=new_performers,
-        )
-    finally:
-        conn.close()
+    return render_template(
+        "trends.html",
+        trending_sites=trending_sites,
+        stable_sites=stable_sites,
+        trending_categories=trending_categories,
+        new_performers=new_performers,
+    )

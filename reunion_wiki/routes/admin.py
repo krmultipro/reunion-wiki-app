@@ -15,6 +15,7 @@ from ..forms import (
     DeleteClickForm,
     ModerationActionForm,
 )
+from ..repositories import category_repository, click_repository, site_repository
 from ..taxonomy import (
     generate_unique_category_slug,
     get_categories,
@@ -64,44 +65,14 @@ def admin_logout():
 @admin_bp.route("/admin", methods=["GET"])
 @admin_required
 def admin_dashboard():
-    conn = get_db_connection()
-    if not conn:
-        flash("Impossible de se connecter à la base de données.", "error")
-        return redirect(url_for("accueil"))
-
     try:
-        cur = conn.cursor()
-        cur.execute(
-            """
-            SELECT
-                s.id,
-                s.nom,
-                c.nom AS categorie,
-                v.nom AS ville,
-                s.lien,
-                s.description,
-                s.status,
-                s.date_ajout
-            FROM sites s
-            LEFT JOIN categories c ON c.id = s.category_id
-            LEFT JOIN villes v ON v.id = s.ville_id
-            WHERE s.status = 'en_attente'
-            ORDER BY s.date_ajout DESC, s.id DESC
-            """
-        )
-        pending_sites = cur.fetchall()
-
-        cur.execute(
-            "SELECT status, COUNT(*) as total FROM sites GROUP BY status"
-        )
-        stats_rows = cur.fetchall()
+        pending_sites = site_repository.get_pending_sites()
+        stats_rows = site_repository.get_status_counts()
     except sqlite3.Error as e:
         current_app.logger.error(f"Erreur lors de la récupération des propositions: {e}")
         flash("Erreur lors de la récupération des propositions.", "error")
         pending_sites = []
         stats_rows = []
-    finally:
-        conn.close()
 
     stats = {row["status"]: row["total"] for row in stats_rows}
 
@@ -125,11 +96,6 @@ def admin_dashboard():
 @admin_bp.route("/admin/sites", methods=["GET"])
 @admin_required
 def admin_sites():
-    conn = get_db_connection()
-    if not conn:
-        flash("Impossible de se connecter à la base de données.", "error")
-        return redirect(url_for("admin_dashboard"))
-
     status_filter = (request.args.get("status") or "all").strip()
     city_filter = (request.args.get("city") or "all").strip()
     query_text = (request.args.get("q") or "").strip()
@@ -155,9 +121,7 @@ def admin_sites():
         query_text = query_text[:120]
 
     try:
-        cur = conn.cursor()
-        cur.execute("SELECT nom, slug FROM villes ORDER BY nom COLLATE NOCASE ASC")
-        cities = cur.fetchall()
+        cities = site_repository.get_admin_city_filters()
 
         allowed_city_slugs = {row["slug"] for row in cities}
         if city_filter != "all" and city_filter not in allowed_city_slugs:
@@ -192,43 +156,14 @@ def admin_sites():
         where_sql = " AND ".join(where_clauses)
         sort_sql = allowed_sorts[sort_filter]
 
-        count_sql = f"""
-            SELECT COUNT(*) AS total
-            FROM sites s
-            LEFT JOIN categories c ON c.id = s.category_id
-            LEFT JOIN villes v ON v.id = s.ville_id
-            WHERE {where_sql}
-        """
-        cur.execute(count_sql, params)
-        total_sites = cur.fetchone()["total"]
+        total_sites = site_repository.count_sites_for_admin(where_sql, params)["total"]
 
         total_pages = max((total_sites + per_page - 1) // per_page, 1)
         if page > total_pages:
             page = total_pages
         offset = (page - 1) * per_page
 
-        query_sql = f"""
-            SELECT
-                s.id,
-                s.nom,
-                c.nom AS categorie,
-                v.nom AS ville_display,
-                v.slug AS ville_slug,
-                s.lien,
-                s.description,
-                s.status,
-                s.date_ajout,
-                s.en_vedette,
-                s.click_count
-            FROM sites s
-            LEFT JOIN categories c ON c.id = s.category_id
-            LEFT JOIN villes v ON v.id = s.ville_id
-            WHERE {where_sql}
-            ORDER BY {sort_sql}
-            LIMIT ? OFFSET ?
-        """
-        cur.execute(query_sql, params + [per_page, offset])
-        all_sites = cur.fetchall()
+        all_sites = site_repository.get_sites_for_admin(where_sql, sort_sql, params, per_page, offset)
     except sqlite3.Error as e:
         current_app.logger.error(f"Erreur lors de la récupération des sites: {e}")
         flash("Erreur lors du chargement des sites.", "error")
@@ -237,8 +172,6 @@ def admin_sites():
         total_sites = 0
         total_pages = 1
         page = 1
-    finally:
-        conn.close()
 
     current_path = request.full_path.rstrip("?")
     action_forms = {}
@@ -267,11 +200,6 @@ def admin_sites():
 @admin_bp.route("/admin/clicks", methods=["GET"])
 @admin_required
 def admin_clicks():
-    conn = get_db_connection()
-    if not conn:
-        flash("Impossible de se connecter à la base de données.", "error")
-        return redirect(url_for("admin_dashboard"))
-
     query_text = (request.args.get("q") or "").strip()
     sort_filter = (request.args.get("sort") or "newest").strip()
     days_filter = parse_positive_int(request.args.get("days"), default=30)
@@ -286,7 +214,6 @@ def admin_clicks():
         days_filter = 30
 
     try:
-        cur = conn.cursor()
         where_clauses = [
             "sc.clicked_at >= datetime('now', ?)"
         ]
@@ -310,46 +237,13 @@ def admin_clicks():
         where_sql = " AND ".join(where_clauses)
         sort_sql = "sc.clicked_at DESC, sc.id DESC" if sort_filter == "newest" else "sc.clicked_at ASC, sc.id ASC"
 
-        cur.execute(
-            f"""
-            SELECT COUNT(*) AS total
-            FROM site_clicks sc
-            JOIN sites s ON s.id = sc.site_id
-            LEFT JOIN categories c ON c.id = s.category_id
-            LEFT JOIN villes v ON v.id = s.ville_id
-            WHERE {where_sql}
-            """,
-            params,
-        )
-        total_clicks = cur.fetchone()["total"]
+        total_clicks = click_repository.count_clicks(where_sql, params)["total"]
         total_pages = max((total_clicks + per_page - 1) // per_page, 1)
         if page > total_pages:
             page = total_pages
         offset = (page - 1) * per_page
 
-        cur.execute(
-            f"""
-            SELECT
-                sc.id,
-                sc.site_id,
-                sc.ip_address,
-                sc.user_agent,
-                sc.clicked_at,
-                s.nom AS site_nom,
-                c.nom AS categorie,
-                v.nom AS ville,
-                s.status
-            FROM site_clicks sc
-            JOIN sites s ON s.id = sc.site_id
-            LEFT JOIN categories c ON c.id = s.category_id
-            LEFT JOIN villes v ON v.id = s.ville_id
-            WHERE {where_sql}
-            ORDER BY {sort_sql}
-            LIMIT ? OFFSET ?
-            """,
-            params + [per_page, offset],
-        )
-        rows = cur.fetchall()
+        rows = click_repository.get_clicks(where_sql, sort_sql, params, per_page, offset)
 
         click_events = []
         delete_forms = {}
@@ -369,8 +263,6 @@ def admin_clicks():
         total_clicks = 0
         total_pages = 1
         page = 1
-    finally:
-        conn.close()
 
     return render_template(
         "admin/clicks.html",
@@ -407,42 +299,22 @@ def admin_delete_click(click_id):
     if not is_safe_next_url(return_to):
         return_to = url_for("admin_clicks")
 
-    conn = get_db_connection()
-    if not conn:
-        flash("Impossible de se connecter à la base de données.", "error")
-        return redirect(return_to)
-
     try:
-        cur = conn.cursor()
-        cur.execute("SELECT site_id FROM site_clicks WHERE id = ?", (click_id,))
-        click_row = cur.fetchone()
+        click_row = click_repository.get_click_by_id(click_id)
         if not click_row:
             flash("Clic introuvable.", "error")
             return redirect(return_to)
 
         site_id = click_row["site_id"]
-        cur.execute("DELETE FROM site_clicks WHERE id = ?", (click_id,))
-        if cur.rowcount == 0:
+        deleted = click_repository.delete_click_and_decrement_site(click_id, site_id)
+        if deleted == 0:
             flash("Clic introuvable.", "error")
-            conn.rollback()
             return redirect(return_to)
 
-        cur.execute(
-            """
-            UPDATE sites
-            SET click_count = CASE WHEN click_count > 0 THEN click_count - 1 ELSE 0 END
-            WHERE id = ?
-            """,
-            (site_id,),
-        )
-        conn.commit()
         flash("Événement de clic supprimé.", "success")
     except sqlite3.Error as e:
-        conn.rollback()
         current_app.logger.error(f"Erreur lors de la suppression du clic {click_id}: {e}")
         flash("Erreur lors de la suppression du clic.", "error")
-    finally:
-        conn.close()
 
     return redirect(return_to)
 
@@ -450,27 +322,12 @@ def admin_delete_click(click_id):
 @admin_bp.route("/admin/categories", methods=["GET"])
 @admin_required
 def admin_categories():
-    conn = get_db_connection()
-    if not conn:
-        flash("Impossible de se connecter à la base de données.", "error")
-        return redirect(url_for("admin_dashboard"))
-
     try:
-        cur = conn.cursor()
-        cur.execute(
-            """
-            SELECT id, nom, slug, created_at
-            FROM categories
-            ORDER BY nom COLLATE NOCASE ASC
-            """
-        )
-        categories = cur.fetchall()
+        categories = category_repository.get_all_categories()
     except sqlite3.Error as e:
         current_app.logger.error(f"Erreur lors de la récupération des catégories: {e}")
         flash("Erreur lors du chargement des catégories.", "error")
         categories = []
-    finally:
-        conn.close()
 
     delete_forms = {cat["id"]: DeleteCategoryForm(category_id=str(cat["id"])) for cat in categories}
 
@@ -493,19 +350,14 @@ def admin_create_category():
             return redirect(url_for("admin_categories"))
         try:
             cur = conn.cursor()
-            # Vérifie unicité du nom
-            cur.execute("SELECT id FROM categories WHERE nom = ?", (form.nom.data,))
-            if cur.fetchone():
+            if category_repository.get_category_by_name(form.nom.data):
                 flash("Cette catégorie existe déjà.", "error")
                 conn.close()
                 return redirect(url_for("admin_categories"))
 
             slug = generate_unique_category_slug(cur, form.nom.data)
-            cur.execute(
-                "INSERT INTO categories (nom, slug) VALUES (?, ?)",
-                (form.nom.data, slug),
-            )
             conn.commit()
+            category_repository.create_category(form.nom.data, slug)
             flash("Catégorie créée.", "success")
             return redirect(url_for("admin_categories"))
         except sqlite3.Error as e:
@@ -534,12 +386,7 @@ def admin_edit_category(category_id):
         return redirect(url_for("admin_categories"))
 
     try:
-        cur = conn.cursor()
-        cur.execute(
-            "SELECT id, nom, slug FROM categories WHERE id = ?",
-            (category_id,),
-        )
-        category = cur.fetchone()
+        category = category_repository.get_category_by_id(category_id)
     except sqlite3.Error as e:
         conn.close()
         current_app.logger.error(f"Erreur lors du chargement de la catégorie {category_id}: {e}")
@@ -555,21 +402,15 @@ def admin_edit_category(category_id):
         form.nom.data = category["nom"]
     elif form.validate_on_submit():
         try:
-            cur.execute(
-                "SELECT id FROM categories WHERE nom = ? AND id != ?",
-                (form.nom.data, category_id),
-            )
-            if cur.fetchone():
+            cur = conn.cursor()
+            if category_repository.get_category_by_name_excluding_id(form.nom.data, category_id):
                 flash("Une autre catégorie porte déjà ce nom.", "error")
                 conn.close()
                 return redirect(url_for("admin_categories"))
 
             slug = generate_unique_category_slug(cur, form.nom.data, exclude_id=category_id)
-            cur.execute(
-                "UPDATE categories SET nom = ?, slug = ? WHERE id = ?",
-                (form.nom.data, slug, category_id),
-            )
             conn.commit()
+            category_repository.update_category(category_id, form.nom.data, slug)
             flash("Catégorie mise à jour.", "success")
             conn.close()
             return redirect(url_for("admin_categories"))
@@ -612,30 +453,19 @@ def admin_delete_category(category_id):
         return redirect(url_for("admin_categories"))
 
     try:
-        cur = conn.cursor()
-        cur.execute("SELECT nom FROM categories WHERE id = ?", (category_id,))
-        row = cur.fetchone()
+        row = category_repository.get_category_by_id(category_id)
         if not row:
             flash("Catégorie introuvable.", "error")
             conn.close()
             return redirect(url_for("admin_categories"))
 
-        cur.execute(
-            """
-            SELECT COUNT(*) as total
-            FROM sites
-            WHERE category_id = ?
-            """,
-            (category_id,),
-        )
-        usage = cur.fetchone()["total"]
+        usage = category_repository.count_sites_by_category(category_id)["total"]
         if usage > 0:
             flash("Impossible de supprimer : des sites utilisent encore cette catégorie.", "error")
             conn.close()
             return redirect(url_for("admin_categories"))
 
-        cur.execute("DELETE FROM categories WHERE id = ?", (category_id,))
-        conn.commit()
+        category_repository.delete_category(category_id)
         flash("Catégorie supprimée.", "success")
     except sqlite3.Error as e:
         conn.rollback()
@@ -670,48 +500,28 @@ def admin_update_site(site_id):
         flash("Action inconnue.", "error")
         return redirect(return_to)
 
-    conn = get_db_connection()
-    if not conn:
-        flash("Impossible d'accéder à la base de données.", "error")
-        return redirect(return_to)
-
     message = ""
     try:
-        cur = conn.cursor()
         if action == "approve":
-            cur.execute(
-                "UPDATE sites SET status = 'valide', date_ajout = DATETIME('now') WHERE id = ?",
-                (site_id,),
-            )
+            rowcount = site_repository.update_site_status(site_id, "valide", refresh_date=True)
             message = "Proposition validée et publiée."
         elif action == "reject":
-            cur.execute(
-                "UPDATE sites SET status = 'refuse' WHERE id = ?",
-                (site_id,),
-            )
+            rowcount = site_repository.update_site_status(site_id, "refuse")
             message = "Proposition refusée."
         elif action == "pending":
-            cur.execute(
-                "UPDATE sites SET status = 'en_attente' WHERE id = ?",
-                (site_id,),
-            )
+            rowcount = site_repository.update_site_status(site_id, "en_attente")
             message = "Statut remis en attente."
         else:
-            cur.execute("DELETE FROM sites WHERE id = ?", (site_id,))
+            rowcount = site_repository.delete_site(site_id)
             message = "Proposition supprimée."
 
-        if cur.rowcount == 0:
+        if rowcount == 0:
             flash("Proposition introuvable.", "error")
-            conn.rollback()
         else:
-            conn.commit()
             flash(message, "success")
     except sqlite3.Error as e:
-        conn.rollback()
         current_app.logger.error(f"Erreur lors de la mise à jour de la proposition {site_id}: {e}")
         flash("Erreur lors de la mise à jour de la proposition.", "error")
-    finally:
-        conn.close()
 
     return redirect(return_to)
 
@@ -719,41 +529,14 @@ def admin_update_site(site_id):
 @admin_bp.route("/admin/propositions/<int:site_id>/edit", methods=["GET", "POST"])
 @admin_required
 def admin_edit_site(site_id):
-    conn = get_db_connection()
-    if not conn:
-        flash("Impossible de se connecter à la base de données.", "error")
-        return redirect(url_for("admin_dashboard"))
-
     try:
-        cur = conn.cursor()
-        cur.execute(
-            """
-            SELECT
-                s.id,
-                s.nom,
-                s.category_id,
-                v.nom AS ville,
-                s.lien,
-                s.description,
-                s.status,
-                s.en_vedette,
-                c.nom AS categorie
-            FROM sites s
-            LEFT JOIN categories c ON c.id = s.category_id
-            LEFT JOIN villes v ON v.id = s.ville_id
-            WHERE s.id = ?
-            """,
-            (site_id,),
-        )
-        site = cur.fetchone()
+        site = site_repository.get_site_by_id(site_id)
     except sqlite3.Error as e:
-        conn.close()
         current_app.logger.error(f"Erreur lors de la récupération du site {site_id}: {e}")
         flash("Impossible de charger la proposition.", "error")
         return redirect(url_for("admin_dashboard"))
 
     if not site:
-        conn.close()
         flash("Proposition introuvable.", "error")
         return redirect(url_for("admin_dashboard"))
 
@@ -787,12 +570,10 @@ def admin_edit_site(site_id):
         conn_to_update = get_db_connection()
         if not conn_to_update:
             flash("Impossible de se connecter à la base de données.", "error")
-            conn.close()
             return redirect(url_for("admin_dashboard"))
         # Sécurise la catégorie envoyée (doit exister)
         if form.categorie.data not in [choice[0] for choice in form.categorie.choices if choice[0]]:
             flash("Catégorie non valide.", "error")
-            conn.close()
             conn_to_update.close()
             return redirect(url_for("admin_dashboard"))
         try:
@@ -802,7 +583,6 @@ def admin_edit_site(site_id):
                 flash("Catégorie non valide.", "error")
                 conn_to_update.rollback()
                 conn_to_update.close()
-                conn.close()
                 return redirect(url_for("admin_dashboard"))
             resolved_category_id, _resolved_category_name = resolved
             resolved_city = resolve_city(cur_update, form.ville.data)
@@ -810,46 +590,34 @@ def admin_edit_site(site_id):
                 flash("Ville non valide.", "error")
                 conn_to_update.rollback()
                 conn_to_update.close()
-                conn.close()
                 return redirect(url_for("admin_dashboard"))
             resolved_city_id = resolved_city[0] if resolved_city else None
-            cur_update.execute(
-                """
-                UPDATE sites
-                SET nom = ?, ville_id = ?, lien = ?, description = ?, category_id = ?, status = ?, en_vedette = ?
-                WHERE id = ?
-                """,
-                (
-                    form.nom.data,
-                    resolved_city_id,
-                    form.lien.data,
-                    form.description.data,
-                    resolved_category_id,
-                    form.status.data,
-                    1 if form.en_vedette.data else 0,
-                    site_id,
-                ),
+            conn_to_update.commit()
+            rowcount = site_repository.update_site(
+                site_id,
+                form.nom.data,
+                resolved_city_id,
+                form.lien.data,
+                form.description.data,
+                resolved_category_id,
+                form.status.data,
+                1 if form.en_vedette.data else 0,
             )
-            if cur_update.rowcount == 0:
+            if rowcount == 0:
                 flash("La mise à jour a échoué : proposition introuvable.", "error")
-                conn_to_update.rollback()
             else:
-                conn_to_update.commit()
                 flash("Proposition mise à jour avec succès.", "success")
             conn_to_update.close()
-            conn.close()
             return redirect(url_for("admin_dashboard"))
         except sqlite3.Error as e:
             conn_to_update.rollback()
             conn_to_update.close()
-            conn.close()
             current_app.logger.error(f"Erreur lors de la mise à jour du site {site_id}: {e}")
             flash("Erreur lors de la mise à jour.", "error")
             return redirect(url_for("admin_dashboard"))
     else:
         flash("Formulaire invalide.", "error")
 
-    conn.close()
     return render_template(
         "admin/edit_site.html",
         form=form,
@@ -898,22 +666,16 @@ def admin_create_site():
                 flash("Ville non valide.", "error")
                 return redirect(url_for("admin_create_site"))
             resolved_city_id = resolved_city[0] if resolved_city else None
-            cur.execute(
-                """
-                INSERT INTO sites (nom, ville_id, lien, description, category_id, status, date_ajout, en_vedette)
-                VALUES (?, ?, ?, ?, ?, ?, DATETIME('now'), ?)
-                """,
-                (
-                    form.nom.data,
-                    resolved_city_id,
-                    form.lien.data,
-                    form.description.data,
-                    resolved_category_id,
-                    form.status.data or "valide",
-                    1 if form.en_vedette.data else 0,
-                ),
-            )
             conn.commit()
+            site_repository.create_site(
+                form.nom.data,
+                resolved_city_id,
+                form.lien.data,
+                form.description.data,
+                resolved_category_id,
+                status=form.status.data or "valide",
+                en_vedette=1 if form.en_vedette.data else 0,
+            )
             flash(f"Nouveau site ajouté (statut : {form.status.data}).", "success")
             return redirect(url_for("admin_dashboard"))
         except sqlite3.Error as e:
