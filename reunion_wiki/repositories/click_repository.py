@@ -38,6 +38,19 @@ def _execute(query, params=()):
 
 
 def insert_click(site_id, ip_address, user_agent):
+    """
+    Insère un clic dans la table site_clicks.
+
+    Args:
+        site_id (int): Identifiant du site cliqué.
+        ip_address (str): Adresse IP du visiteur.
+        user_agent (str): User-Agent du visiteur.
+
+    Returns:
+        int:
+            Nombre de lignes insérées.
+    """
+
     return _execute(
         """
         INSERT INTO site_clicks (site_id, ip_address, user_agent)
@@ -48,6 +61,18 @@ def insert_click(site_id, ip_address, user_agent):
 
 
 def get_click_by_ip_and_site(site_id, ip_address):
+    """
+    Récupère un clic récent pour un couple site/IP.
+
+    Args:
+        site_id (int): Identifiant du site.
+        ip_address (str): Adresse IP du visiteur.
+
+    Returns:
+        sqlite3.Row | None:
+            Clic trouvé sur la fenêtre récente, ou None.
+    """
+
     return _fetchone(
         """
         SELECT id FROM site_clicks
@@ -60,14 +85,49 @@ def get_click_by_ip_and_site(site_id, ip_address):
 
 
 def get_click_by_id(click_id):
+    """
+    Récupère le site associé à un clic.
+
+    Args:
+        click_id (int): Identifiant du clic.
+
+    Returns:
+        sqlite3.Row | None:
+            Ligne contenant site_id, ou None si le clic est introuvable.
+    """
+
     return _fetchone("SELECT site_id FROM site_clicks WHERE id = ?", (click_id,))
 
 
 def increment_click_count(site_id):
+    """
+    Incrémente le compteur de clics d'un site.
+
+    Args:
+        site_id (int): Identifiant du site.
+
+    Returns:
+        int:
+            Nombre de lignes mises à jour.
+    """
+
     return _execute("UPDATE sites SET click_count = click_count + 1 WHERE id = ?", (site_id,))
 
 
 def insert_click_and_increment_count(site_id, ip_address, user_agent):
+    """
+    Incrémente le compteur d'un site et insère le clic correspondant.
+
+    Args:
+        site_id (int): Identifiant du site cliqué.
+        ip_address (str): Adresse IP du visiteur.
+        user_agent (str): User-Agent du visiteur.
+
+    Returns:
+        int:
+            Nombre de lignes affectées par la dernière insertion.
+    """
+
     conn = get_db_connection()
     try:
         cur = conn.cursor()
@@ -89,6 +149,17 @@ def insert_click_and_increment_count(site_id, ip_address, user_agent):
 
 
 def decrement_click_count(site_id):
+    """
+    Décrémente le compteur de clics d'un site sans descendre sous zéro.
+
+    Args:
+        site_id (int): Identifiant du site.
+
+    Returns:
+        int:
+            Nombre de lignes mises à jour.
+    """
+
     return _execute(
         """
         UPDATE sites
@@ -100,10 +171,33 @@ def decrement_click_count(site_id):
 
 
 def delete_click(click_id):
+    """
+    Supprime un clic à partir de son identifiant.
+
+    Args:
+        click_id (int): Identifiant du clic.
+
+    Returns:
+        int:
+            Nombre de lignes supprimées.
+    """
+
     return _execute("DELETE FROM site_clicks WHERE id = ?", (click_id,))
 
 
 def delete_click_and_decrement_site(click_id, site_id):
+    """
+    Supprime un clic et décrémente le compteur du site associé.
+
+    Args:
+        click_id (int): Identifiant du clic à supprimer.
+        site_id (int): Identifiant du site associé au clic.
+
+    Returns:
+        int:
+            Nombre de clics supprimés.
+    """
+
     conn = get_db_connection()
     try:
         cur = conn.cursor()
@@ -128,6 +222,18 @@ def delete_click_and_decrement_site(click_id, site_id):
 
 
 def count_clicks(where_sql, params):
+    """
+    Compte les clics correspondant aux filtres fournis.
+
+    Args:
+        where_sql (str): Clause WHERE déjà construite par l'appelant.
+        params (list | tuple): Paramètres SQL associés à la clause WHERE.
+
+    Returns:
+        sqlite3.Row:
+            Ligne contenant le total.
+    """
+
     return _fetchone(
         f"""
         SELECT COUNT(*) AS total
@@ -142,6 +248,21 @@ def count_clicks(where_sql, params):
 
 
 def get_clicks(where_sql, sort_sql, params, limit, offset):
+    """
+    Retourne les clics paginés pour l'administration.
+
+    Args:
+        where_sql (str): Clause WHERE déjà construite par l'appelant.
+        sort_sql (str): Clause ORDER BY déjà construite par l'appelant.
+        params (list): Paramètres SQL associés aux filtres.
+        limit (int): Nombre maximum de clics à retourner.
+        offset (int): Décalage de pagination.
+
+    Returns:
+        list[sqlite3.Row]:
+            Liste des clics avec site, catégorie, ville et statut.
+    """
+
     return _fetchall(
         f"""
         SELECT
@@ -167,6 +288,14 @@ def get_clicks(where_sql, sort_sql, params, limit, offset):
 
 
 def get_click_stats():
+    """
+    Retourne le nombre total de clics groupé par site.
+
+    Returns:
+        list[sqlite3.Row]:
+            Liste des identifiants de sites avec leur total de clics.
+    """
+
     return _fetchall(
         """
         SELECT site_id, COUNT(*) AS total
@@ -177,6 +306,14 @@ def get_click_stats():
 
 
 def get_trending_sites():
+    """
+    Retourne les sites ayant le plus de clics récents et leur progression.
+
+    Returns:
+        list[sqlite3.Row]:
+            Liste des sites validés avec clics 7 jours, période précédente et croissance.
+    """
+
     return _fetchall(
         """
         WITH clicks_7 AS (
@@ -214,6 +351,14 @@ def get_trending_sites():
 
 
 def get_stable_sites():
+    """
+    Retourne les sites les plus cliqués sur les 30 derniers jours.
+
+    Returns:
+        list[sqlite3.Row]:
+            Liste des sites validés classés par clics sur 30 jours.
+    """
+
     return _fetchall(
         """
         SELECT

@@ -9,6 +9,7 @@ from ..forms import SiteForm
 from ..mail import send_submission_notification
 from ..queries import get_derniers_sites_global, get_sites_en_vedette, get_top_sites
 from ..repositories import category_repository, click_repository, site_repository
+from ..services import click_service
 from ..taxonomy import (
     get_categories,
     get_city_choices,
@@ -17,7 +18,6 @@ from ..taxonomy import (
     resolve_city,
 )
 from ..utils import (
-    get_client_ip,
     slugify,
 )
 
@@ -105,42 +105,11 @@ def voir_categorie(slug):
 
 @public_bp.route("/go/<int:site_id>")
 def redirect_site(site_id):
-    current_app.logger.info(f"[GO] Tentative de redirection pour site_id={site_id}")
-
     try:
-        # Vérifie que le site existe
-        row = site_repository.get_valid_site_by_id(site_id)
-
-        if not row:
-            current_app.logger.warning(f"[GO] Site introuvable ou non valide id={site_id}")
+        result = click_service.handle_click(site_id, request.headers)
+        if not result.found:
             abort(404)
-
-        current_app.logger.info(
-            f"[GO] Site trouvé id={site_id} | ancien compteur={row['click_count']} | url={row['lien']}"
-        )
-        
-        ip = get_client_ip()
-        user_agent = (request.headers.get("User-Agent", "") or "")[:400]
-        
-        # Anti-bot simple
-        ua_lower = user_agent.lower()
-        if "bot" in ua_lower or "crawl" in ua_lower or "spider" in ua_lower:
-            current_app.logger.info(f"[GO] Bot détecté, clic ignoré id={site_id} ua={user_agent}")
-            return redirect(row["lien"])
-
-
-        # Vérifie si cette IP a cliqué ce site dans les 30 dernières minutes
-        recent_click = click_repository.get_click_by_ip_and_site(site_id, ip)
-
-        if not recent_click:
-            click_repository.insert_click_and_increment_count(site_id, ip, user_agent)
-
-            current_app.logger.info(f"[GO] Clic validé id={site_id} ip={ip}")
-        else:
-            current_app.logger.info(f"[GO] Clic ignoré (trop récent) id={site_id} ip={ip}")
-
-        return redirect(row["lien"])
-
+        return redirect(result.url)
     except sqlite3.Error as e:
         current_app.logger.error(f"[GO] Erreur SQLite site_id={site_id} | {e}")
         abort(500)

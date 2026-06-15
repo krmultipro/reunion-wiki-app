@@ -38,6 +38,17 @@ def _execute(query, params=()):
 
 
 def get_site_by_id(site_id):
+    """
+    Récupère un site à partir de son identifiant pour l'administration.
+
+    Args:
+        site_id (int): Identifiant du site.
+
+    Returns:
+        sqlite3.Row | None:
+            Site trouvé avec sa catégorie et sa ville, ou None si inexistant.
+    """
+
     return _fetchone(
         """
         SELECT
@@ -60,6 +71,17 @@ def get_site_by_id(site_id):
 
 
 def get_valid_site_by_id(site_id):
+    """
+    Récupère l'URL et le compteur de clics d'un site validé.
+
+    Args:
+        site_id (int): Identifiant du site.
+
+    Returns:
+        sqlite3.Row | None:
+            Site validé contenant lien et click_count, ou None si introuvable.
+    """
+
     return _fetchone(
         "SELECT lien, click_count FROM sites WHERE id = ? AND status = 'valide'",
         (site_id,),
@@ -69,6 +91,17 @@ def get_valid_site_by_id(site_id):
 
 
 def get_latest_sites(limit=None):
+    """
+    Retourne les derniers sites validés par date d'ajout décroissante.
+
+    Args:
+        limit (int | None): Nombre maximum de sites à retourner.
+
+    Returns:
+        list[sqlite3.Row]:
+            Liste des sites validés les plus récemment ajoutés.
+    """
+
     query = """
         SELECT
             s.id,
@@ -88,6 +121,17 @@ def get_latest_sites(limit=None):
 
 
 def get_top_sites(limit=None):
+    """
+    Retourne les sites validés les plus visités.
+
+    Args:
+        limit (int | None): Nombre maximum de sites à retourner.
+
+    Returns:
+        list[sqlite3.Row]:
+            Liste des sites classés par nombre de clics décroissant.
+    """
+
     query = """
         SELECT
             s.id,
@@ -107,6 +151,17 @@ def get_top_sites(limit=None):
 
 
 def get_sites_by_category_id(category_id):
+    """
+    Retourne les sites validés d'une catégorie.
+
+    Args:
+        category_id (int): Identifiant de la catégorie.
+
+    Returns:
+        list[sqlite3.Row]:
+            Liste des sites validés associés à la catégorie.
+    """
+
     return _fetchall(
         """
         SELECT s.*, c.nom AS categorie, v.nom AS ville
@@ -122,6 +177,14 @@ def get_sites_by_category_id(category_id):
 
 
 def get_city_stats():
+    """
+    Retourne les statistiques publiques des villes.
+
+    Returns:
+        list[sqlite3.Row]:
+            Liste des villes avec nombre de sites validés et total de clics.
+    """
+
     return _fetchall(
         """
         SELECT
@@ -141,14 +204,44 @@ def get_city_stats():
 
 
 def get_city_by_slug(slug):
+    """
+    Récupère une ville à partir de son slug.
+
+    Args:
+        slug (str): Slug de la ville.
+
+    Returns:
+        sqlite3.Row | None:
+            Ville trouvée ou None si inexistante.
+    """
+
     return _fetchone("SELECT id, nom, slug FROM villes WHERE slug = ?", (slug,))
 
 
 def get_admin_city_filters():
+    """
+    Retourne les villes disponibles pour les filtres d'administration.
+
+    Returns:
+        list[sqlite3.Row]:
+            Liste des villes triées par nom.
+    """
+
     return _fetchall("SELECT nom, slug FROM villes ORDER BY nom COLLATE NOCASE ASC")
 
 
 def get_sites_by_city_id(ville_id):
+    """
+    Retourne les sites validés associés à une ville.
+
+    Args:
+        ville_id (int): Identifiant de la ville.
+
+    Returns:
+        list[sqlite3.Row]:
+            Liste des sites validés pour cette ville.
+    """
+
     return _fetchall(
         """
         SELECT s.*, c.nom AS categorie, v.nom AS ville
@@ -163,6 +256,17 @@ def get_sites_by_city_id(ville_id):
 
 
 def get_total_clicks_by_city_id(ville_id):
+    """
+    Retourne le total des clics des sites validés d'une ville.
+
+    Args:
+        ville_id (int): Identifiant de la ville.
+
+    Returns:
+        sqlite3.Row:
+            Ligne contenant total_clicks.
+    """
+
     return _fetchone(
         """
         SELECT COALESCE(SUM(click_count), 0) AS total_clicks
@@ -174,6 +278,14 @@ def get_total_clicks_by_city_id(ville_id):
 
 
 def get_pending_sites():
+    """
+    Retourne les sites en attente de validation.
+
+    Returns:
+        list[sqlite3.Row]:
+            Liste des sites dont le statut est en_attente.
+    """
+
     return _fetchall(
         """
         SELECT
@@ -195,10 +307,30 @@ def get_pending_sites():
 
 
 def get_status_counts():
+    """
+    Compte les sites par statut.
+
+    Returns:
+        list[sqlite3.Row]:
+            Liste des statuts avec leur nombre de sites.
+    """
+
     return _fetchall("SELECT status, COUNT(*) as total FROM sites GROUP BY status")
 
 
 def count_sites_for_admin(where_sql, params):
+    """
+    Compte les sites correspondant aux filtres d'administration.
+
+    Args:
+        where_sql (str): Clause WHERE déjà construite par l'appelant.
+        params (list | tuple): Paramètres SQL associés à la clause WHERE.
+
+    Returns:
+        sqlite3.Row:
+            Ligne contenant le total.
+    """
+
     return _fetchone(
         f"""
         SELECT COUNT(*) AS total
@@ -212,6 +344,21 @@ def count_sites_for_admin(where_sql, params):
 
 
 def get_sites_for_admin(where_sql, sort_sql, params, limit, offset):
+    """
+    Retourne les sites paginés pour l'administration.
+
+    Args:
+        where_sql (str): Clause WHERE déjà construite par l'appelant.
+        sort_sql (str): Clause ORDER BY déjà construite par l'appelant.
+        params (list): Paramètres SQL associés aux filtres.
+        limit (int): Nombre maximum de sites à retourner.
+        offset (int): Décalage de pagination.
+
+    Returns:
+        list[sqlite3.Row]:
+            Liste des sites avec catégorie, ville, statut et compteur de clics.
+    """
+
     return _fetchall(
         f"""
         SELECT
@@ -238,6 +385,18 @@ def get_sites_for_admin(where_sql, sort_sql, params, limit, offset):
 
 
 def search_sites(like, like_city):
+    """
+    Recherche des sites validés par nom, catégorie, description, lien ou ville.
+
+    Args:
+        like (str): Motif SQL LIKE principal.
+        like_city (str): Motif SQL LIKE pour la ville normalisée.
+
+    Returns:
+        list[sqlite3.Row]:
+            Liste des sites validés correspondant à la recherche.
+    """
+
     return _fetchall(
         """
         SELECT
@@ -279,6 +438,23 @@ def search_sites(like, like_city):
 
 
 def create_site(nom, ville_id, lien, description, category_id, status="en_attente", en_vedette=None):
+    """
+    Crée un nouveau site.
+
+    Args:
+        nom (str): Nom du site.
+        ville_id (int | None): Identifiant de la ville associée.
+        lien (str): URL du site.
+        description (str): Description du site.
+        category_id (int): Identifiant de la catégorie.
+        status (str): Statut initial du site.
+        en_vedette (int | None): Valeur du marqueur de mise en avant.
+
+    Returns:
+        int:
+            Nombre de lignes insérées.
+    """
+
     if en_vedette is None:
         return _execute(
             """
@@ -297,6 +473,24 @@ def create_site(nom, ville_id, lien, description, category_id, status="en_attent
 
 
 def update_site(site_id, nom, ville_id, lien, description, category_id, status, en_vedette):
+    """
+    Met à jour les données principales d'un site.
+
+    Args:
+        site_id (int): Identifiant du site.
+        nom (str): Nouveau nom du site.
+        ville_id (int | None): Nouvel identifiant de ville.
+        lien (str): Nouvelle URL du site.
+        description (str): Nouvelle description du site.
+        category_id (int): Nouvel identifiant de catégorie.
+        status (str): Nouveau statut du site.
+        en_vedette (int): Nouvelle valeur du marqueur de mise en avant.
+
+    Returns:
+        int:
+            Nombre de lignes mises à jour.
+    """
+
     return _execute(
         """
         UPDATE sites
@@ -308,6 +502,19 @@ def update_site(site_id, nom, ville_id, lien, description, category_id, status, 
 
 
 def update_site_status(site_id, status, refresh_date=False):
+    """
+    Met à jour le statut d'un site.
+
+    Args:
+        site_id (int): Identifiant du site.
+        status (str): Nouveau statut.
+        refresh_date (bool): Indique si date_ajout doit être remise à maintenant.
+
+    Returns:
+        int:
+            Nombre de lignes mises à jour.
+    """
+
     if refresh_date:
         return _execute(
             "UPDATE sites SET status = ?, date_ajout = DATETIME('now') WHERE id = ?",
@@ -317,10 +524,29 @@ def update_site_status(site_id, status, refresh_date=False):
 
 
 def delete_site(site_id):
+    """
+    Supprime un site à partir de son identifiant.
+
+    Args:
+        site_id (int): Identifiant du site.
+
+    Returns:
+        int:
+            Nombre de lignes supprimées.
+    """
+
     return _execute("DELETE FROM sites WHERE id = ?", (site_id,))
 
 
 def get_featured_valid_sites():
+    """
+    Retourne les sites validés mis en avant.
+
+    Returns:
+        list[sqlite3.Row]:
+            Liste des sites validés marqués en vedette avec catégorie et ville.
+    """
+
     return _fetchall(
         """
         SELECT
@@ -339,6 +565,14 @@ def get_featured_valid_sites():
 
 
 def get_all_valid_sites_by_category_order():
+    """
+    Retourne tous les sites validés triés par catégorie.
+
+    Returns:
+        list[sqlite3.Row]:
+            Liste des sites validés avec catégorie et ville.
+    """
+
     return _fetchall(
         """
         SELECT
@@ -357,6 +591,14 @@ def get_all_valid_sites_by_category_order():
 
 
 def get_new_performers():
+    """
+    Retourne les nouveaux sites performants sur les clics récents.
+
+    Returns:
+        list[sqlite3.Row]:
+            Liste des sites validés ajoutés récemment, classés par clics sur 7 jours.
+    """
+
     return _fetchall(
         """
         SELECT

@@ -40,18 +40,60 @@ def _execute(query, params=()):
 
 
 def get_category_by_id(category_id):
+    """
+    Récupère une catégorie à partir de son identifiant.
+
+    Args:
+        category_id (int): Identifiant de la catégorie.
+
+    Returns:
+        sqlite3.Row | None:
+            Catégorie trouvée ou None si inexistante.
+    """
+
     return _fetchone("SELECT id, nom, slug FROM categories WHERE id = ?", (category_id,))
 
 
 def get_category_by_name(nom):
+    """
+    Récupère une catégorie à partir de son nom.
+
+    Args:
+        nom (str): Nom de la catégorie.
+
+    Returns:
+        sqlite3.Row | None:
+            Catégorie trouvée ou None si inexistante.
+    """
+
     return _fetchone("SELECT id, nom, slug FROM categories WHERE nom = ?", (nom,))
 
 
 def get_category_by_name_excluding_id(nom, category_id):
+    """
+    Récupère une catégorie par nom en excluant un identifiant donné.
+
+    Args:
+        nom (str): Nom de la catégorie recherchée.
+        category_id (int): Identifiant de catégorie à exclure.
+
+    Returns:
+        sqlite3.Row | None:
+            Catégorie trouvée hors identifiant exclu, ou None.
+    """
+
     return _fetchone("SELECT id FROM categories WHERE nom = ? AND id != ?", (nom, category_id))
 
 
 def get_all_categories():
+    """
+    Retourne toutes les catégories.
+
+    Returns:
+        list[sqlite3.Row]:
+            Liste des catégories triées par nom.
+    """
+
     return _fetchall(
         """
         SELECT id, nom, slug, created_at
@@ -61,6 +103,14 @@ def get_all_categories():
     )
 
 def get_categories_rank():
+    """
+    Retourne le classement des catégories par clics et nombre de sites.
+
+    Returns:
+        list[sqlite3.Row]:
+            Liste des catégories avec nombre de sites et total de clics.
+    """
+
     return _fetchall(
         """
         SELECT
@@ -77,6 +127,14 @@ def get_categories_rank():
 
 
 def get_category_stats():
+    """
+    Retourne les statistiques publiques des catégories.
+
+    Returns:
+        list[sqlite3.Row]:
+            Liste des catégories avec nombre de sites validés et total de clics.
+    """
+
     return _fetchall(
         """
         SELECT
@@ -93,6 +151,14 @@ def get_category_stats():
 
 
 def get_trending_categories():
+    """
+    Retourne les catégories ayant le plus de clics récents et leur progression.
+
+    Returns:
+        list[sqlite3.Row]:
+            Liste des catégories avec clics 7 jours, période précédente et croissance.
+    """
+
     return _fetchall(
         """
         WITH c7 AS (
@@ -138,6 +204,17 @@ def get_trending_categories():
 
 
 def count_sites_by_category(category_id):
+    """
+    Compte les sites associés à une catégorie.
+
+    Args:
+        category_id (int): Identifiant de la catégorie.
+
+    Returns:
+        sqlite3.Row:
+            Ligne contenant le total de sites associés.
+    """
+
     return _fetchone(
         """
         SELECT COUNT(*) as total
@@ -149,12 +226,48 @@ def count_sites_by_category(category_id):
 
 
 def create_category(nom, slug):
+    """
+    Crée une nouvelle catégorie.
+
+    Args:
+        nom (str): Nom de la catégorie.
+        slug (str): Slug de la catégorie.
+
+    Returns:
+        int:
+            Nombre de lignes insérées.
+    """
+
     return _execute("INSERT INTO categories (nom, slug) VALUES (?, ?)", (nom, slug))
 
 
 def update_category(category_id, nom, slug):
+    """
+    Met à jour une catégorie existante.
+
+    Args:
+        category_id (int): Identifiant de la catégorie.
+        nom (str): Nouveau nom de la catégorie.
+        slug (str): Nouveau slug de la catégorie.
+
+    Returns:
+        int:
+            Nombre de lignes mises à jour.
+    """
+
     return _execute("UPDATE categories SET nom = ?, slug = ? WHERE id = ?", (nom, slug, category_id))
 
 
 def delete_category(category_id):
+    """
+    Supprime une catégorie à partir de son identifiant.
+
+    Args:
+        category_id (int): Identifiant de la catégorie.
+
+    Returns:
+        int:
+            Nombre de lignes supprimées.
+    """
+
     return _execute("DELETE FROM categories WHERE id = ?", (category_id,))
