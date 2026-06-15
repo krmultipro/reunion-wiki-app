@@ -3,8 +3,10 @@ import sqlite3
 
 from flask import Blueprint, abort, current_app, flash, redirect, render_template, request, session, url_for
 
-from extensions import limiter
-from forms import (
+from ..auth import admin_required, verify_admin_credentials
+from ..db import get_db_connection
+from ..extensions import limiter
+from ..forms import (
     AdminLoginForm,
     AdminLogoutForm,
     AdminSiteForm,
@@ -13,16 +15,14 @@ from forms import (
     DeleteClickForm,
     ModerationActionForm,
 )
-from auth import admin_required, verify_admin_credentials
-from db import get_db_connection
-from taxonomy import (
+from ..taxonomy import (
     generate_unique_category_slug,
     get_categories,
     get_city_choices,
     resolve_category,
     resolve_city,
 )
-from utils import is_safe_next_url, mask_ip, parse_positive_int
+from ..utils import is_safe_next_url, mask_ip, parse_positive_int
 
 
 admin_bp = Blueprint("admin", __name__)

@@ -20,7 +20,7 @@ def get_db_connection():
 
 def init_db_schema(conn):
     """Initialise et migre le schéma de la base si nécessaire."""
-    from taxonomy import resolve_category, resolve_city
+    from .taxonomy import resolve_category, resolve_city
 
     cur = conn.cursor()
 

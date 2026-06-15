@@ -3,19 +3,19 @@ import sqlite3
 
 from flask import Blueprint, abort, current_app, flash, redirect, render_template, request, url_for
 
-from extensions import limiter
-from forms import SiteForm
-from db import get_db_connection
-from mail import send_submission_notification
-from queries import get_derniers_sites_global, get_sites_en_vedette, get_top_sites
-from taxonomy import (
+from ..db import get_db_connection
+from ..extensions import limiter
+from ..forms import SiteForm
+from ..mail import send_submission_notification
+from ..queries import get_derniers_sites_global, get_sites_en_vedette, get_top_sites
+from ..taxonomy import (
     get_categories,
     get_city_choices,
     get_nom_categorie_depuis_slug,
     resolve_category,
     resolve_city,
 )
-from utils import (
+from ..utils import (
     get_client_ip,
     slugify,
 )

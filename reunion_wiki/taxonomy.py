@@ -4,8 +4,8 @@ import sqlite3
 
 from flask import current_app, g, has_request_context
 
-from db import get_db_connection
-from utils import slugify, slugify_ville
+from .db import get_db_connection
+from .utils import slugify, slugify_ville
 
 
 def get_categories():

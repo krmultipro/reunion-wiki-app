@@ -6,7 +6,7 @@ seo_bp = Blueprint("seo", __name__)
 
 @seo_bp.route('/service-worker.js')
 def service_worker():
-    response = make_response(send_from_directory('static', 'service-worker.js'))
+    response = make_response(send_from_directory(current_app.static_folder, 'service-worker.js'))
     response.headers['Content-Type'] = 'application/javascript'
     return response    
 
@@ -18,8 +18,8 @@ def google_verification():
 
 @seo_bp.route('/robots.txt')
 def robots_txt():
-    return send_from_directory('static', 'robots.txt')
+    return send_from_directory(current_app.static_folder, 'robots.txt')
 
 @seo_bp.route('/sitemap.xml')
 def sitemap():
-    return send_from_directory('static', 'sitemap.xml')
+    return send_from_directory(current_app.static_folder, 'sitemap.xml')
