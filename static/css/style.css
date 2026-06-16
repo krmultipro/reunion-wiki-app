@@ -1804,70 +1804,96 @@ h1 {
 /* ===== Blog ===== */
 
 .blog-article {
-  max-width: 960px;
-  margin: 1.5rem auto;
+  max-width: 880px;
+  margin: 2rem auto 3rem;
+  padding: 0 1rem;
 }
 
 .blog-header {
   text-align: center;
-  margin-bottom: 1.2rem;
+  margin-bottom: 2rem;
+}
+
+.blog-header h1 {
+  max-width: 780px;
+  margin: 0 auto;
+  line-height: 1.15;
 }
 
 .blog-intro {
-  margin: 0.6rem auto 0;
-  max-width: 70ch;
-  line-height: 1.6;
+  margin: 1.2rem auto 0;
+  max-width: 720px;
+  padding: 1rem 1.15rem;
+  border-left: 4px solid var(--vert-fougere);
+  border-radius: 0.45rem;
+  background: rgba(11, 132, 87, 0.07);
   color: #4c5558;
+  line-height: 1.65;
+  text-align: left;
+}
+
+.blog-content {
+  line-height: 1.75;
 }
 
 .blog-content h2 {
   text-align: left;
-  margin-top: 1.8rem;
+  margin-top: 2.4rem;
+  padding-bottom: 0.45rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
 }
 
 .blog-category-list {
   list-style: none;
   padding-left: 0;
-  margin: 1rem 0 0;
+  margin: 1.2rem 0 0;
   display: grid;
   grid-template-columns: 1fr;
-  gap: 0.8rem;
+  gap: 1rem;
 }
 
-@media (min-width: 700px) {
+@media (min-width: 760px) {
   .blog-category-list {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 .blog-category-list li {
   background: var(--blanc);
-  border: 1px solid #eee;
-  border-radius: 0.6rem;
-  padding: 0.9rem 1rem;
+  border: 1px solid rgba(11, 132, 87, 0.16);
+  border-radius: 0.5rem;
+  padding: 1rem;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
 }
 
 .blog-category-list li:hover {
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
   border-color: rgba(11, 132, 87, 0.35);
+  transform: translateY(-1px);
 }
 
 .blog-category-list a {
+  display: inline-block;
+  margin-bottom: 0.25rem;
   color: var(--vert-fougere);
   text-decoration: none;
 }
 
 .blog-category-list a:hover {
   color: var(--lava);
+  text-decoration: underline;
 }
 
 .blog-cta {
-  margin-top: 1.5rem;
-  padding: 1rem 1.1rem;
-  border-radius: 0.6rem;
-  background: rgba(11, 132, 87, 0.08);
-  border: 1px solid rgba(11, 132, 87, 0.18);
+  margin-top: 2rem;
+  padding: 1.2rem 1.3rem;
+  border-radius: 0.5rem;
+  background: rgba(11, 132, 87, 0.09);
+  border: 1px solid rgba(11, 132, 87, 0.2);
   font-weight: 700;
 }
 .recent-site-date {
