@@ -3182,6 +3182,13 @@ a.cat-card__city:hover {
   line-height: 1.2;
 }
 
+.category-page__title .cat-icon {
+  width: 1.65em;
+  height: 1.65em;
+  margin-right: 0.45rem;
+  vertical-align: -0.32em;
+}
+
 .category-page__description {
   margin: 0;
   color: #455055;
