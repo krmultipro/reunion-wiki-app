@@ -8,6 +8,23 @@ from ..repositories import click_repository, site_repository
 from ..utils import get_client_ip
 
 
+KNOWN_BOT_PATTERNS = [
+    "websiphon",
+    "googleother",
+    "gptbot",
+    "claudebot",
+    "bytespider",
+    "semrushbot",
+    "ahrefsbot",
+    "mj12bot",
+    "dotbot",
+    "petalbot",
+    "amazonbot",
+    "crawler",
+    "spider",
+]
+
+
 @dataclass(frozen=True)
 class ClickResult:
     """
@@ -22,9 +39,9 @@ class ClickResult:
     found: bool
 
 
-def is_bot(user_agent: str) -> bool:
+def is_known_bot(user_agent: str) -> bool:
     """
-    Détecte si un User-Agent correspond probablement à un robot.
+    Détecte si un User-Agent contient un motif de robot connu.
 
     Args:
         user_agent (str): valeur de l'en-tête HTTP User-Agent.
@@ -34,7 +51,21 @@ def is_bot(user_agent: str) -> bool:
     """
 
     ua_lower = (user_agent or "").lower()
-    return "bot" in ua_lower or "crawl" in ua_lower or "spider" in ua_lower
+    return any(pattern in ua_lower for pattern in KNOWN_BOT_PATTERNS)
+
+
+def is_bot(user_agent: str) -> bool:
+    """
+    Indique si un User-Agent doit être traité comme un robot.
+
+    Args:
+        user_agent (str): valeur de l'en-tête HTTP User-Agent.
+
+    Returns:
+        bool: True si le clic doit être ignoré pour les statistiques.
+    """
+
+    return is_known_bot(user_agent)
 
 
 def should_count_click(site_id: int, ip_address: str):
@@ -101,7 +132,7 @@ def handle_click(site_id: int, headers) -> ClickResult:
     user_agent = (headers.get("User-Agent", "") or "")[:400]
 
     # Ignore les robots afin de ne pas fausser les statistiques.
-    if is_bot(user_agent):
+    if is_known_bot(user_agent):
         current_app.logger.info(f"[GO] Bot détecté, clic ignoré id={site_id} ua={user_agent}")
         return ClickResult(url=row["lien"], found=True)
 
