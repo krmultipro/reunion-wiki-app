@@ -1,4 +1,4 @@
-{% extends "base.html" %} {% block title %} Sites les plus visités - Réunion
+{% extends "base.html" %} {% block seo_title %} Sites les plus visités - Réunion
 Wiki {% endblock %} {% block content %}
 <div class="category_page ranking_page">
   <h2>Classement des sites les plus visités</h2>
@@ -7,9 +7,7 @@ Wiki {% endblock %} {% block content %}
     {% for site in sites %}
     <li class="ranking-item js-load-item">
       <div class="ranking-top-line">
-        <span class="ranking-badge">
-          #{{ loop.index }}
-        </span>
+        <span class="ranking-badge"> #{{ loop.index }} </span>
 
         <a
           href="{{ url_for('redirect_site', site_id=site['id']) }}"
@@ -36,7 +34,11 @@ Wiki {% endblock %} {% block content %}
     >
       Voir plus
     </button>
-    <p id="top-sites-load-more-status" class="load-more-status" aria-live="polite"></p>
+    <p
+      id="top-sites-load-more-status"
+      class="load-more-status"
+      aria-live="polite"
+    ></p>
   </div>
 
   <section class="next-steps" aria-label="À voir ensuite">
