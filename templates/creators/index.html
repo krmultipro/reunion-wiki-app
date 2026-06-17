@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+
+{% block seo_title %}Créateurs réunionnais - Réunion Wiki{% endblock %}
+{% block seo_description %}Découvrez une première sélection de créateurs de contenu, artistes, youtubeurs et personnalités locales de La Réunion.{% endblock %}
+{% block intro_text %}{% endblock %}
+
+{% block content %}
+<main class="creators-page">
+  <section class="creators-hero" aria-labelledby="creators-title">
+    <div class="creators-hero__content">
+      <p class="creators-hero__eyebrow">Annuaire expérimental</p>
+      <h1 id="creators-title" class="creators-hero__title">Créateurs réunionnais</h1>
+      <p class="creators-hero__subtitle">
+        Découvrez les créateurs de contenu,
+        youtubeurs, artistes, humoristes,
+        photographes et personnalités locales.
+      </p>
+    </div>
+
+    <dl class="creators-stats" aria-label="Statistiques des créateurs">
+      <div class="creators-stats__item">
+        <dt>Créateurs</dt>
+        <dd>{{ stats.creator_count }}</dd>
+      </div>
+      <div class="creators-stats__item">
+        <dt>Abonnés cumulés</dt>
+        <dd>{{ stats.total_followers_label }}</dd>
+      </div>
+      <div class="creators-stats__item">
+        <dt>Catégories</dt>
+        <dd>{{ stats.category_count }}</dd>
+      </div>
+    </dl>
+  </section>
+
+  <section class="creator-universe" aria-labelledby="creator-universe-title">
+    <div class="creators-section-head">
+      <p class="creators-section-kicker">Univers</p>
+      <h2 id="creator-universe-title">Explorer par ambiance</h2>
+    </div>
+    <div class="creator-universe__grid">
+      {% for universe in universes %}
+      <a class="creator-universe__chip" href="#creator-grid">{{ universe }}</a>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="creator-grid-section" aria-labelledby="creator-grid-title">
+    <div class="creators-section-head">
+      <p class="creators-section-kicker">Sélection</p>
+      <h2 id="creator-grid-title">Talents à découvrir</h2>
+    </div>
+
+    <div id="creator-grid" class="creator-grid">
+      {% for creator in creators %}
+      <article class="creator-card">
+        <img
+          class="creator-card__image"
+          src="{{ url_for('static', filename=creator.image) }}"
+          alt="Portrait temporaire de {{ creator.name }}"
+          loading="lazy"
+        />
+        <div class="creator-card__body">
+          <div class="creator-card__topline">
+            <span class="creator-card__category">{{ creator.category }}</span>
+            <span class="creator-card__tier">{{ creator.tier }}</span>
+          </div>
+          <h3 class="creator-card__name">{{ creator.name }}</h3>
+          <p class="creator-card__city">{{ creator.city }}</p>
+          <p class="creator-card__description">{{ creator.description }}</p>
+          <dl class="creator-card__facts">
+            <div>
+              <dt>Abonnés</dt>
+              <dd>{{ creator.total_followers_label }}</dd>
+            </div>
+            <div>
+              <dt>Plateformes</dt>
+              <dd>{{ creator.platform_count }}</dd>
+            </div>
+          </dl>
+          <p class="creator-card__platforms">{{ creator.platforms_label }}</p>
+          <a class="creator-card__button" href="#creator-profile-preview">Voir le profil</a>
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="creator-regions" aria-labelledby="creator-regions-title">
+    <div class="creators-section-head">
+      <p class="creators-section-kicker">Territoires</p>
+      <h2 id="creator-regions-title">Découverte par région</h2>
+    </div>
+    <div class="creator-regions__grid">
+      {% for region in region_cards %}
+      <article class="creator-region-card">
+        <p class="creator-region-card__count">{{ region.count }} profil(s)</p>
+        <h3>{{ region.title }}</h3>
+        <p>{{ region.creator_names }}</p>
+      </article>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section
+    id="creator-profile-preview"
+    class="creator-profile-preview"
+    aria-labelledby="creator-profile-preview-title"
+  >
+    <img
+      class="creator-profile-preview__image"
+      src="{{ url_for('static', filename=featured_creator.image) }}"
+      alt="Portrait temporaire de {{ featured_creator.name }}"
+      loading="lazy"
+    />
+    <div class="creator-profile-preview__body">
+      <p class="creators-section-kicker">Fiche exemple</p>
+      <h2 id="creator-profile-preview-title">{{ featured_creator.name }}</h2>
+      <p class="creator-profile-preview__meta">
+        {{ featured_creator.city }} · {{ featured_creator.category }}
+      </p>
+      <p class="creator-profile-preview__description">
+        {{ featured_creator.description }}
+      </p>
+      <div class="creator-profile-preview__platforms">
+        {% for platform in featured_creator.platform_names %}
+        <span>{{ platform }}</span>
+        {% endfor %}
+      </div>
+      <dl class="creator-profile-preview__numbers">
+        <div>
+          <dt>Abonnés cumulés</dt>
+          <dd>{{ featured_creator.total_followers_label }}</dd>
+        </div>
+        <div>
+          <dt>Plateformes</dt>
+          <dd>{{ featured_creator.platform_count }}</dd>
+        </div>
+        <div>
+          <dt>Positionnement</dt>
+          <dd>{{ featured_creator.tier }}</dd>
+        </div>
+      </dl>
+    </div>
+  </section>
+</main>
+{% endblock %}

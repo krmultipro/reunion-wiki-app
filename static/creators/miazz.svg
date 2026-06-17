@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 720" role="img" aria-label="Portrait temporaire Miazz">
+  <rect width="640" height="720" fill="#f5f9f6"/>
+  <path d="M80 120c160-88 320-88 480 0v480c-160 88-320 88-480 0V120z" fill="#0b8457" opacity=".08"/>
+  <circle cx="320" cy="255" r="118" fill="#efc1a0"/>
+  <path d="M203 240c12-90 92-135 163-112 52 17 84 66 88 122-92-30-174-31-251-10z" fill="#2d211b"/>
+  <path d="M160 690c26-145 105-220 160-220s134 75 160 220H160z" fill="#0b8457"/>
+  <text x="320" y="650" text-anchor="middle" font-family="Arial, sans-serif" font-size="52" font-weight="700" fill="#fff">M</text>
+</svg>

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 720" role="img" aria-label="Portrait temporaire Harendra">
+  <rect width="640" height="720" fill="#e8f5ef"/>
+  <circle cx="500" cy="110" r="120" fill="#0b8457" opacity=".12"/>
+  <circle cx="140" cy="610" r="150" fill="#cf1020" opacity=".08"/>
+  <circle cx="320" cy="250" r="120" fill="#f7c9a9"/>
+  <path d="M190 245c18-82 78-130 150-122 70 8 112 60 116 138-58-28-121-39-266-16z" fill="#1e2a23"/>
+  <path d="M170 690c22-150 106-230 150-230s128 80 150 230H170z" fill="#0b8457"/>
+  <text x="320" y="650" text-anchor="middle" font-family="Arial, sans-serif" font-size="54" font-weight="700" fill="#fff">H</text>
+</svg>

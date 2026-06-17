@@ -208,11 +208,13 @@ def register_legacy_blueprint_endpoints(bp_name, endpoint_names):
 # Imports placés après la création/config de app : les blueprints importent des
 # helpers applicatifs, donc on évite de les charger avant que Flask soit prêt.
 from .routes.admin import admin_bp
+from .routes.creators import creators_bp
 from .routes.public import public_bp
 from .routes.seo import seo_bp
 
 # Les routes sont séparées par domaine : admin, public, SEO/fichiers spéciaux.
 app.register_blueprint(admin_bp)
+app.register_blueprint(creators_bp)
 app.register_blueprint(public_bp)
 app.register_blueprint(seo_bp)
 
@@ -252,6 +254,12 @@ register_legacy_blueprint_endpoints(
         "voir_ville",
         "most_visited_categories",
         "trends",
+    ],
+)
+register_legacy_blueprint_endpoints(
+    "creators",
+    [
+        "creators_index",
     ],
 )
 register_legacy_blueprint_endpoints(
