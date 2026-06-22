@@ -1,4 +1,6 @@
-from flask import Blueprint, current_app, make_response, send_from_directory
+from flask import Blueprint, Response, current_app, make_response, send_from_directory
+
+from ..services import sitemap_service
 
 
 seo_bp = Blueprint("seo", __name__)
@@ -22,4 +24,6 @@ def robots_txt():
 
 @seo_bp.route('/sitemap.xml')
 def sitemap():
-    return send_from_directory(current_app.static_folder, 'sitemap.xml')
+    """Sitemap généré dynamiquement : chaque contenu publié y apparaît."""
+    xml = sitemap_service.build_sitemap_xml()
+    return Response(xml, mimetype="application/xml")

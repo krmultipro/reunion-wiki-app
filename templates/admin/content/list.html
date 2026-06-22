@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block seo_title %}Contenu SEO - Réunion Wiki{% endblock %}
+{% block seo_description %}Gestion des pages de contenu SEO.{% endblock %}
+
+{% block content %}
+<section class="admin-dashboard">
+  <header class="admin-dashboard__header">
+    <div class="admin-dashboard__intro">
+      <h1>Contenu SEO</h1>
+      <p>Bonjour {{ admin_username or "admin" }}. {{ total }} contenu(s).</p>
+    </div>
+    <div class="admin-dashboard__actions">
+      <a class="btn btn-primary" href="{{ url_for('admin_content.new_content') }}">+ Nouveau contenu</a>
+      <a class="btn btn-secondary" href="{{ url_for('admin_dashboard') }}">Tableau de bord</a>
+      <form method="post" action="{{ url_for('admin_logout') }}" class="admin-inline-form">
+        {{ admin_logout_form.hidden_tag() }}
+        <button type="submit" class="btn btn-secondary">Déconnexion</button>
+      </form>
+    </div>
+  </header>
+
+  <form method="get" action="{{ url_for('admin_content.list_content') }}" class="admin-filters">
+    <select name="type" class="admin-form__input">
+      <option value="">Tous les types</option>
+      {% for key, label in content_types %}
+      <option value="{{ key }}" {{ 'selected' if type_filter == key else '' }}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <select name="status" class="admin-form__input">
+      <option value="">Tous les statuts</option>
+      {% for key, label in statuses %}
+      <option value="{{ key }}" {{ 'selected' if status_filter == key else '' }}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <input type="text" name="q" value="{{ query_text }}" placeholder="Rechercher (titre, slug)" class="admin-form__input" />
+    <button type="submit" class="btn btn-secondary">Filtrer</button>
+  </form>
+
+  {% if items %}
+  <div class="admin-table-wrapper">
+    <table class="admin-table admin-table--sites">
+      <thead>
+        <tr>
+          <th>Titre</th>
+          <th>Type</th>
+          <th>Slug</th>
+          <th>Statut</th>
+          <th>Modifié le</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in items %}
+        <tr>
+          <td class="admin-table__cell--title" data-label="Titre">{{ item['title'] }}</td>
+          <td data-label="Type">{{ item['content_type'] }}</td>
+          <td data-label="Slug">{{ item['slug'] }}</td>
+          <td data-label="Statut">{{ item['status'] }}</td>
+          <td data-label="Modifié le">{{ item['updated_at']|format_date("%d/%m/%Y %H:%M") }}</td>
+          <td class="admin-table__cell--actions admin-table__cell--actions--compact" data-label="Actions">
+            <a class="btn btn-edit" href="{{ url_for('admin_content.edit_content', content_id=item['id']) }}">Modifier</a>
+
+            {% if item['status'] == 'published' %}
+            <a class="btn btn-secondary" href="{{ url_for('content.show', slug=item['slug']) }}" target="_blank" rel="noopener noreferrer">Voir ↗</a>
+            <form method="post" action="{{ url_for('admin_content.unpublish_content', content_id=item['id']) }}" class="admin-table__form">
+              {{ delete_forms[item['id']].csrf_token }}
+              {{ delete_forms[item['id']].content_id(value=item['id']) }}
+              <button type="submit" class="btn btn-secondary">Dépublier</button>
+            </form>
+            {% else %}
+            <form method="post" action="{{ url_for('admin_content.publish_content', content_id=item['id']) }}" class="admin-table__form">
+              {{ delete_forms[item['id']].csrf_token }}
+              {{ delete_forms[item['id']].content_id(value=item['id']) }}
+              <button type="submit" class="btn btn-approve">Publier</button>
+            </form>
+            {% endif %}
+
+            {% if item['status'] != 'archived' %}
+            <form method="post" action="{{ url_for('admin_content.archive_content', content_id=item['id']) }}" class="admin-table__form">
+              {{ delete_forms[item['id']].csrf_token }}
+              {{ delete_forms[item['id']].content_id(value=item['id']) }}
+              <button type="submit" class="btn btn-reject">Archiver</button>
+            </form>
+            {% endif %}
+
+            <form method="post" action="{{ url_for('admin_content.delete_content', content_id=item['id']) }}" class="admin-table__form" onsubmit="return confirm('Supprimer définitivement ce contenu ?');">
+              {{ delete_forms[item['id']].csrf_token }}
+              {{ delete_forms[item['id']].content_id(value=item['id']) }}
+              <button type="submit" class="btn btn-delete">Supprimer</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if total_pages > 1 %}
+  <nav class="admin-pagination">
+    {% for p in range(1, total_pages + 1) %}
+    <a class="btn {{ 'btn-primary' if p == page else 'btn-secondary' }}"
+       href="{{ url_for('admin_content.list_content', type=type_filter, status=status_filter, q=query_text, sort=sort_filter, page=p) }}">{{ p }}</a>
+    {% endfor %}
+  </nav>
+  {% endif %}
+  {% else %}
+  <p class="admin-empty">Aucun contenu pour le moment.</p>
+  {% endif %}
+</section>
+{% endblock %}

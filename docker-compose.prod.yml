@@ -20,6 +20,7 @@ services:
       - redis
     volumes:
       - ./data_prod:/data
+      - ./uploads_prod:/app/static/uploads # Uploads persistés hors du conteneur
     networks:
       - reunionwiki_prod_net
     env_file:
@@ -39,6 +40,7 @@ services:
       - ./certbot/conf:/etc/letsencrypt
       - ./logs/nginx:/var/log/nginx
       - ./static:/var/www/static:ro
+      - ./uploads_prod:/var/www/static/uploads:ro # Nginx sert les uploads directement
     depends_on:
       - web
     networks:

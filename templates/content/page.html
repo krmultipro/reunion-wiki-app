@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block seo_title %}{{ seo_title }}{% endblock %}
+{% block seo_description %}{{ seo_description }}{% endblock %}
+{% block canonical %}{{ canonical }}{% endblock %}
+{% block og_url %}{{ canonical }}{% endblock %}
+
+{% block content %}
+<article class="content-page">
+  <header class="content-page__header">
+    <h1>{{ content['title'] }}</h1>
+    {% if content['summary'] %}
+    <p class="content-page__summary">{{ content['summary'] }}</p>
+    {% endif %}
+  </header>
+
+  {% if content['featured_image'] %}
+  <img class="content-page__image"
+       src="{{ url_for('static', filename=content['featured_image']) }}"
+       alt="{{ content['title'] }}"
+       loading="lazy" />
+  {% endif %}
+
+  {% if content['body'] %}
+  <div class="content-page__body">
+    {{ content['body']|safe }}
+  </div>
+  {% endif %}
+</article>
+{% endblock %}

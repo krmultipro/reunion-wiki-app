@@ -254,6 +254,42 @@ def _drop_sites_ville_column(cur) -> bool:
     return True
 
 
+def _ensure_content_table(cur) -> None:
+    """Crée la table `content` et ses index si nécessaire.
+
+    Table plate et réutilisable qui alimentera les pages SEO publiées depuis
+    l'admin (landing pages, guides, personnalités...). Les images ne sont jamais
+    stockées ici : seul le chemin relatif sur disque est conservé dans
+    `featured_image`.
+
+    Args:
+        cur (sqlite3.Cursor): Curseur de la base cible.
+    """
+
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS content (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            content_type TEXT NOT NULL,
+            title TEXT NOT NULL,
+            slug TEXT NOT NULL UNIQUE,
+            summary TEXT,
+            body TEXT,
+            status TEXT NOT NULL DEFAULT 'draft',
+            meta_title TEXT,
+            meta_description TEXT,
+            featured_image TEXT,
+            published_at DATETIME,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+        """
+    )
+    cur.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_content_slug ON content(slug)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_content_type_status ON content(content_type, status)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_content_status_pub ON content(status, published_at)")
+
+
 def main():
     print("📂 DB cible:", DATABASE_PATH)
 
@@ -273,6 +309,9 @@ def main():
 
     conn = sqlite3.connect(DATABASE_PATH)
     cur = conn.cursor()
+
+    # WAL améliore la concurrence lecture/écriture. À régler hors transaction.
+    cur.execute("PRAGMA journal_mode=WAL")
 
     try:
         cur.execute("PRAGMA foreign_keys = ON")
@@ -468,6 +507,9 @@ def main():
         cur.execute("CREATE INDEX IF NOT EXISTS idx_site_clicks_site_id ON site_clicks(site_id)")
         cur.execute("CREATE INDEX IF NOT EXISTS idx_site_clicks_clicked_at ON site_clicks(clicked_at)")
         cur.execute("CREATE INDEX IF NOT EXISTS idx_villes_slug ON villes(slug)")
+
+        # Plateforme de contenu SEO (table plate réutilisable).
+        _ensure_content_table(cur)
 
         conn.commit()
         print("✅ Migration terminée avec succès")

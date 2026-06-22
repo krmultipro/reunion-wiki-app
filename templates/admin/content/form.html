@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block seo_title %}{{ page_title }} - Réunion Wiki{% endblock %}
+{% block seo_description %}Édition de contenu SEO Réunion Wiki.{% endblock %}
+
+{% block content %}
+<section class="admin-card">
+  <header class="admin-card__header">
+    <div>
+      <h1>{{ page_title }}</h1>
+      {% if public_slug %}
+      <p>Page publiée : <a href="{{ url_for('content.show', slug=public_slug) }}" target="_blank" rel="noopener noreferrer">/{{ public_slug }} ↗</a></p>
+      {% endif %}
+    </div>
+    <a class="btn btn-secondary" href="{{ url_for('admin_content.list_content') }}">← Retour à la liste</a>
+  </header>
+
+  <form method="post" action="{{ form_action }}" class="admin-form" enctype="multipart/form-data" novalidate>
+    {{ form.hidden_tag() }}
+
+    <div class="admin-form__group">
+      <div class="admin-form__field">
+        {{ form.content_type.label(class_="admin-form__label") }}
+        {{ form.content_type(class_="admin-form__input") }}
+        {% for error in form.content_type.errors %}<span class="admin-form__error">{{ error }}</span>{% endfor %}
+      </div>
+      <div class="admin-form__field">
+        {{ form.status.label(class_="admin-form__label") }}
+        {{ form.status(class_="admin-form__input") }}
+        {% for error in form.status.errors %}<span class="admin-form__error">{{ error }}</span>{% endfor %}
+      </div>
+    </div>
+
+    <div class="admin-form__field">
+      {{ form.title.label(class_="admin-form__label") }}
+      {{ form.title(class_="admin-form__input") }}
+      {% for error in form.title.errors %}<span class="admin-form__error">{{ error }}</span>{% endfor %}
+    </div>
+
+    <div class="admin-form__field">
+      {{ form.slug.label(class_="admin-form__label") }}
+      {{ form.slug(class_="admin-form__input") }}
+      {% for error in form.slug.errors %}<span class="admin-form__error">{{ error }}</span>{% endfor %}
+    </div>
+
+    <div class="admin-form__field">
+      {{ form.summary.label(class_="admin-form__label") }}
+      {{ form.summary(class_="admin-form__textarea", rows="3") }}
+      {% for error in form.summary.errors %}<span class="admin-form__error">{{ error }}</span>{% endfor %}
+    </div>
+
+    <div class="admin-form__field">
+      {{ form.body.label(class_="admin-form__label") }}
+      {{ form.body(class_="admin-form__textarea", rows="12") }}
+      <small>HTML simple autorisé : titres, paragraphes, gras, listes, liens. Le reste est nettoyé automatiquement.</small>
+      {% for error in form.body.errors %}<span class="admin-form__error">{{ error }}</span>{% endfor %}
+    </div>
+
+    <div class="admin-form__field">
+      {{ form.featured_image.label(class_="admin-form__label") }}
+      {{ form.featured_image(class_="admin-form__input") }}
+      {% for error in form.featured_image.errors %}<span class="admin-form__error">{{ error }}</span>{% endfor %}
+      {% if featured_image %}
+      <p>Image actuelle :</p>
+      <img src="{{ url_for('static', filename=featured_image) }}" alt="Image à la une" style="max-width:240px;height:auto;" />
+      {% endif %}
+    </div>
+
+    <div class="admin-form__field">
+      {{ form.meta_title.label(class_="admin-form__label") }}
+      {{ form.meta_title(class_="admin-form__input") }}
+      <small>Obligatoire pour publier.</small>
+      {% for error in form.meta_title.errors %}<span class="admin-form__error">{{ error }}</span>{% endfor %}
+    </div>
+
+    <div class="admin-form__field">
+      {{ form.meta_description.label(class_="admin-form__label") }}
+      {{ form.meta_description(class_="admin-form__textarea", rows="2") }}
+      <small>Obligatoire pour publier.</small>
+      {% for error in form.meta_description.errors %}<span class="admin-form__error">{{ error }}</span>{% endfor %}
+    </div>
+
+    <div class="admin-form__actions">
+      <button type="submit" class="btn btn-primary">{{ submit_label }}</button>
+    </div>
+  </form>
+</section>
+{% endblock %}

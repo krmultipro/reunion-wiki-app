@@ -16,6 +16,7 @@ services:
     user: "0:0" # Permet d'écrire dans le bind mount /data créé par Docker sur un clone propre
     volumes:
       - ./data_dev:/data # Monte le dossier data pour la persistance des données
+      - ./uploads_dev:/app/static/uploads # Uploads persistés hors du conteneur
     restart: always
     environment:
       - FLASK_ENV=production #désactive débug
