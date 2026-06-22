@@ -6,24 +6,52 @@ from flask import Blueprint, render_template
 creators_bp = Blueprint("creators", __name__)
 
 CREATOR_UNIVERSES = [
-    "Humour",
+    "Humoristes",
+    "Youtubeurs",
+    "Photographes",
+    "Artistes",
+    "Musiciens",
+    "Créateurs vidéo",
     "Lifestyle",
-    "Voyage",
-    "Food",
-    "Musique",
-    "Gaming",
-    "Art & Image",
     "Sport",
+]
+
+EDITORIAL_UNIVERSES = [
+    {
+        "title": "Humour réunionnais",
+        "description": "Sketchs, personnages et scènes du quotidien péi.",
+    },
+    {
+        "title": "Photographie locale",
+        "description": "Regards sur les paysages, les villes et les instants de l'île.",
+    },
+    {
+        "title": "Musique péi",
+        "description": "Artistes, voix et univers sonores ancrés à La Réunion.",
+    },
+    {
+        "title": "Création vidéo",
+        "description": "Formats courts, séries web, coulisses et narration locale.",
+    },
+    {
+        "title": "Lifestyle",
+        "description": "Sorties, lieux, habitudes et inspirations du quotidien.",
+    },
 ]
 
 CREATORS = [
     {
         "slug": "harendra",
         "name": "Harendra",
-        "category": "Humour",
-        "city": "Saint-Denis",
+        "discipline": "Humoriste réunionnais",
+        "category": "Humoristes",
+        "city": "Saint-Pierre",
         "image": "creators/harendra.svg",
-        "description": "Un regard drôle et local sur le quotidien réunionnais.",
+        "description": (
+            "Originaire du sud de l'île, il est connu pour ses vidéos humoristiques "
+            "inspirées du quotidien réunionnais."
+        ),
+        "creative_universe": "Humour réunionnais",
         "platforms": [
             {"name": "YouTube", "followers": 185000},
             {"name": "Instagram", "followers": 92000},
@@ -33,10 +61,12 @@ CREATORS = [
     {
         "slug": "la-zeba",
         "name": "La Zeba",
+        "discipline": "Créatrice lifestyle",
         "category": "Lifestyle",
         "city": "Saint-Pierre",
         "image": "creators/la-zeba.svg",
-        "description": "Lifestyle, sorties et instants péi avec une tonalité solaire.",
+        "description": "Elle partage des sorties, des lieux de vie et des instants péi avec une tonalité solaire.",
+        "creative_universe": "Lifestyle local",
         "platforms": [
             {"name": "Instagram", "followers": 76000},
             {"name": "TikTok", "followers": 118000},
@@ -45,10 +75,12 @@ CREATORS = [
     {
         "slug": "romuzeuf",
         "name": "Romuzeuf",
-        "category": "Gaming",
+        "discipline": "Youtubeur et vidéaste",
+        "category": "Youtubeurs",
         "city": "Le Tampon",
         "image": "creators/romuzeuf.svg",
-        "description": "Création vidéo, gaming et formats courts pour une audience jeune.",
+        "description": "Il mêle création vidéo, formats courts et culture web pour parler à une génération connectée.",
+        "creative_universe": "Création vidéo",
         "platforms": [
             {"name": "YouTube", "followers": 65000},
             {"name": "Twitch", "followers": 28000},
@@ -58,10 +90,12 @@ CREATORS = [
     {
         "slug": "miazz",
         "name": "Miazz",
-        "category": "Musique",
+        "discipline": "Musicien",
+        "category": "Musiciens",
         "city": "Saint-Paul",
         "image": "creators/miazz.svg",
-        "description": "Univers musical, coulisses créatives et énergie locale.",
+        "description": "Son univers met en avant la musique, les coulisses créatives et une énergie locale affirmée.",
+        "creative_universe": "Musique péi",
         "platforms": [
             {"name": "YouTube", "followers": 42000},
             {"name": "Instagram", "followers": 36000},
@@ -70,10 +104,12 @@ CREATORS = [
     {
         "slug": "space-974",
         "name": "Space 974",
-        "category": "Art & Image",
+        "discipline": "Photographe",
+        "category": "Photographes",
         "city": "Saint-Leu",
         "image": "creators/space-974.svg",
-        "description": "Photo, image et exploration visuelle des paysages réunionnais.",
+        "description": "Son travail explore les paysages, la lumière et les détails visuels de La Réunion.",
+        "creative_universe": "Photographie locale",
         "platforms": [
             {"name": "Instagram", "followers": 58000},
             {"name": "YouTube", "followers": 21000},
@@ -115,11 +151,11 @@ def build_creator_view_model(creator):
     total_followers = sum(platform["followers"] for platform in creator["platforms"])
     platform_names = [platform["name"] for platform in creator["platforms"]]
     if total_followers >= 300_000:
-        tier = "Audience majeure"
+        tier = "Portrait repéré"
     elif total_followers >= 100_000:
-        tier = "Talent confirmé"
+        tier = "Parcours installé"
     else:
-        tier = "À suivre"
+        tier = "À découvrir"
 
     return {
         **creator,
@@ -158,33 +194,49 @@ def build_region_cards(creators):
     return cards
 
 
+def build_popular_personality_cards(creators):
+    """
+    Prépare une sélection éditoriale de personnalités locales à mettre en avant.
+
+    Args:
+        creators (list[dict]): Créateurs enrichis.
+
+    Returns:
+        list[dict]: Cartes prêtes pour une section de type guide local.
+    """
+
+    return sorted(creators, key=lambda creator: creator["total_followers"], reverse=True)[:3]
+
+
 @creators_bp.route("/createurs-reunionnais")
 def creators_index():
     """
-    Affiche la première maquette statique de l'annuaire des créateurs réunionnais.
+    Affiche une page de découverte des talents et créateurs réunionnais.
 
     Returns:
         str: Page HTML des créateurs réunionnais.
     """
 
     creators = [build_creator_view_model(creator) for creator in CREATORS]
-    categories = sorted({creator["category"] for creator in creators})
     featured_creator = creators[0]
     total_followers = sum(creator["total_followers"] for creator in creators)
     stats = {
         "creator_count": len(creators),
         "total_followers": total_followers,
         "total_followers_label": format_followers(total_followers),
-        "category_count": len(categories),
+        "category_count": len(CREATOR_UNIVERSES),
+        "city_count": len({creator["city"] for creator in creators}),
     }
     region_cards = build_region_cards(creators)
+    popular_creators = build_popular_personality_cards(creators)
 
     # TODO: future phase BDD/profil public : /createur/<slug>.
     return render_template(
         "creators/index.html",
         creators=creators,
-        universes=CREATOR_UNIVERSES,
+        editorial_universes=EDITORIAL_UNIVERSES,
         stats=stats,
         region_cards=region_cards,
         featured_creator=featured_creator,
+        popular_creators=popular_creators,
     )
