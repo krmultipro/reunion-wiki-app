@@ -25,7 +25,7 @@ services:
     depends_on:
       - redis # Assure que Redis démarre avant l’application Flask
     ports:
-      - "8085:8000" # Expose le port 8000 pour la communication interne entre conteneurs
+      - "8086:8000" # Expose Flask en local sans conflit avec les autres projets
     networks:
       - reunionwiki_dev_net
 
