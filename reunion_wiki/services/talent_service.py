@@ -1,0 +1,398 @@
+# -*- coding: utf-8 -*-
+
+from datetime import datetime
+
+from ..repositories import talent_repository
+from ..utils import slugify
+
+
+STATUSES = [
+    ("draft", "Brouillon"),
+    ("published", "Publié"),
+    ("archived", "Archivé"),
+    ("en_attente", "En attente"),
+    ("valide", "Validé"),
+]
+STATUS_KEYS = {key for key, _label in STATUSES}
+PUBLIC_STATUS_KEYS = {"published", "valide"}
+
+
+def _now_sql():
+    """Retourne l'horodatage courant au format texte SQLite.
+
+    Returns:
+        str:
+            Date UTC au format `YYYY-MM-DD HH:MM:SS`.
+    """
+
+    return datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+
+
+def _clean_text(value, max_length=None):
+    """Nettoie une valeur texte issue d'un formulaire ou d'un import.
+
+    Args:
+        value (str | None): Valeur brute.
+        max_length (int | None): Longueur maximale conservée.
+
+    Returns:
+        str:
+            Texte nettoyé.
+    """
+
+    cleaned = (value or "").strip()
+    if max_length is not None:
+        return cleaned[:max_length]
+    return cleaned
+
+
+def _clean_optional_text(value, max_length=None):
+    """Nettoie un texte optionnel et retourne None si vide.
+
+    Args:
+        value (str | None): Valeur brute.
+        max_length (int | None): Longueur maximale conservée.
+
+    Returns:
+        str | None:
+            Texte nettoyé ou None.
+    """
+
+    cleaned = _clean_text(value, max_length)
+    return cleaned or None
+
+
+def _clean_display_order(value):
+    """Normalise l'ordre d'affichage manuel.
+
+    Args:
+        value: Valeur brute convertible en entier.
+
+    Returns:
+        int:
+            Ordre d'affichage positif ou nul.
+    """
+
+    try:
+        return max(int(value), 0)
+    except (TypeError, ValueError):
+        return 0
+
+
+def generate_unique_slug(name, slug_input=None, exclude_id=None):
+    """Génère un slug unique pour un talent.
+
+    Args:
+        name (str): Nom du talent.
+        slug_input (str | None): Slug proposé.
+        exclude_id (int | None): Identifiant à ignorer en édition.
+
+    Returns:
+        str:
+            Slug unique disponible.
+    """
+
+    base = slugify(slug_input or "") or slugify(name or "") or "talent"
+    candidate = base
+    suffix = 2
+    while talent_repository.slug_exists(candidate, exclude_id):
+        candidate = f"{base}-{suffix}"
+        suffix += 1
+    return candidate
+
+
+def validate_talent_data(data):
+    """Valide les champs métier minimaux d'un talent.
+
+    Args:
+        data (dict): Données nettoyées du talent.
+
+    Returns:
+        list[str]:
+            Messages d'erreur, vide si les données sont valides.
+    """
+
+    errors = []
+    if not data["name"]:
+        errors.append("Le nom est obligatoire.")
+    if not data["slug"]:
+        errors.append("Le slug est obligatoire.")
+    if not data["category"]:
+        errors.append("La catégorie est obligatoire.")
+    if not data["description"]:
+        errors.append("La description est obligatoire.")
+    if data["status"] not in STATUS_KEYS:
+        errors.append("Statut invalide.")
+    return errors
+
+
+def normalize_talent_data(data, existing=None, talent_id=None):
+    """Prépare les données d'un talent avant écriture.
+
+    Args:
+        data (dict): Données brutes du talent.
+        existing (sqlite3.Row | None): Talent existant en cas d'édition.
+        talent_id (int | None): Identifiant ignoré pour l'unicité du slug.
+
+    Returns:
+        dict:
+            Données nettoyées prêtes pour le repository.
+    """
+
+    name = _clean_text(data.get("name"), 160)
+    status = _clean_text(data.get("status") or "draft", 40)
+    published_at = existing["published_at"] if existing else None
+    if status in PUBLIC_STATUS_KEYS and not published_at:
+        published_at = _now_sql()
+
+    return {
+        "name": name,
+        "slug": generate_unique_slug(name, data.get("slug"), exclude_id=talent_id),
+        "category": _clean_text(data.get("category"), 120),
+        "city": _clean_optional_text(data.get("city"), 120),
+        "description": _clean_text(data.get("description"), 500),
+        "bio": _clean_optional_text(data.get("bio")),
+        "image": _clean_optional_text(data.get("image"), 255),
+        "instagram_url": _clean_optional_text(data.get("instagram_url"), 255),
+        "youtube_url": _clean_optional_text(data.get("youtube_url"), 255),
+        "tiktok_url": _clean_optional_text(data.get("tiktok_url"), 255),
+        "facebook_url": _clean_optional_text(data.get("facebook_url"), 255),
+        "website_url": _clean_optional_text(data.get("website_url"), 255),
+        "status": status,
+        "display_order": _clean_display_order(data.get("display_order")),
+        "published_at": published_at,
+    }
+
+
+def save_talent(data, talent_id=None):
+    """Crée ou met à jour un talent en appliquant les règles métier.
+
+    Args:
+        data (dict): Données du talent.
+        talent_id (int | None): Identifiant si mise à jour, None si création.
+
+    Returns:
+        tuple[int | None, list[str]]:
+            Identifiant du talent enregistré, ou None, et erreurs éventuelles.
+    """
+
+    existing = talent_repository.get_by_id(talent_id) if talent_id else None
+    if talent_id and not existing:
+        return None, ["Talent introuvable."]
+
+    cleaned = normalize_talent_data(data, existing=existing, talent_id=talent_id)
+    errors = validate_talent_data(cleaned)
+    if errors:
+        return None, errors
+
+    if talent_id:
+        talent_repository.update(
+            talent_id,
+            cleaned["name"],
+            cleaned["slug"],
+            cleaned["category"],
+            cleaned["city"],
+            cleaned["description"],
+            cleaned["bio"],
+            cleaned["image"],
+            cleaned["instagram_url"],
+            cleaned["youtube_url"],
+            cleaned["tiktok_url"],
+            cleaned["facebook_url"],
+            cleaned["website_url"],
+            cleaned["status"],
+            cleaned["display_order"],
+            cleaned["published_at"],
+        )
+        return talent_id, []
+
+    new_id = talent_repository.insert(
+        cleaned["name"],
+        cleaned["slug"],
+        cleaned["category"],
+        cleaned["city"],
+        cleaned["description"],
+        cleaned["bio"],
+        cleaned["image"],
+        cleaned["instagram_url"],
+        cleaned["youtube_url"],
+        cleaned["tiktok_url"],
+        cleaned["facebook_url"],
+        cleaned["website_url"],
+        cleaned["status"],
+        cleaned["display_order"],
+        cleaned["published_at"],
+    )
+    return new_id, []
+
+
+def publish(talent_id):
+    """Publie un talent existant.
+
+    Args:
+        talent_id (int): Identifiant du talent.
+
+    Returns:
+        tuple[bool, list[str]]:
+            Succès et erreurs éventuelles.
+    """
+
+    row = talent_repository.get_by_id(talent_id)
+    if not row:
+        return False, ["Talent introuvable."]
+
+    errors = validate_talent_data(
+        {
+            "name": row["name"],
+            "slug": row["slug"],
+            "category": row["category"],
+            "description": row["description"],
+            "status": "published",
+        }
+    )
+    if errors:
+        return False, errors
+
+    published_at = row["published_at"] or _now_sql()
+    talent_repository.update_status(talent_id, "published", published_at)
+    return True, []
+
+
+def unpublish(talent_id):
+    """Repasse un talent publié en brouillon.
+
+    Args:
+        talent_id (int): Identifiant du talent.
+
+    Returns:
+        bool:
+            True si le talent existait et a été mis à jour.
+    """
+
+    row = talent_repository.get_by_id(talent_id)
+    if not row:
+        return False
+    talent_repository.update_status(talent_id, "draft", row["published_at"])
+    return True
+
+
+def archive(talent_id):
+    """Archive un talent.
+
+    Args:
+        talent_id (int): Identifiant du talent.
+
+    Returns:
+        bool:
+            True si le talent existait et a été mis à jour.
+    """
+
+    row = talent_repository.get_by_id(talent_id)
+    if not row:
+        return False
+    talent_repository.update_status(talent_id, "archived", row["published_at"])
+    return True
+
+
+def delete_talent(talent_id):
+    """Supprime définitivement un talent.
+
+    Args:
+        talent_id (int): Identifiant du talent.
+
+    Returns:
+        bool:
+            True si une ligne a été supprimée.
+    """
+
+    return talent_repository.delete(talent_id) > 0
+
+
+def get_public_talent(slug):
+    """Récupère un talent public pour une future page profil.
+
+    Args:
+        slug (str): Slug demandé.
+
+    Returns:
+        sqlite3.Row | None:
+            Talent public ou None.
+    """
+
+    return talent_repository.get_published_by_slug(slug)
+
+
+def list_public_talents(limit=None, offset=0):
+    """Retourne les talents publics pour une future liste.
+
+    Args:
+        limit (int | None): Nombre maximum de talents.
+        offset (int): Décalage de pagination.
+
+    Returns:
+        list[sqlite3.Row]:
+            Talents publics.
+    """
+
+    return talent_repository.list_published(limit=limit, offset=offset)
+
+
+def list_public_talents_by_category(category, limit=None, offset=0):
+    """Retourne les talents publics d'une catégorie.
+
+    Args:
+        category (str): Catégorie demandée.
+        limit (int | None): Nombre maximum de talents.
+        offset (int): Décalage de pagination.
+
+    Returns:
+        list[sqlite3.Row]:
+            Talents publics de la catégorie.
+    """
+
+    cleaned_category = _clean_text(category, 120)
+    if not cleaned_category:
+        return []
+    return talent_repository.list_published_by_category(cleaned_category, limit=limit, offset=offset)
+
+
+def list_public_categories():
+    """Retourne les catégories ayant au moins un talent public.
+
+    Returns:
+        list[sqlite3.Row]:
+            Catégories représentées et leur total.
+    """
+
+    return talent_repository.list_categories()
+
+
+def get_admin_list(status=None, category=None, q=None, sort="recent", page=1, per_page=20):
+    """Prépare une liste paginée de talents pour une future interface admin.
+
+    Args:
+        status (str | None): Filtre par statut.
+        category (str | None): Filtre par catégorie.
+        q (str | None): Recherche texte.
+        sort (str): Clé de tri.
+        page (int): Page demandée.
+        per_page (int): Taille de page.
+
+    Returns:
+        dict:
+            Items, page courante, nombre total de pages et total.
+    """
+
+    status_filter = status if status in STATUS_KEYS else None
+    category_filter = _clean_optional_text(category, 120)
+    search = _clean_optional_text(q, 120)
+
+    total = talent_repository.count_for_admin(status_filter, category_filter, search)["total"]
+    total_pages = max((total + per_page - 1) // per_page, 1)
+    page = max(min(int(page or 1), total_pages), 1)
+    offset = (page - 1) * per_page
+
+    items = talent_repository.list_for_admin(
+        status_filter, category_filter, search, sort, per_page, offset
+    )
+    return {"items": items, "page": page, "total_pages": total_pages, "total": total}

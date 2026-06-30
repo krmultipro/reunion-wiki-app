@@ -77,6 +77,24 @@ def ensure_column(cur, table_name: str, column_name: str, definition: str) -> No
         cur.execute(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {definition}")
 
 
+def rename_column_if_needed(cur, table_name: str, old_name: str, new_name: str) -> None:
+    """Renomme une colonne legacy uniquement si la colonne cible n'existe pas.
+
+    Args:
+        cur (sqlite3.Cursor): Curseur de la base cible.
+        table_name (str): Nom de la table à faire évoluer.
+        old_name (str): Nom actuel de la colonne legacy.
+        new_name (str): Nouveau nom attendu.
+
+    Returns:
+        None
+    """
+
+    if column_exists(cur, table_name, old_name) and not column_exists(cur, table_name, new_name):
+        print(f"✏️ Renommage colonne {table_name}.{old_name} -> {new_name}")
+        cur.execute(f"ALTER TABLE {table_name} RENAME COLUMN {old_name} TO {new_name}")
+
+
 def _next_available_category_slug(cur, base_slug: str) -> str:
     base = base_slug or "categorie"
     candidate = base
@@ -288,6 +306,125 @@ def _ensure_content_table(cur) -> None:
     cur.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_content_slug ON content(slug)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_content_type_status ON content(content_type, status)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_content_status_pub ON content(status, published_at)")
+
+
+def _next_available_talent_slug(cur, base_slug: str, talent_id: int) -> str:
+    """Retourne un slug talent unique en ignorant la ligne en cours.
+
+    Args:
+        cur (sqlite3.Cursor): Curseur de la base cible.
+        base_slug (str): Base de slug générée depuis le nom.
+        talent_id (int): Identifiant du talent en cours de backfill.
+
+    Returns:
+        str: Slug disponible pour la table talents.
+    """
+
+    base = base_slug or f"talent-{talent_id}"
+    candidate = base
+    suffix = 1
+    while True:
+        cur.execute(
+            "SELECT 1 FROM talents WHERE slug = ? AND id != ?",
+            (candidate, talent_id),
+        )
+        if not cur.fetchone():
+            return candidate
+        candidate = f"{base}-{suffix}"
+        suffix += 1
+
+
+def _backfill_talent_slugs(cur) -> int:
+    """Complète les slugs manquants de la table talents à partir du nom.
+
+    Args:
+        cur (sqlite3.Cursor): Curseur de la base cible.
+
+    Returns:
+        int: Nombre de talents mis à jour.
+    """
+
+    cur.execute(
+        """
+        SELECT id, name
+        FROM talents
+        WHERE slug IS NULL OR TRIM(slug) = ''
+        ORDER BY id ASC
+        """
+    )
+    rows = cur.fetchall()
+    updated = 0
+
+    for talent_id, name in rows:
+        slug = _next_available_talent_slug(cur, slugify(name), talent_id)
+        cur.execute("UPDATE talents SET slug = ? WHERE id = ?", (slug, talent_id))
+        updated += 1
+
+    return updated
+
+
+def _ensure_talents_table(cur) -> None:
+    """Fait évoluer la table talents vers le schéma MVP sans recréation.
+
+    Args:
+        cur (sqlite3.Cursor): Curseur de la base cible.
+
+    Returns:
+        None
+    """
+
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS talents (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            slug TEXT DEFAULT '',
+            category TEXT DEFAULT '',
+            city TEXT DEFAULT '',
+            description TEXT NOT NULL,
+            bio TEXT DEFAULT '',
+            image TEXT DEFAULT '',
+            instagram_url TEXT DEFAULT '',
+            youtube_url TEXT DEFAULT '',
+            tiktok_url TEXT DEFAULT '',
+            facebook_url TEXT DEFAULT '',
+            website_url TEXT DEFAULT '',
+            status TEXT NOT NULL DEFAULT 'en_attente',
+            display_order INTEGER DEFAULT 0,
+            published_at TEXT,
+            date_created TEXT NOT NULL DEFAULT (DATETIME('now')),
+            date_updated TEXT NOT NULL DEFAULT (DATETIME('now'))
+        )
+        """
+    )
+
+    rename_column_if_needed(cur, "talents", "pseudo", "name")
+    rename_column_if_needed(cur, "talents", "instagram", "instagram_url")
+
+    ensure_column(cur, "talents", "slug", "TEXT DEFAULT ''")
+    ensure_column(cur, "talents", "category", "TEXT DEFAULT ''")
+    ensure_column(cur, "talents", "city", "TEXT DEFAULT ''")
+    ensure_column(cur, "talents", "bio", "TEXT DEFAULT ''")
+    ensure_column(cur, "talents", "image", "TEXT DEFAULT ''")
+    ensure_column(cur, "talents", "instagram_url", "TEXT DEFAULT ''")
+    ensure_column(cur, "talents", "youtube_url", "TEXT DEFAULT ''")
+    ensure_column(cur, "talents", "tiktok_url", "TEXT DEFAULT ''")
+    ensure_column(cur, "talents", "facebook_url", "TEXT DEFAULT ''")
+    ensure_column(cur, "talents", "website_url", "TEXT DEFAULT ''")
+    ensure_column(cur, "talents", "status", "TEXT NOT NULL DEFAULT 'en_attente'")
+    ensure_column(cur, "talents", "display_order", "INTEGER DEFAULT 0")
+    ensure_column(cur, "talents", "published_at", "TEXT")
+    ensure_column(cur, "talents", "date_created", "TEXT NOT NULL DEFAULT (DATETIME('now'))")
+    ensure_column(cur, "talents", "date_updated", "TEXT NOT NULL DEFAULT (DATETIME('now'))")
+
+    slugs_updated = _backfill_talent_slugs(cur)
+    print(f"🔁 Backfill talents.slug effectué sur {slugs_updated} talent(s)")
+
+    cur.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_talents_slug ON talents(slug)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_talents_status ON talents(status)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_talents_category ON talents(category)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_talents_city ON talents(city)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_talents_display_order ON talents(display_order)")
 
 
 def main():
@@ -510,6 +647,9 @@ def main():
 
         # Plateforme de contenu SEO (table plate réutilisable).
         _ensure_content_table(cur)
+
+        # Talents locaux: évolution du prototype Instagram vers un modèle wiki.
+        _ensure_talents_table(cur)
 
         conn.commit()
         print("✅ Migration terminée avec succès")
