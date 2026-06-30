@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
 
+import os
 from datetime import datetime
+from urllib.parse import urlparse
+
+from flask import current_app
 
 from ..repositories import talent_repository
 from ..utils import slugify
@@ -11,12 +15,23 @@ STATUSES = [
     ("draft", "Brouillon"),
     ("published", "Publié"),
     ("archived", "Archivé"),
-    ("en_attente", "En attente"),
-    ("valide", "Validé"),
 ]
 STATUS_KEYS = {key for key, _label in STATUSES}
-PUBLIC_STATUS_KEYS = {"published", "valide"}
 DEFAULT_TALENT_IMAGE = "icons/icon-192x192.png"
+MAX_LENGTHS = {
+    "name": 160,
+    "slug": 180,
+    "category": 120,
+    "city": 120,
+    "description": 500,
+    "image": 255,
+    "instagram_url": 255,
+    "youtube_url": 255,
+    "tiktok_url": 255,
+    "facebook_url": 255,
+    "website_url": 255,
+}
+URL_FIELDS = ("instagram_url", "youtube_url", "tiktok_url", "facebook_url", "website_url")
 
 
 def _now_sql():
@@ -43,8 +58,6 @@ def _clean_text(value, max_length=None):
     """
 
     cleaned = (value or "").strip()
-    if max_length is not None:
-        return cleaned[:max_length]
     return cleaned
 
 
@@ -79,6 +92,46 @@ def _clean_display_order(value):
         return max(int(value), 0)
     except (TypeError, ValueError):
         return 0
+
+
+def _is_valid_http_url(value):
+    """Indique si une URL optionnelle est en HTTP ou HTTPS.
+
+    Args:
+        value (str | None): URL à vérifier.
+
+    Returns:
+        bool:
+            True si l'URL est vide ou valide.
+    """
+
+    if not value:
+        return True
+    parsed = urlparse(value)
+    return parsed.scheme in {"http", "https"} and bool(parsed.netloc)
+
+
+def _remove_uploaded_image(relative_path):
+    """Supprime une image uploadée récemment si l'écriture DB échoue.
+
+    Args:
+        relative_path (str | None): Chemin relatif retourné par image_storage.
+
+    Returns:
+        None
+    """
+
+    if not relative_path:
+        return
+
+    static_root = os.path.abspath(current_app.static_folder)
+    absolute_path = os.path.abspath(os.path.join(static_root, relative_path))
+    if os.path.commonpath([static_root, absolute_path]) != static_root:
+        return
+    try:
+        os.remove(absolute_path)
+    except OSError:
+        pass
 
 
 def generate_unique_slug(name, slug_input=None, exclude_id=None):
@@ -125,6 +178,16 @@ def validate_talent_data(data):
         errors.append("La description est obligatoire.")
     if data["status"] not in STATUS_KEYS:
         errors.append("Statut invalide.")
+
+    for field, max_length in MAX_LENGTHS.items():
+        value = data.get(field)
+        if value and len(value) > max_length:
+            errors.append(f"{field} ne doit pas dépasser {max_length} caractères.")
+
+    for field in URL_FIELDS:
+        if not _is_valid_http_url(data.get(field)):
+            errors.append(f"{field} doit être une URL http ou https valide.")
+
     return errors
 
 
@@ -144,7 +207,7 @@ def normalize_talent_data(data, existing=None, talent_id=None):
     name = _clean_text(data.get("name"), 160)
     status = _clean_text(data.get("status") or "draft", 40)
     published_at = existing["published_at"] if existing else None
-    if status in PUBLIC_STATUS_KEYS and not published_at:
+    if status == "published" and not published_at:
         published_at = _now_sql()
 
     return {
@@ -185,19 +248,41 @@ def save_talent(data, image_file=None, talent_id=None):
 
     cleaned = normalize_talent_data(data, existing=existing, talent_id=talent_id)
     cleaned["image"] = existing["image"] if existing else cleaned["image"]
-    if image_file is not None and getattr(image_file, "filename", ""):
-        try:
-            cleaned["image"] = image_storage.save_upload(image_file)
-        except image_storage.ImageStorageError as exc:
-            return None, [str(exc)]
-
     errors = validate_talent_data(cleaned)
     if errors:
         return None, errors
 
-    if talent_id:
-        talent_repository.update(
-            talent_id,
+    uploaded_image = None
+    if image_file is not None and getattr(image_file, "filename", ""):
+        try:
+            cleaned["image"] = image_storage.save_upload(image_file)
+            uploaded_image = cleaned["image"]
+        except image_storage.ImageStorageError as exc:
+            return None, [str(exc)]
+
+    try:
+        if talent_id:
+            talent_repository.update(
+                talent_id,
+                cleaned["name"],
+                cleaned["slug"],
+                cleaned["category"],
+                cleaned["city"],
+                cleaned["description"],
+                cleaned["bio"],
+                cleaned["image"],
+                cleaned["instagram_url"],
+                cleaned["youtube_url"],
+                cleaned["tiktok_url"],
+                cleaned["facebook_url"],
+                cleaned["website_url"],
+                cleaned["status"],
+                cleaned["display_order"],
+                cleaned["published_at"],
+            )
+            return talent_id, []
+
+        new_id = talent_repository.insert(
             cleaned["name"],
             cleaned["slug"],
             cleaned["category"],
@@ -214,26 +299,10 @@ def save_talent(data, image_file=None, talent_id=None):
             cleaned["display_order"],
             cleaned["published_at"],
         )
-        return talent_id, []
-
-    new_id = talent_repository.insert(
-        cleaned["name"],
-        cleaned["slug"],
-        cleaned["category"],
-        cleaned["city"],
-        cleaned["description"],
-        cleaned["bio"],
-        cleaned["image"],
-        cleaned["instagram_url"],
-        cleaned["youtube_url"],
-        cleaned["tiktok_url"],
-        cleaned["facebook_url"],
-        cleaned["website_url"],
-        cleaned["status"],
-        cleaned["display_order"],
-        cleaned["published_at"],
-    )
-    return new_id, []
+        return new_id, []
+    except Exception:
+        _remove_uploaded_image(uploaded_image)
+        raise
 
 
 def publish(talent_id):
@@ -256,7 +325,14 @@ def publish(talent_id):
             "name": row["name"],
             "slug": row["slug"],
             "category": row["category"],
+            "city": row["city"],
             "description": row["description"],
+            "image": row["image"],
+            "instagram_url": row["instagram_url"],
+            "youtube_url": row["youtube_url"],
+            "tiktok_url": row["tiktok_url"],
+            "facebook_url": row["facebook_url"],
+            "website_url": row["website_url"],
             "status": "published",
         }
     )
@@ -421,8 +497,8 @@ def get_public_index_context():
 
     talents = list_public_talents()
     cards = [build_public_card(talent) for talent in talents]
-    category_count = len({card["category"] for card in cards if card["category"]})
-    city_count = len({card["city"] for card in cards if card["city"]})
+    category_count = len({talent["category"] for talent in talents if talent["category"]})
+    city_count = len({talent["city"] for talent in talents if talent["city"]})
 
     return {
         "creators": cards,

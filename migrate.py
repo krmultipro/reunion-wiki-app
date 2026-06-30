@@ -363,6 +363,55 @@ def _backfill_talent_slugs(cur) -> int:
     return updated
 
 
+def _dedupe_talent_slugs(cur) -> int:
+    """Rend uniques tous les slugs talents avant la création de l'index.
+
+    Args:
+        cur (sqlite3.Cursor): Curseur de la base cible.
+
+    Returns:
+        int: Nombre de slugs modifiés.
+    """
+
+    cur.execute("SELECT id, name, slug FROM talents ORDER BY id ASC")
+    rows = cur.fetchall()
+    seen = set()
+    updated = 0
+
+    for talent_id, name, slug in rows:
+        base = slugify(slug or "") or slugify(name or "") or f"talent-{talent_id}"
+        candidate = base
+        suffix = 2
+        while candidate in seen:
+            candidate = f"{base}-{suffix}"
+            suffix += 1
+        seen.add(candidate)
+
+        if candidate != (slug or ""):
+            cur.execute("UPDATE talents SET slug = ? WHERE id = ?", (candidate, talent_id))
+            updated += 1
+
+    return updated
+
+
+def _normalize_talent_statuses(cur) -> int:
+    """Convertit les anciens statuts talents vers le workflow courant.
+
+    Args:
+        cur (sqlite3.Cursor): Curseur de la base cible.
+
+    Returns:
+        int: Nombre de talents mis à jour.
+    """
+
+    updates = 0
+    cur.execute("UPDATE talents SET status = 'published' WHERE status = 'valide'")
+    updates += cur.rowcount
+    cur.execute("UPDATE talents SET status = 'draft' WHERE status = 'en_attente'")
+    updates += cur.rowcount
+    return updates
+
+
 def _ensure_talents_table(cur) -> None:
     """Fait évoluer la table talents vers le schéma MVP sans recréation.
 
@@ -389,7 +438,7 @@ def _ensure_talents_table(cur) -> None:
             tiktok_url TEXT DEFAULT '',
             facebook_url TEXT DEFAULT '',
             website_url TEXT DEFAULT '',
-            status TEXT NOT NULL DEFAULT 'en_attente',
+            status TEXT NOT NULL DEFAULT 'draft',
             display_order INTEGER DEFAULT 0,
             published_at TEXT,
             date_created TEXT NOT NULL DEFAULT (DATETIME('now')),
@@ -411,7 +460,7 @@ def _ensure_talents_table(cur) -> None:
     ensure_column(cur, "talents", "tiktok_url", "TEXT DEFAULT ''")
     ensure_column(cur, "talents", "facebook_url", "TEXT DEFAULT ''")
     ensure_column(cur, "talents", "website_url", "TEXT DEFAULT ''")
-    ensure_column(cur, "talents", "status", "TEXT NOT NULL DEFAULT 'en_attente'")
+    ensure_column(cur, "talents", "status", "TEXT NOT NULL DEFAULT 'draft'")
     ensure_column(cur, "talents", "display_order", "INTEGER DEFAULT 0")
     ensure_column(cur, "talents", "published_at", "TEXT")
     ensure_column(cur, "talents", "date_created", "TEXT NOT NULL DEFAULT (DATETIME('now'))")
@@ -419,6 +468,10 @@ def _ensure_talents_table(cur) -> None:
 
     slugs_updated = _backfill_talent_slugs(cur)
     print(f"🔁 Backfill talents.slug effectué sur {slugs_updated} talent(s)")
+    slugs_deduped = _dedupe_talent_slugs(cur)
+    print(f"🔁 Dédoublonnage talents.slug effectué sur {slugs_deduped} talent(s)")
+    statuses_updated = _normalize_talent_statuses(cur)
+    print(f"🔁 Normalisation talents.status effectuée sur {statuses_updated} talent(s)")
 
     cur.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_talents_slug ON talents(slug)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_talents_status ON talents(status)")
