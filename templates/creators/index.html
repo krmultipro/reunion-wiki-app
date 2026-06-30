@@ -23,41 +23,25 @@
 
     <dl class="creators-stats" aria-label="Repères de découverte">
       <div class="creators-stats__item">
-        <dt>Talents présentés</dt>
+        <dt>Talents référencés</dt>
         <dd>{{ stats.creator_count }}</dd>
       </div>
       <div class="creators-stats__item">
-        <dt>Univers créatifs</dt>
+        <dt>Catégories</dt>
         <dd>{{ stats.category_count }}</dd>
       </div>
       <div class="creators-stats__item">
-        <dt>Villes représentées</dt>
+        <dt>Communes représentées</dt>
         <dd>{{ stats.city_count }}</dd>
       </div>
     </dl>
   </section>
 
-  <section class="creator-universe" aria-labelledby="creator-universe-title">
-    <div class="creators-section-head">
-      <p class="creators-section-kicker">Explorer</p>
-      <h2 id="creator-universe-title">Explorer par univers</h2>
-      <p>Parcourez la création locale comme un guide culturel, par ambiance et par discipline.</p>
-    </div>
-    <div class="creator-universe__grid">
-      {% for universe in editorial_universes %}
-      <a class="creator-universe__card" href="#creator-grid">
-        <span>{{ universe.title }}</span>
-        <small>{{ universe.description }}</small>
-      </a>
-      {% endfor %}
-    </div>
-  </section>
-
   <section class="creator-grid-section" aria-labelledby="creator-grid-title">
     <div class="creators-section-head">
-      <p class="creators-section-kicker">Sélection locale</p>
+      <p class="creators-section-kicker">Index talents</p>
       <h2 id="creator-grid-title">Talents à découvrir</h2>
-      <p>Des profils à explorer pour leur univers, leur ancrage local et leur manière de créer.</p>
+      <p>Une liste simple de profils réunionnais à explorer pour leur discipline et leur ancrage local.</p>
     </div>
 
     <div id="creator-grid" class="creator-grid">
@@ -71,105 +55,12 @@
         />
         <div class="creator-card__body">
           <h3 class="creator-card__name">{{ creator.name }}</h3>
-          <p class="creator-card__discipline">{{ creator.discipline }}</p>
+          <p class="creator-card__category">{{ creator.category }}</p>
           <p class="creator-card__city">{{ creator.city }}</p>
           <p class="creator-card__description">{{ creator.description }}</p>
-          <dl class="creator-card__identity">
-            <div>
-              <dt>Univers</dt>
-              <dd>{{ creator.creative_universe }}</dd>
-            </div>
-            <div>
-              <dt>Catégorie</dt>
-              <dd>{{ creator.category }}</dd>
-            </div>
-          </dl>
-          <div class="creator-card__footer">
-            <span>{{ creator.platforms_label }}</span>
-            <span>{{ creator.total_followers_label }} abonnés cumulés</span>
-          </div>
-          <a class="creator-card__button" href="#creator-profile-preview">Lire la fiche</a>
         </div>
       </article>
       {% endfor %}
-    </div>
-  </section>
-
-  <section class="creator-popular" aria-labelledby="creator-popular-title">
-    <div class="creators-section-head">
-      <p class="creators-section-kicker">Mise en lumière</p>
-      <h2 id="creator-popular-title">Portraits réunionnais</h2>
-      <p>Une sélection éditoriale pour découvrir des profils, des disciplines et des univers créatifs locaux.</p>
-    </div>
-    <div class="creator-popular__list">
-      {% for creator in popular_creators %}
-      <article class="creator-popular-card">
-        <img
-          src="{{ url_for('static', filename=creator.image) }}"
-          alt="Portrait temporaire de {{ creator.name }}"
-          loading="lazy"
-        />
-        <div>
-          <h3>{{ creator.name }}</h3>
-          <p>{{ creator.discipline }} à {{ creator.city }}</p>
-          <span>{{ creator.creative_universe }}</span>
-        </div>
-      </article>
-      {% endfor %}
-    </div>
-  </section>
-
-  <section class="creator-regions" aria-labelledby="creator-regions-title">
-    <div class="creators-section-head">
-      <p class="creators-section-kicker">Territoires</p>
-      <h2 id="creator-regions-title">Découverte par région</h2>
-      <p>Un point d'entrée pour repérer les profils par ville et enrichir progressivement le guide.</p>
-    </div>
-    <div class="creator-regions__grid">
-      {% for region in region_cards %}
-      <article class="creator-region-card">
-        <p class="creator-region-card__count">{{ region.count }} profil(s)</p>
-        <h3>{{ region.title }}</h3>
-        <p>{{ region.creator_names }}</p>
-      </article>
-      {% endfor %}
-    </div>
-  </section>
-
-  <section
-    id="creator-profile-preview"
-    class="creator-profile-preview"
-    aria-labelledby="creator-profile-preview-title"
-  >
-    <img
-      class="creator-profile-preview__image"
-      src="{{ url_for('static', filename=featured_creator.image) }}"
-      alt="Portrait temporaire de {{ featured_creator.name }}"
-      loading="lazy"
-    />
-    <div class="creator-profile-preview__body">
-      <p class="creators-section-kicker">Fiche exemple</p>
-      <h2 id="creator-profile-preview-title">{{ featured_creator.name }}</h2>
-      <p class="creator-profile-preview__meta">
-        {{ featured_creator.discipline }} · {{ featured_creator.city }}
-      </p>
-      <p class="creator-profile-preview__description">
-        {{ featured_creator.description }}
-      </p>
-      <dl class="creator-profile-preview__details">
-        <div>
-          <dt>Univers créatif</dt>
-          <dd>{{ featured_creator.creative_universe }}</dd>
-        </div>
-        <div>
-          <dt>Présence en ligne</dt>
-          <dd>{{ featured_creator.platforms_label }}</dd>
-        </div>
-        <div>
-          <dt>Indication réseaux</dt>
-          <dd>{{ featured_creator.total_followers_label }} abonnés cumulés</dd>
-        </div>
-      </dl>
     </div>
   </section>
 </main>
