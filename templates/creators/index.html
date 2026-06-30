@@ -11,13 +11,13 @@
       <p class="creators-hero__eyebrow">Guide découverte</p>
       <h1 id="creators-title" class="creators-hero__title">Créateurs réunionnais</h1>
       <p class="creators-hero__subtitle">
-        Découvrez les créateurs de contenu,
+        Répertoire de créateurs réunionnais :
         youtubeurs, artistes, humoristes,
-        photographes et personnalités locales.
+        photographes et profils locaux.
       </p>
       <p class="creators-hero__note">
-        Une première sélection pour explorer les talents, les univers créatifs
-        et les personnalités qui racontent La Réunion à leur manière.
+        Cette page présente une première sélection de talents référencés,
+        avec leur catégorie, leur commune et une courte description.
       </p>
     </div>
 
@@ -28,7 +28,7 @@
       </div>
       <div class="creators-stats__item">
         <dt>Catégories</dt>
-        <dd>{{ stats.category_count }}</dd>
+        <dd>{{ creators|map(attribute="category")|unique|list|length }}</dd>
       </div>
       <div class="creators-stats__item">
         <dt>Communes représentées</dt>
@@ -39,12 +39,22 @@
 
   <section class="creator-grid-section" aria-labelledby="creator-grid-title">
     <div class="creators-section-head">
-      <p class="creators-section-kicker">Index talents</p>
+      <p class="creators-section-kicker">Index des talents</p>
       <h2 id="creator-grid-title">Talents à découvrir</h2>
-      <p>Une liste simple de profils réunionnais à explorer pour leur discipline et leur ancrage local.</p>
+      <p>Découvrez des créateurs réunionnais référencés sur Réunion Wiki.</p>
     </div>
 
     <div id="creator-grid" class="creator-grid">
+      {% set category_labels = {
+        "Humoristes": "Humoriste",
+        "Youtubeurs": "Youtubeur",
+        "Photographes": "Photographe",
+        "Artistes": "Artiste",
+        "Musiciens": "Musicien",
+        "Créateurs vidéo": "Créateur vidéo",
+        "Lifestyle": "Lifestyle",
+        "Sport": "Sportif"
+      } %}
       {% for creator in creators %}
       <article class="creator-card">
         <img
@@ -55,8 +65,16 @@
         />
         <div class="creator-card__body">
           <h3 class="creator-card__name">{{ creator.name }}</h3>
-          <p class="creator-card__category">{{ creator.category }}</p>
-          <p class="creator-card__city">{{ creator.city }}</p>
+          <p class="creator-card__category">{{ category_labels.get(creator.category, creator.category) }}</p>
+          <p class="creator-card__city">
+            <img
+              class="creator-card__city-icon"
+              src="{{ url_for('static', filename='icons/map.svg') }}"
+              alt=""
+              aria-hidden="true"
+            />
+            <span>{{ creator.city }}</span>
+          </p>
           <p class="creator-card__description">{{ creator.description }}</p>
         </div>
       </article>

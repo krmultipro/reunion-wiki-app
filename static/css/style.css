@@ -1967,7 +1967,7 @@ h1 {
 
 .creators-stats__item {
   min-width: 0;
-  padding: 0.95rem;
+  padding: 1.1rem 1rem;
   border: 1px solid rgba(11, 132, 87, 0.14);
   border-radius: 0.5rem;
   background: rgba(255, 255, 255, 0.76);
@@ -1976,16 +1976,18 @@ h1 {
 .creators-stats dt {
   margin: 0 0 0.35rem;
   color: var(--texte-muet);
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   font-weight: 700;
+  line-height: 1.25;
 }
 
 .creators-stats dd {
   margin: 0;
   color: var(--gris-texte);
   font-family: "Montserrat", sans-serif;
-  font-size: clamp(1.4rem, 4vw, 2rem);
+  font-size: clamp(1.7rem, 7vw, 2.45rem);
   font-weight: 900;
+  line-height: 1;
 }
 
 .creators-section-head {
@@ -2068,9 +2070,18 @@ h1 {
 }
 
 .creator-card__city {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.32rem;
   margin-top: 0.2rem;
   font-weight: 800;
   color: var(--vert-fougere);
+}
+
+.creator-card__city-icon {
+  width: 0.86rem;
+  height: 0.86rem;
+  flex: 0 0 auto;
 }
 
 .creator-card__description {
