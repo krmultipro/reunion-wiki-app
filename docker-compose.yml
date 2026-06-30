@@ -15,15 +15,18 @@ services:
     container_name: web_dev
     user: "0:0" # Permet d'écrire dans le bind mount /data créé par Docker sur un clone propre
     volumes:
+      - .:/app # Monte le code local pour voir les changements sans rebuild
       - ./data:/data # Monte la base locale utilisée par python3 app.py
       - ./uploads_dev:/app/static/uploads # Uploads persistés hors du conteneur
     restart: always
     environment:
-      - FLASK_ENV=production #désactive débug
+      - FLASK_ENV=development # Active la configuration Flask de dev
+      - FLASK_DEBUG=1 # Active le reloader/debugger Flask en local
       - DATABASE_PATH=/data/base.db # Utilise le volume monté pour persister SQLite
       - RATELIMIT_STORAGE_URL=redis://redis_dev:6379/0 # parle au service redis pour le nom interne
       - ADMIN_USERNAME=${ADMIN_USERNAME:-admin} # Identifiant admin local, surchargeable via l'environnement
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin} # Mot de passe admin local, surchargeable via l'environnement
+    command: sh -c "python migrate.py && flask --app app run --host=0.0.0.0 --port=8000 --debug"
     depends_on:
       - redis # Assure que Redis démarre avant l’application Flask
     ports:
