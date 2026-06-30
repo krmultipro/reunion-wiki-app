@@ -28,7 +28,7 @@
       </div>
       <div class="creators-stats__item">
         <dt>Catégories</dt>
-        <dd>{{ creators|map(attribute="category")|unique|list|length }}</dd>
+        <dd>{{ stats.category_count }}</dd>
       </div>
       <div class="creators-stats__item">
         <dt>Communes représentées</dt>
@@ -44,17 +44,8 @@
       <p>Découvrez des créateurs réunionnais référencés sur Réunion Wiki.</p>
     </div>
 
+    {% if creators %}
     <div id="creator-grid" class="creator-grid">
-      {% set category_labels = {
-        "Humoristes": "Humoriste",
-        "Youtubeurs": "Youtubeur",
-        "Photographes": "Photographe",
-        "Artistes": "Artiste",
-        "Musiciens": "Musicien",
-        "Créateurs vidéo": "Créateur vidéo",
-        "Lifestyle": "Lifestyle",
-        "Sport": "Sportif"
-      } %}
       {% for creator in creators %}
       <article class="creator-card">
         <img
@@ -65,7 +56,7 @@
         />
         <div class="creator-card__body">
           <h3 class="creator-card__name">{{ creator.name }}</h3>
-          <p class="creator-card__category">{{ category_labels.get(creator.category, creator.category) }}</p>
+          <p class="creator-card__category">{{ creator.category }}</p>
           <p class="creator-card__city">
             <img
               class="creator-card__city-icon"
@@ -80,6 +71,11 @@
       </article>
       {% endfor %}
     </div>
+    {% else %}
+    <p class="creator-empty">
+      Aucun talent publié pour le moment. Les premiers profils apparaîtront ici après validation.
+    </p>
+    {% endif %}
   </section>
 </main>
 {% endblock %}

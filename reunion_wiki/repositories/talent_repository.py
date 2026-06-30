@@ -170,7 +170,7 @@ def get_published_by_slug(slug):
 
     Returns:
         sqlite3.Row | None:
-            Talent publié ou validé trouvé, ou None.
+            Talent publié trouvé, ou None.
     """
 
     return _fetchone(
@@ -178,7 +178,7 @@ def get_published_by_slug(slug):
         SELECT *
         FROM talents
         WHERE slug = ?
-          AND status IN ('published', 'valide')
+          AND status = 'published'
         """,
         (slug,),
     )
@@ -215,13 +215,13 @@ def list_published(limit=None, offset=0):
 
     Returns:
         list[sqlite3.Row]:
-            Talents publiés ou validés, triés pour l'affichage public.
+            Talents publiés, triés pour l'affichage public.
     """
 
     query = """
         SELECT *
         FROM talents
-        WHERE status IN ('published', 'valide')
+        WHERE status = 'published'
         ORDER BY display_order ASC, name COLLATE NOCASE ASC, id ASC
     """
     if limit is None:
@@ -245,7 +245,7 @@ def list_published_by_category(category, limit=None, offset=0):
     query = """
         SELECT *
         FROM talents
-        WHERE status IN ('published', 'valide')
+        WHERE status = 'published'
           AND category = ?
         ORDER BY display_order ASC, name COLLATE NOCASE ASC, id ASC
     """
@@ -266,7 +266,7 @@ def list_categories():
         """
         SELECT category, COUNT(*) AS total
         FROM talents
-        WHERE status IN ('published', 'valide')
+        WHERE status = 'published'
           AND category IS NOT NULL
           AND TRIM(category) != ''
         GROUP BY category

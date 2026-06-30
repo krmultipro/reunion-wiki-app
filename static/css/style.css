@@ -2029,6 +2029,16 @@ h1 {
   margin-top: 1rem;
 }
 
+.creator-empty {
+  margin: 1rem 0 0;
+  padding: 1rem;
+  border: 1px solid rgba(11, 132, 87, 0.14);
+  border-radius: 0.5rem;
+  background: rgba(255, 255, 255, 0.78);
+  color: #4b565b;
+  line-height: 1.55;
+}
+
 .creator-card {
   display: grid;
   grid-template-columns: 82px 1fr;

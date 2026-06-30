@@ -16,6 +16,7 @@ STATUSES = [
 ]
 STATUS_KEYS = {key for key, _label in STATUSES}
 PUBLIC_STATUS_KEYS = {"published", "valide"}
+DEFAULT_TALENT_IMAGE = "icons/icon-192x192.png"
 
 
 def _now_sql():
@@ -388,6 +389,49 @@ def list_public_categories():
     """
 
     return talent_repository.list_categories()
+
+
+def build_public_card(talent):
+    """Prépare un talent publié pour l'affichage dans l'index public.
+
+    Args:
+        talent (sqlite3.Row): Ligne de talent publiée.
+
+    Returns:
+        dict:
+            Données minimales attendues par le template public.
+    """
+
+    return {
+        "image": talent["image"] or DEFAULT_TALENT_IMAGE,
+        "name": talent["name"],
+        "category": talent["category"] or "Talent réunionnais",
+        "city": talent["city"] or "La Réunion",
+        "description": talent["description"] or "",
+    }
+
+
+def get_public_index_context():
+    """Prépare les données publiques de la page des créateurs réunionnais.
+
+    Returns:
+        dict:
+            Dictionnaire contenant les talents publiés et les statistiques.
+    """
+
+    talents = list_public_talents()
+    cards = [build_public_card(talent) for talent in talents]
+    category_count = len({card["category"] for card in cards if card["category"]})
+    city_count = len({card["city"] for card in cards if card["city"]})
+
+    return {
+        "creators": cards,
+        "stats": {
+            "creator_count": len(cards),
+            "category_count": category_count,
+            "city_count": city_count,
+        },
+    }
 
 
 def get_admin_list(status=None, category=None, q=None, sort="recent", page=1, per_page=20):
