@@ -209,6 +209,7 @@ def register_legacy_blueprint_endpoints(bp_name, endpoint_names):
 # helpers applicatifs, donc on évite de les charger avant que Flask soit prêt.
 from .routes.admin import admin_bp
 from .routes.admin_content import admin_content_bp
+from .routes.admin_talents import admin_talents_bp
 from .routes.content import content_bp
 from .routes.creators import creators_bp
 from .routes.public import public_bp
@@ -217,6 +218,7 @@ from .routes.seo import seo_bp
 # Les routes sont séparées par domaine : admin, public, SEO/fichiers spéciaux.
 app.register_blueprint(admin_bp)
 app.register_blueprint(admin_content_bp)
+app.register_blueprint(admin_talents_bp)
 app.register_blueprint(creators_bp)
 app.register_blueprint(public_bp)
 app.register_blueprint(seo_bp)

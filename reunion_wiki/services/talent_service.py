@@ -4,6 +4,7 @@ from datetime import datetime
 
 from ..repositories import talent_repository
 from ..utils import slugify
+from . import image_storage
 
 
 STATUSES = [
@@ -164,11 +165,12 @@ def normalize_talent_data(data, existing=None, talent_id=None):
     }
 
 
-def save_talent(data, talent_id=None):
+def save_talent(data, image_file=None, talent_id=None):
     """Crée ou met à jour un talent en appliquant les règles métier.
 
     Args:
         data (dict): Données du talent.
+        image_file: FileStorage optionnel pour l'image du talent.
         talent_id (int | None): Identifiant si mise à jour, None si création.
 
     Returns:
@@ -181,6 +183,13 @@ def save_talent(data, talent_id=None):
         return None, ["Talent introuvable."]
 
     cleaned = normalize_talent_data(data, existing=existing, talent_id=talent_id)
+    cleaned["image"] = existing["image"] if existing else cleaned["image"]
+    if image_file is not None and getattr(image_file, "filename", ""):
+        try:
+            cleaned["image"] = image_storage.save_upload(image_file)
+        except image_storage.ImageStorageError as exc:
+            return None, [str(exc)]
+
     errors = validate_talent_data(cleaned)
     if errors:
         return None, errors
@@ -306,6 +315,20 @@ def delete_talent(talent_id):
     """
 
     return talent_repository.delete(talent_id) > 0
+
+
+def get_talent(talent_id):
+    """Récupère un talent par identifiant pour l'administration.
+
+    Args:
+        talent_id (int): Identifiant du talent.
+
+    Returns:
+        sqlite3.Row | None:
+            Talent trouvé ou None.
+    """
+
+    return talent_repository.get_by_id(talent_id)
 
 
 def get_public_talent(slug):
