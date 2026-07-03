@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block seo_title %}{{ seo_title }}{% endblock %}
+{% block seo_description %}{{ seo_description }}{% endblock %}
+{% block intro_text %}{% endblock %}
+
+{% block content %}
+<main class="creator-detail-page">
+  <nav class="creator-detail-breadcrumb" aria-label="Fil d'Ariane">
+    <a href="{{ url_for('creators_index') }}">Créateurs réunionnais</a>
+  </nav>
+
+  <article class="creator-profile">
+    <div class="creator-profile__media">
+      <img
+        class="creator-profile__image"
+        src="{{ url_for('static', filename=image) }}"
+        alt="Portrait de {{ talent['name'] }}"
+      />
+    </div>
+
+    <div class="creator-profile__content">
+      <h1 class="creator-profile__title">{{ talent['name'] }}</h1>
+
+      {% if talent['description'] %}
+      <p class="creator-profile__lead">{{ talent['description'] }}</p>
+      {% endif %}
+
+      <ul class="creator-profile__badges" aria-label="Informations principales">
+        {% if talent['entity_type'] != "person" %}
+        <li>{{ entity_type_label }}</li>
+        {% endif %}
+        <li>{{ talent['category'] or "Culture numérique réunionnaise" }}</li>
+        {% if talent['city'] and talent['city'] != "La Réunion" %}
+        <li>{{ talent['city'] }}</li>
+        {% endif %}
+      </ul>
+
+      {% if primary_social %}
+      <a
+        class="creator-profile__primary-link"
+        href="{{ primary_social.url }}"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        Découvrir sur {{ primary_social.label }}
+      </a>
+      {% endif %}
+    </div>
+  </article>
+
+  {% if talent['bio'] %}
+  <section class="creator-detail-section" aria-labelledby="creator-bio-title">
+    <p class="creators-section-kicker">Parcours</p>
+    <h2 id="creator-bio-title">À propos de {{ talent['name'] }}</h2>
+    <div class="creator-detail-section__text">
+      {{ talent['bio']|replace('\n', '<br>')|safe }}
+    </div>
+  </section>
+  {% endif %}
+
+  {% if secondary_social_links %}
+  <section class="creator-detail-section" aria-labelledby="creator-links-title">
+    <p class="creators-section-kicker">Présence en ligne</p>
+    <h2 id="creator-links-title">Autres réseaux et liens officiels</h2>
+    <div class="creator-social-links">
+      {% for link in secondary_social_links %}
+      <a
+        class="creator-social-link"
+        href="{{ link.url }}"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="{{ link.aria_label }} de {{ talent['name'] }}"
+      >
+        {{ link.label }}
+      </a>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  {% if similar_talents %}
+  <section class="creator-detail-section" aria-labelledby="similar-creators-title">
+    <p class="creators-section-kicker">À explorer aussi</p>
+    <h2 id="similar-creators-title">Talents similaires</h2>
+    <p class="creator-detail-section__intro">
+      Découvrez d'autres créateurs susceptibles de vous intéresser.
+    </p>
+    <div class="creator-grid creator-grid--compact">
+      {% for creator in similar_talents %}
+      <a class="creator-card" href="{{ url_for('creators.creator_detail', slug=creator.slug) }}">
+        <img
+          class="creator-card__image"
+          src="{{ url_for('static', filename=creator.image) }}"
+          alt="Portrait de {{ creator.name }}"
+          loading="lazy"
+        />
+        <div class="creator-card__body">
+          <h3 class="creator-card__name">{{ creator.name }}</h3>
+          <p class="creator-card__category">{{ creator.category }}</p>
+          <p class="creator-card__description">{{ creator.description }}</p>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+</main>
+{% endblock %}

@@ -27,6 +27,14 @@ ENTITY_TYPES = [
     ("podcast", "Podcast"),
 ]
 ENTITY_TYPE_KEYS = {key for key, _label in ENTITY_TYPES}
+ENTITY_TYPE_LABELS = {key: label for key, label in ENTITY_TYPES}
+SOCIAL_LINK_DEFINITIONS = (
+    ("instagram_url", "Instagram", "Instagram"),
+    ("youtube_url", "YouTube", "YouTube"),
+    ("tiktok_url", "TikTok", "TikTok"),
+    ("facebook_url", "Facebook", "Facebook"),
+    ("website_url", "Site web", "Site web"),
+)
 DEFAULT_TALENT_IMAGE = "icons/icon-192x192.png"
 MAX_LENGTHS = {
     "name": 160,
@@ -567,6 +575,43 @@ def get_public_talent(slug):
     return talent_repository.get_published_by_slug(slug)
 
 
+def get_public_talent_detail_context(slug):
+    """Prépare le contexte public d'une fiche créateur.
+
+    Args:
+        slug (str): Slug public du talent.
+
+    Returns:
+        dict | None:
+            Contexte de rendu, ou None si le talent publié n'existe pas.
+    """
+
+    talent = get_public_talent(slug)
+    if not talent:
+        return None
+
+    social_links = _build_social_links(talent)
+    similar_rows = talent_repository.list_similar_published(
+        talent["id"],
+        talent["category_id"],
+        talent["entity_type"],
+        limit=3,
+    )
+    seo = _build_talent_seo(talent)
+
+    return {
+        "talent": talent,
+        "image": talent["image"] or DEFAULT_TALENT_IMAGE,
+        "entity_type_label": _entity_type_label(talent["entity_type"]),
+        "social_links": social_links,
+        "primary_social": _primary_social_link(social_links),
+        "secondary_social_links": social_links[1:],
+        "similar_talents": [build_public_card(row) for row in similar_rows],
+        "seo_title": seo["title"],
+        "seo_description": seo["description"],
+    }
+
+
 def list_public_talents(limit=None, offset=0):
     """Retourne les talents publics pour une future liste.
 
@@ -612,6 +657,99 @@ def list_public_categories():
     return talent_repository.list_categories()
 
 
+def _entity_type_label(entity_type):
+    """Retourne le libellé public d'un type d'entité talent.
+
+    Args:
+        entity_type (str): Clé de type d'entité.
+
+    Returns:
+        str:
+            Libellé lisible par l'utilisateur.
+    """
+
+    return ENTITY_TYPE_LABELS.get(entity_type, "Talent réunionnais")
+
+
+def _build_social_links(talent):
+    """Construit la liste des réseaux disponibles pour un talent.
+
+    Args:
+        talent (sqlite3.Row): Talent publié.
+
+    Returns:
+        list[dict]:
+            Liens sociaux disponibles dans l'ordre de priorité.
+    """
+
+    links = []
+    for field, label, aria_label in SOCIAL_LINK_DEFINITIONS:
+        url = talent[field]
+        if url:
+            links.append({
+                "field": field,
+                "label": label,
+                "aria_label": aria_label,
+                "url": url,
+            })
+    return links
+
+
+def _primary_social_link(social_links):
+    """Retourne le réseau principal selon l'ordre de priorité éditorial.
+
+    Args:
+        social_links (list[dict]): Liens sociaux disponibles.
+
+    Returns:
+        dict | None:
+            Premier lien disponible, ou None.
+    """
+
+    return social_links[0] if social_links else None
+
+
+def _truncate_text(value, max_length=155):
+    """Raccourcit un texte pour une meta description.
+
+    Args:
+        value (str | None): Texte source.
+        max_length (int): Longueur maximale.
+
+    Returns:
+        str:
+            Texte raccourci proprement.
+    """
+
+    text = " ".join((value or "").split())
+    if len(text) <= max_length:
+        return text
+    return text[: max_length - 1].rstrip() + "…"
+
+
+def _build_talent_seo(talent):
+    """Construit les métadonnées SEO d'une fiche créateur.
+
+    Args:
+        talent (sqlite3.Row): Talent publié.
+
+    Returns:
+        dict:
+            Titre et description SEO.
+    """
+
+    category = talent["category"] or "création réunionnaise"
+    city = talent["city"] or "La Réunion"
+    entity_label = _entity_type_label(talent["entity_type"]).lower()
+    title = f"{talent['name']} - {category} à {city} | Réunion Wiki"
+    fallback = (
+        f"Découvrez {talent['name']}, {entity_label} de La Réunion référencé "
+        f"dans le guide des créateurs réunionnais."
+    )
+    description = _truncate_text(talent["description"] or talent["bio"] or fallback)
+    return {"title": title, "description": description}
+
+
 def build_public_card(talent):
     """Prépare un talent publié pour l'affichage dans l'index public.
 
@@ -624,6 +762,7 @@ def build_public_card(talent):
     """
 
     return {
+        "slug": talent["slug"],
         "image": talent["image"] or DEFAULT_TALENT_IMAGE,
         "name": talent["name"],
         "category": talent["category"] or "Talent réunionnais",

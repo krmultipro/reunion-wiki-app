@@ -47,7 +47,7 @@
     {% if creators %}
     <div id="creator-grid" class="creator-grid">
       {% for creator in creators %}
-      <article class="creator-card">
+      <a class="creator-card" href="{{ url_for('creators.creator_detail', slug=creator.slug) }}">
         <img
           class="creator-card__image"
           src="{{ url_for('static', filename=creator.image) }}"
@@ -68,7 +68,7 @@
           </p>
           <p class="creator-card__description">{{ creator.description }}</p>
         </div>
-      </article>
+      </a>
       {% endfor %}
     </div>
     {% else %}

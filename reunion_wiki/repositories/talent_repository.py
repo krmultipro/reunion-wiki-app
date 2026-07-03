@@ -301,6 +301,41 @@ def list_published_by_category(category, limit=None, offset=0):
     return _fetchall(f"{query} LIMIT ? OFFSET ?", (category, limit, offset))
 
 
+def list_similar_published(talent_id, category_id, entity_type, limit=3):
+    """Liste des talents publics proches d'un talent donné.
+
+    Args:
+        talent_id (int): Talent courant à exclure.
+        category_id (int): Catégorie prioritaire.
+        entity_type (str): Type d'entité de repli.
+        limit (int): Nombre maximum de talents retournés.
+
+    Returns:
+        list[sqlite3.Row]:
+            Talents publiés similaires, même catégorie en priorité.
+    """
+
+    return _fetchall(
+        f"""
+        SELECT {TALENT_SELECT_FIELDS}
+        {TALENT_JOIN_SQL}
+        WHERE t.status = 'published'
+          AND t.id != ?
+          AND (
+              t.category_id = ?
+              OR t.entity_type = ?
+          )
+        ORDER BY
+            CASE WHEN t.category_id = ? THEN 0 ELSE 1 END,
+            t.display_order ASC,
+            t.name COLLATE NOCASE ASC,
+            t.id ASC
+        LIMIT ?
+        """,
+        (talent_id, category_id, entity_type, category_id, limit),
+    )
+
+
 def list_categories():
     """Retourne les catégories représentées par des talents publics.
 
