@@ -102,7 +102,12 @@ Préférer des phrases simples.
 
 Description idéale :
 
-2 à 4 phrases.
+Généralement 2 phrases.
+
+La première présente le créateur et son activité principale.
+
+La seconde décrit le type de contenus, les projets ou les plateformes sur
+lesquels il est actif.
 
 Environ :
 
