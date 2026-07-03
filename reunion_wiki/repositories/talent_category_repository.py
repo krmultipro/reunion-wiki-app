@@ -137,6 +137,29 @@ def get_by_name(name):
     )
 
 
+def get_by_name_excluding_id(name, category_id):
+    """Récupère une catégorie talent par nom en ignorant un identifiant.
+
+    Args:
+        name (str): Nom de catégorie talent.
+        category_id (int): Identifiant de catégorie à exclure.
+
+    Returns:
+        sqlite3.Row | None:
+            Catégorie trouvée ou None.
+    """
+
+    return _fetchone(
+        """
+        SELECT id, name, slug
+        FROM talent_categories
+        WHERE name = ?
+          AND id != ?
+        """,
+        (name, category_id),
+    )
+
+
 def get_by_slug(slug):
     """Récupère une catégorie talent à partir de son slug.
 
@@ -155,6 +178,29 @@ def get_by_slug(slug):
         WHERE slug = ?
         """,
         (slug,),
+    )
+
+
+def get_by_slug_excluding_id(slug, category_id):
+    """Récupère une catégorie talent par slug en ignorant un identifiant.
+
+    Args:
+        slug (str): Slug de catégorie talent.
+        category_id (int): Identifiant de catégorie à exclure.
+
+    Returns:
+        sqlite3.Row | None:
+            Catégorie trouvée ou None.
+    """
+
+    return _fetchone(
+        """
+        SELECT id, name, slug
+        FROM talent_categories
+        WHERE slug = ?
+          AND id != ?
+        """,
+        (slug, category_id),
     )
 
 

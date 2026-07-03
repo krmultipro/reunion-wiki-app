@@ -12,6 +12,7 @@
     </div>
     <div class="admin-dashboard__actions">
       <a class="btn btn-primary" href="{{ url_for('admin_talents.new_talent') }}">+ Nouveau talent</a>
+      <a class="btn btn-secondary" href="{{ url_for('admin_talent_categories.list_categories') }}">Catégories créateurs</a>
       <a class="btn btn-secondary" href="{{ url_for('admin_dashboard') }}">Tableau de bord</a>
       <form method="post" action="{{ url_for('admin_logout') }}" class="admin-inline-form">
         {{ admin_logout_form.hidden_tag() }}

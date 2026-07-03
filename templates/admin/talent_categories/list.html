@@ -1,20 +1,18 @@
 {% extends "base.html" %}
 
-{% block seo_title %}Catégories - Réunion Wiki{% endblock %}
-{% block seo_description %}Gestion des catégories utilisées par les sites.{% endblock %}
+{% block seo_title %}Catégories créateurs - Réunion Wiki{% endblock %}
+{% block seo_description %}Gestion des catégories utilisées par les créateurs.{% endblock %}
 
 {% block content %}
 <section class="admin-dashboard">
   <header class="admin-dashboard__header">
     <div class="admin-dashboard__intro">
-      <h1>Catégories</h1>
+      <h1>Catégories créateurs</h1>
       <p>Bonjour {{ admin_username or "admin" }}.</p>
     </div>
     <div class="admin-dashboard__actions">
-      <a class="btn btn-primary" href="{{ url_for('admin_create_category') }}">+ Ajouter une catégorie</a>
-      <a class="btn btn-secondary" href="{{ url_for('admin_talent_categories.list_categories') }}">Catégories créateurs</a>
-      <a class="btn btn-secondary" href="{{ url_for('admin_clicks') }}">Clics</a>
-      <a class="btn btn-secondary" href="{{ url_for('admin_sites') }}">Sites</a>
+      <a class="btn btn-primary" href="{{ url_for('admin_talent_categories.new_category') }}">+ Ajouter une catégorie</a>
+      <a class="btn btn-secondary" href="{{ url_for('admin_talents.list_talents') }}">Créateurs</a>
       <a class="btn btn-secondary" href="{{ url_for('admin_dashboard') }}">Tableau de bord</a>
       <form method="post" action="{{ url_for('admin_logout') }}" class="admin-inline-form">
         {{ admin_logout_form.hidden_tag() }}
@@ -30,19 +28,17 @@
         <tr>
           <th>Nom</th>
           <th>Slug</th>
-          <th>Créée le</th>
           <th>Actions</th>
         </tr>
       </thead>
       <tbody>
         {% for cat in categories_ %}
         <tr>
-          <td class="admin-table__cell--title" data-label="Nom">{{ cat['nom'] }}</td>
+          <td class="admin-table__cell--title" data-label="Nom">{{ cat['name'] }}</td>
           <td data-label="Slug">{{ cat['slug'] }}</td>
-          <td data-label="Créée le">{{ cat['created_at']|format_date("%d/%m/%Y %H:%M") }}</td>
           <td class="admin-table__cell--actions admin-table__cell--actions--compact" data-label="Actions">
-            <a class="btn btn-edit" href="{{ url_for('admin_edit_category', category_id=cat['id']) }}">Modifier</a>
-            <form method="post" action="{{ url_for('admin_delete_category', category_id=cat['id']) }}" class="admin-table__form" onsubmit="return confirm('Supprimer cette catégorie ?');">
+            <a class="btn btn-edit" href="{{ url_for('admin_talent_categories.edit_category', category_id=cat['id']) }}">Modifier</a>
+            <form method="post" action="{{ url_for('admin_talent_categories.delete_category', category_id=cat['id']) }}" class="admin-table__form" onsubmit="return confirm('Supprimer cette catégorie créateur ?');">
               {{ delete_forms[cat['id']].csrf_token }}
               {{ delete_forms[cat['id']].category_id(value=cat['id']) }}
               <button type="submit" class="btn btn-delete">Supprimer</button>
@@ -54,7 +50,7 @@
     </table>
   </div>
   {% else %}
-  <p class="admin-empty">Aucune catégorie enregistrée.</p>
+  <p class="admin-empty">Aucune catégorie créateur enregistrée.</p>
   {% endif %}
 </section>
 {% endblock %}
