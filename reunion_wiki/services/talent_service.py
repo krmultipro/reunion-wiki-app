@@ -152,9 +152,10 @@ def _remove_uploaded_image(relative_path):
     if not relative_path:
         return
 
-    static_root = os.path.abspath(current_app.static_folder)
-    absolute_path = os.path.abspath(os.path.join(static_root, relative_path))
-    if os.path.commonpath([static_root, absolute_path]) != static_root:
+    upload_root = os.path.abspath(current_app.config["UPLOAD_FOLDER"])
+    relative_upload_path = relative_path.removeprefix("uploads/").lstrip("/")
+    absolute_path = os.path.abspath(os.path.join(upload_root, relative_upload_path))
+    if os.path.commonpath([upload_root, absolute_path]) != upload_root:
         return
     try:
         os.remove(absolute_path)
@@ -395,7 +396,7 @@ def save_talent(data, image_file=None, talent_id=None):
     uploaded_image = None
     if image_file is not None and getattr(image_file, "filename", ""):
         try:
-            cleaned["image"] = image_storage.save_upload(image_file)
+            cleaned["image"] = image_storage.save_upload(image_file, namespace="talents")
             uploaded_image = cleaned["image"]
         except image_storage.ImageStorageError as exc:
             return None, [str(exc)]

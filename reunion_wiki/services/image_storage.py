@@ -33,18 +33,22 @@ def _extension(filename: str) -> str:
     return filename.rsplit(".", 1)[-1].lower()
 
 
-def save_upload(file_storage):
+def save_upload(file_storage, namespace=None):
     """Valide et enregistre une image uploadée sur le disque.
 
-    L'image est écrite sous `static/uploads/AAAA/MM/` avec un nom de fichier
+    L'image est écrite sous le dossier configuré `UPLOAD_FOLDER`, avec un nom
     sécurisé et un préfixe aléatoire pour éviter les collisions. Seul le chemin
-    relatif est retourné : il a vocation à être stocké en base, jamais le binaire.
+    relatif au dossier statique est retourné : il a vocation à être stocké en
+    base, jamais le binaire.
 
     Args:
         file_storage: Objet `FileStorage` issu d'un FileField WTForms.
+        namespace (str | None): Sous-dossier métier optionnel, par exemple
+            `talents` ou `content`.
 
     Returns:
-        str: Chemin relatif au dossier statique (ex: 'uploads/2026/06/ab12-x.jpg').
+        str: Chemin relatif au dossier statique
+            (ex: 'uploads/talents/2026/06/ab12-x.jpg').
 
     Raises:
         ImageStorageError: Si l'extension, le type MIME ou la taille sont invalides.
@@ -74,8 +78,13 @@ def save_upload(file_storage):
         raise ImageStorageError("Image trop lourde (3 Mo maximum).")
 
     now = datetime.utcnow()
-    relative_dir = os.path.join("uploads", now.strftime("%Y"), now.strftime("%m"))
-    absolute_dir = os.path.join(current_app.static_folder, relative_dir)
+    parts = [now.strftime("%Y"), now.strftime("%m")]
+    if namespace:
+        parts.insert(0, secure_filename(namespace))
+
+    relative_dir = os.path.join(*parts)
+    upload_root = current_app.config["UPLOAD_FOLDER"]
+    absolute_dir = os.path.join(upload_root, relative_dir)
     os.makedirs(absolute_dir, exist_ok=True)
 
     safe_name = secure_filename(filename) or f"image.{extension}"
@@ -84,4 +93,4 @@ def save_upload(file_storage):
     file_storage.save(absolute_path)
 
     # Toujours en séparateurs URL pour un usage direct dans les templates.
-    return os.path.join(relative_dir, unique_name).replace(os.sep, "/")
+    return os.path.join("uploads", relative_dir, unique_name).replace(os.sep, "/")

@@ -201,7 +201,7 @@ def save_content(data, image_file=None, content_id=None):
     featured_image = existing["featured_image"] if existing else None
     if image_file is not None and getattr(image_file, "filename", ""):
         try:
-            featured_image = image_storage.save_upload(image_file)
+            featured_image = image_storage.save_upload(image_file, namespace="content")
         except image_storage.ImageStorageError as exc:
             return None, [str(exc)]
 

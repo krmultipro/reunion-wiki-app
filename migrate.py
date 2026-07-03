@@ -11,6 +11,8 @@ app = Flask(__name__)
 env = os.getenv("FLASK_ENV", "development")
 app.config.from_object(config.get(env, config["default"]))
 DATABASE_PATH = app.config["DATABASE_PATH"]
+UPLOAD_FOLDER = app.config["UPLOAD_FOLDER"]
+PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 
 CANONICAL_VILLES = [
     (1, "Les Avirons", "les-avirons"),
@@ -75,6 +77,83 @@ def ensure_column(cur, table_name: str, column_name: str, definition: str) -> No
     if not column_exists(cur, table_name, column_name):
         print(f"➕ Ajout colonne {table_name}.{column_name}")
         cur.execute(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {definition}")
+
+
+def _next_upload_collision_path(path: str) -> str:
+    """Retourne un chemin disponible en cas de collision de fichier uploadé.
+
+    Args:
+        path (str): Chemin cible initial.
+
+    Returns:
+        str:
+            Chemin disponible sans écraser un fichier existant.
+    """
+
+    root, extension = os.path.splitext(path)
+    suffix = 2
+    candidate = f"{root}-legacy-{suffix}{extension}"
+    while os.path.exists(candidate):
+        suffix += 1
+        candidate = f"{root}-legacy-{suffix}{extension}"
+    return candidate
+
+
+def _copy_upload_source(source_dir: str, target_root: str) -> int:
+    """Copie les uploads d'un ancien dossier vers le dossier persistant.
+
+    Args:
+        source_dir (str): Ancienne racine des uploads.
+        target_root (str): Nouvelle racine persistante.
+
+    Returns:
+        int:
+            Nombre de fichiers copiés.
+    """
+
+    if not os.path.isdir(source_dir):
+        return 0
+
+    source_dir = os.path.abspath(source_dir)
+    target_root = os.path.abspath(target_root)
+    if source_dir == target_root:
+        return 0
+
+    copied = 0
+    for current_dir, _dirnames, filenames in os.walk(source_dir):
+        for filename in filenames:
+            source_path = os.path.join(current_dir, filename)
+            relative_path = os.path.relpath(source_path, source_dir)
+            target_path = os.path.join(target_root, relative_path)
+            if os.path.abspath(source_path) == os.path.abspath(target_path):
+                continue
+            os.makedirs(os.path.dirname(target_path), exist_ok=True)
+            if os.path.exists(target_path):
+                if os.path.getsize(source_path) == os.path.getsize(target_path):
+                    continue
+                target_path = _next_upload_collision_path(target_path)
+            shutil.copy2(source_path, target_path)
+            copied += 1
+    return copied
+
+
+def _migrate_upload_files() -> None:
+    """Regroupe les anciens uploads dans le dossier persistant configuré."""
+
+    os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+    sources = [
+        os.path.join(PROJECT_ROOT, "static", "uploads"),
+        os.path.join(PROJECT_ROOT, "uploads_dev"),
+        os.path.join(PROJECT_ROOT, "uploads_prod"),
+    ]
+    total = 0
+    for source in sources:
+        copied = _copy_upload_source(source, UPLOAD_FOLDER)
+        if copied:
+            print(f"🖼️ Uploads copiés depuis {source}: {copied} fichier(s)")
+            total += copied
+    if not total:
+        print("🖼️ Aucun ancien upload à migrer")
 
 
 def rename_column_if_needed(cur, table_name: str, old_name: str, new_name: str) -> None:
@@ -633,6 +712,7 @@ def main():
     db_dir = os.path.dirname(DATABASE_PATH)
     if db_dir:
         os.makedirs(db_dir, exist_ok=True)
+    _migrate_upload_files()
 
     # Backup auto
     os.makedirs("backups", exist_ok=True)

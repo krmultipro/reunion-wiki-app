@@ -28,6 +28,12 @@ class Config:
         DATABASE_PATH = os.path.join(BASE_DIR, DATABASE_PATH)
         
     print("DATABASE_PATH final:", DATABASE_PATH)
+
+    UPLOAD_FOLDER = os.getenv("UPLOAD_FOLDER")
+    if not UPLOAD_FOLDER:
+        UPLOAD_FOLDER = os.path.join(os.path.dirname(DATABASE_PATH), "uploads")
+    elif not os.path.isabs(UPLOAD_FOLDER):
+        UPLOAD_FOLDER = os.path.join(BASE_DIR, UPLOAD_FOLDER)
     
     # NOTIFICATIONS : configuration email (désactivée par défaut)
     MAIL_ENABLED = os.getenv('MAIL_ENABLED', 'false').lower() == 'true'

@@ -15,12 +15,12 @@ cp data_prod/base.db data_prod/base.db.bak-$(date +%Y%m%d)
 ## 2. Créer les dossiers requis
 
 ```bash
-# Dossier uploads production (bind mount Flask + Nginx)
-mkdir -p uploads_prod
+# Dossier uploads production dans /data
+mkdir -p data_prod/uploads
 
 # L'UID 1000 correspond à appuser dans l'image python:3.10-slim
-chown 1000:1000 uploads_prod
-chmod 755 uploads_prod
+chown 1000:1000 data_prod data_prod/uploads
+chmod 755 data_prod data_prod/uploads
 ```
 
 > Sans ce `chown`, Flask (appuser) ne peut pas écrire dans le dossier → uploads silencieusement refusés.
