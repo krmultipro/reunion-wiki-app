@@ -7,7 +7,7 @@ from urllib.parse import urlparse
 from flask import current_app
 
 from ..repositories import site_repository, talent_category_repository, talent_repository
-from ..utils import slugify, slugify_ville
+from ..utils import slugify
 from . import image_storage
 
 
@@ -174,32 +174,6 @@ def generate_unique_slug(name, slug_input=None, exclude_id=None):
     return candidate
 
 
-def _find_talent_category_by_name(name):
-    """Récupère une catégorie talent existante par nom.
-
-    Args:
-        name (str | None): Nom à résoudre.
-
-    Returns:
-        sqlite3.Row | None:
-            Catégorie trouvée, ou None.
-    """
-
-    normalized = _clean_text(name)
-    if not normalized:
-        return None
-
-    row = talent_category_repository.get_by_name(normalized)
-    if row:
-        return row
-
-    expected = normalized.casefold()
-    for category in talent_category_repository.list_all():
-        if (category["name"] or "").strip().casefold() == expected:
-            return category
-    return None
-
-
 def _get_city_by_id(city_id):
     """Récupère une ville par identifiant via les repositories existants.
 
@@ -221,23 +195,6 @@ def _get_city_by_id(city_id):
     return None
 
 
-def _find_city_by_name(name):
-    """Récupère une ville existante par son nom.
-
-    Args:
-        name (str | None): Nom de ville à résoudre.
-
-    Returns:
-        sqlite3.Row | None:
-            Ville trouvée, ou None.
-    """
-
-    normalized = _clean_optional_text(name)
-    if not normalized:
-        return None
-    return site_repository.get_city_by_slug(slugify_ville(normalized))
-
-
 def _resolve_category_reference(data):
     """Résout la catégorie obligatoire d'un talent vers category_id.
 
@@ -255,15 +212,6 @@ def _resolve_category_reference(data):
         if not category:
             return ["La catégorie sélectionnée est introuvable."]
         data["category_id"] = category["id"]
-        data["category_name"] = category["name"]
-        return []
-
-    # Compatibilité temporaire avec l'ancien formulaire qui transmet un nom.
-    # À supprimer lors de la phase finale de migration.
-    category = _find_talent_category_by_name(data.get("_legacy_category_name"))
-    if category:
-        data["category_id"] = category["id"]
-        data["category_name"] = category["name"]
         return []
 
     return ["La catégorie est obligatoire et doit correspondre à une catégorie existante."]
@@ -286,23 +234,9 @@ def _resolve_city_reference(data):
         if not city:
             return ["La commune sélectionnée est introuvable."]
         data["city_id"] = city["id"]
-        data["city_name"] = city["nom"]
         return []
 
-    # Compatibilité temporaire avec l'ancien formulaire qui transmet un nom.
-    # À supprimer lors de la phase finale de migration.
-    legacy_city_name = data.get("_legacy_city_name")
-    if not legacy_city_name:
-        data["city_id"] = None
-        data["city_name"] = None
-        return []
-
-    city = _find_city_by_name(legacy_city_name)
-    if not city:
-        return ["La commune sélectionnée est introuvable."]
-
-    data["city_id"] = city["id"]
-    data["city_name"] = city["nom"]
+    data["city_id"] = None
     return []
 
 
@@ -406,8 +340,6 @@ def normalize_talent_data(data, existing=None, talent_id=None):
         "slug": generate_unique_slug(name, data.get("slug"), exclude_id=talent_id),
         "category_id": _clean_optional_int(data.get("category_id")),
         "city_id": _clean_optional_int(data.get("city_id")),
-        "_legacy_category_name": _clean_text(data.get("category"), 120),
-        "_legacy_city_name": _clean_optional_text(data.get("city"), 120),
         "description": _clean_text(data.get("description"), 500),
         "bio": _clean_optional_text(data.get("bio")),
         "image": _clean_optional_text(data.get("image"), 255),
@@ -456,14 +388,12 @@ def save_talent(data, image_file=None, talent_id=None):
 
     try:
         if talent_id:
-            # Compatibilité temporaire avec les anciennes colonnes category/city.
-            # À supprimer lors de la phase finale de migration.
             talent_repository.update(
                 talent_id,
                 cleaned["name"],
                 cleaned["slug"],
-                cleaned["category_name"],
-                cleaned["city_name"],
+                cleaned["category_id"],
+                cleaned["city_id"],
                 cleaned["description"],
                 cleaned["bio"],
                 cleaned["image"],
@@ -478,13 +408,11 @@ def save_talent(data, image_file=None, talent_id=None):
             )
             return talent_id, []
 
-        # Compatibilité temporaire avec les anciennes colonnes category/city.
-        # À supprimer lors de la phase finale de migration.
         new_id = talent_repository.insert(
             cleaned["name"],
             cleaned["slug"],
-            cleaned["category_name"],
-            cleaned["city_name"],
+            cleaned["category_id"],
+            cleaned["city_id"],
             cleaned["description"],
             cleaned["bio"],
             cleaned["image"],

@@ -96,8 +96,8 @@ def _insert(query, params=()):
 
 
 ADMIN_SORTS = {
-    "recent": "t.date_updated DESC, t.id DESC",
-    "oldest": "t.date_updated ASC, t.id ASC",
+    "recent": "t.id DESC",
+    "oldest": "t.id ASC",
     "name_asc": "t.name COLLATE NOCASE ASC, t.id ASC",
     "name_desc": "t.name COLLATE NOCASE DESC, t.id DESC",
     "display_order": "t.display_order ASC, t.name COLLATE NOCASE ASC, t.id ASC",
@@ -107,8 +107,8 @@ TALENT_SELECT_FIELDS = """
     t.id,
     t.name,
     t.slug,
-    COALESCE(tc.name, t.category) AS category,
-    COALESCE(v.nom, t.city) AS city,
+    tc.name AS category,
+    v.nom AS city,
     t.category_id,
     t.city_id,
     t.description,
@@ -122,8 +122,8 @@ TALENT_SELECT_FIELDS = """
     t.status,
     t.display_order,
     t.published_at,
-    t.date_created,
-    t.date_updated
+    NULL AS date_created,
+    NULL AS date_updated
 """
 
 TALENT_JOIN_SQL = """
@@ -132,28 +132,8 @@ TALENT_JOIN_SQL = """
     LEFT JOIN villes v ON v.id = t.city_id
 """
 
-CATEGORY_ALIAS_SQL = "COALESCE(tc.name, t.category)"
-CITY_ALIAS_SQL = "COALESCE(v.nom, t.city)"
-CATEGORY_ID_SQL = """
-    (
-        SELECT id
-        FROM talent_categories
-        WHERE name = ?
-           OR LOWER(TRIM(name)) = LOWER(TRIM(?))
-        ORDER BY id ASC
-        LIMIT 1
-    )
-"""
-CITY_ID_SQL = """
-    (
-        SELECT id
-        FROM villes
-        WHERE nom = ?
-           OR LOWER(TRIM(nom)) = LOWER(TRIM(?))
-        ORDER BY id ASC
-        LIMIT 1
-    )
-"""
+CATEGORY_ALIAS_SQL = "tc.name"
+CITY_ALIAS_SQL = "v.nom"
 
 
 def _build_admin_filters(status=None, category=None, q=None):
@@ -371,8 +351,8 @@ def list_for_admin(status=None, category=None, q=None, sort="recent", limit=50, 
             t.status,
             t.display_order,
             t.published_at,
-            t.date_created,
-            t.date_updated
+            NULL AS date_created,
+            NULL AS date_updated
         {TALENT_JOIN_SQL}
         WHERE {where_sql}
         ORDER BY {order_sql}
@@ -406,7 +386,7 @@ def count_for_admin(status=None, category=None, q=None):
     )
 
 
-def insert(name, slug, category, city, description, bio, image, instagram_url,
+def insert(name, slug, category_id, city_id, description, bio, image, instagram_url,
            youtube_url, tiktok_url, facebook_url, website_url, status,
            display_order, published_at):
     """Insère un talent dans la base.
@@ -414,8 +394,8 @@ def insert(name, slug, category, city, description, bio, image, instagram_url,
     Args:
         name (str): Nom affiché du talent.
         slug (str): Slug unique.
-        category (str): Catégorie du talent.
-        city (str): Commune associée.
+        category_id (int): Identifiant de catégorie talent.
+        city_id (int | None): Identifiant de commune.
         description (str): Courte description.
         bio (str | None): Biographie longue.
         image (str | None): Chemin relatif de l'image.
@@ -436,20 +416,20 @@ def insert(name, slug, category, city, description, bio, image, instagram_url,
     return _insert(
         f"""
         INSERT INTO talents (
-            name, slug, category, city, category_id, city_id, description, bio, image,
+            name, slug, category_id, city_id, description, bio, image,
             instagram_url, youtube_url, tiktok_url, facebook_url, website_url,
             status, display_order, published_at
-        ) VALUES (?, ?, ?, ?, {CATEGORY_ID_SQL}, {CITY_ID_SQL}, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
-            name, slug, category, city, category, category, city, city, description, bio, image,
+            name, slug, category_id, city_id, description, bio, image,
             instagram_url, youtube_url, tiktok_url, facebook_url, website_url,
             status, display_order, published_at,
         ),
     )
 
 
-def update(talent_id, name, slug, category, city, description, bio, image,
+def update(talent_id, name, slug, category_id, city_id, description, bio, image,
            instagram_url, youtube_url, tiktok_url, facebook_url, website_url,
            status, display_order, published_at):
     """Met à jour un talent existant.
@@ -458,8 +438,8 @@ def update(talent_id, name, slug, category, city, description, bio, image,
         talent_id (int): Identifiant du talent.
         name (str): Nom affiché du talent.
         slug (str): Slug unique.
-        category (str): Catégorie du talent.
-        city (str): Commune associée.
+        category_id (int): Identifiant de catégorie talent.
+        city_id (int | None): Identifiant de commune.
         description (str): Courte description.
         bio (str | None): Biographie longue.
         image (str | None): Chemin relatif de l'image.
@@ -480,17 +460,14 @@ def update(talent_id, name, slug, category, city, description, bio, image,
     return _execute(
         f"""
         UPDATE talents SET
-            name = ?, slug = ?, category = ?, city = ?,
-            category_id = {CATEGORY_ID_SQL},
-            city_id = {CITY_ID_SQL},
-            description = ?,
+            name = ?, slug = ?, category_id = ?, city_id = ?, description = ?,
             bio = ?, image = ?, instagram_url = ?, youtube_url = ?,
             tiktok_url = ?, facebook_url = ?, website_url = ?, status = ?,
-            display_order = ?, published_at = ?, date_updated = DATETIME('now')
+            display_order = ?, published_at = ?
         WHERE id = ?
         """,
         (
-            name, slug, category, city, category, category, city, city, description, bio, image,
+            name, slug, category_id, city_id, description, bio, image,
             instagram_url, youtube_url, tiktok_url, facebook_url, website_url,
             status, display_order, published_at, talent_id,
         ),
@@ -513,7 +490,7 @@ def update_status(talent_id, status, published_at):
     return _execute(
         """
         UPDATE talents
-        SET status = ?, published_at = ?, date_updated = DATETIME('now')
+        SET status = ?, published_at = ?
         WHERE id = ?
         """,
         (status, published_at, talent_id),
