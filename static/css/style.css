@@ -2149,9 +2149,14 @@ h1 {
   box-shadow: 0 1px 12px rgba(15, 23, 42, 0.045);
 }
 
+.creator-profile__media {
+  display: flex;
+  justify-content: center;
+}
+
 .creator-profile__image {
-  width: 100%;
-  aspect-ratio: 4 / 3;
+  width: min(150px, 46vw);
+  height: min(150px, 46vw);
   border-radius: 0.5rem;
   object-fit: cover;
 }
@@ -2281,14 +2286,15 @@ h1 {
   }
 
   .creator-profile {
-    grid-template-columns: minmax(240px, 0.82fr) 1fr;
+    grid-template-columns: minmax(180px, 0.48fr) 1fr;
     gap: 1.35rem;
     padding: 1.25rem;
     align-items: center;
   }
 
   .creator-profile__image {
-    aspect-ratio: 1;
+    width: 170px;
+    height: 170px;
   }
 
   .creator-detail-section {
