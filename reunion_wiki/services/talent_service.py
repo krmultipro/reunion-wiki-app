@@ -6,8 +6,8 @@ from urllib.parse import urlparse
 
 from flask import current_app
 
-from ..repositories import talent_repository
-from ..utils import slugify
+from ..repositories import site_repository, talent_category_repository, talent_repository
+from ..utils import slugify, slugify_ville
 from . import image_storage
 
 
@@ -21,8 +21,6 @@ DEFAULT_TALENT_IMAGE = "icons/icon-192x192.png"
 MAX_LENGTHS = {
     "name": 160,
     "slug": 180,
-    "category": 120,
-    "city": 120,
     "description": 500,
     "image": 255,
     "instagram_url": 255,
@@ -94,6 +92,26 @@ def _clean_display_order(value):
         return 0
 
 
+def _clean_optional_int(value):
+    """Normalise un identifiant optionnel.
+
+    Args:
+        value: Valeur brute convertible en entier.
+
+    Returns:
+        int | None:
+            Identifiant positif, ou None si la valeur est vide/invalide.
+    """
+
+    if value in (None, ""):
+        return None
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError):
+        return None
+    return parsed if parsed > 0 else None
+
+
 def _is_valid_http_url(value):
     """Indique si une URL optionnelle est en HTTP ou HTTPS.
 
@@ -156,11 +174,184 @@ def generate_unique_slug(name, slug_input=None, exclude_id=None):
     return candidate
 
 
-def validate_talent_data(data):
+def _find_talent_category_by_name(name):
+    """Récupère une catégorie talent existante par nom.
+
+    Args:
+        name (str | None): Nom à résoudre.
+
+    Returns:
+        sqlite3.Row | None:
+            Catégorie trouvée, ou None.
+    """
+
+    normalized = _clean_text(name)
+    if not normalized:
+        return None
+
+    row = talent_category_repository.get_by_name(normalized)
+    if row:
+        return row
+
+    expected = normalized.casefold()
+    for category in talent_category_repository.list_all():
+        if (category["name"] or "").strip().casefold() == expected:
+            return category
+    return None
+
+
+def _get_city_by_id(city_id):
+    """Récupère une ville par identifiant via les repositories existants.
+
+    Args:
+        city_id (int | None): Identifiant de ville.
+
+    Returns:
+        sqlite3.Row | None:
+            Ville trouvée, ou None.
+    """
+
+    if not city_id:
+        return None
+
+    for city in site_repository.get_admin_city_filters():
+        row = site_repository.get_city_by_slug(city["slug"])
+        if row and row["id"] == city_id:
+            return row
+    return None
+
+
+def _find_city_by_name(name):
+    """Récupère une ville existante par son nom.
+
+    Args:
+        name (str | None): Nom de ville à résoudre.
+
+    Returns:
+        sqlite3.Row | None:
+            Ville trouvée, ou None.
+    """
+
+    normalized = _clean_optional_text(name)
+    if not normalized:
+        return None
+    return site_repository.get_city_by_slug(slugify_ville(normalized))
+
+
+def _resolve_category_reference(data):
+    """Résout la catégorie obligatoire d'un talent vers category_id.
+
+    Args:
+        data (dict): Données nettoyées du talent.
+
+    Returns:
+        list[str]:
+            Messages d'erreur de résolution.
+    """
+
+    category_id = _clean_optional_int(data.get("category_id"))
+    if category_id:
+        category = talent_category_repository.get_by_id(category_id)
+        if not category:
+            return ["La catégorie sélectionnée est introuvable."]
+        data["category_id"] = category["id"]
+        data["category_name"] = category["name"]
+        return []
+
+    # Compatibilité temporaire avec l'ancien formulaire qui transmet un nom.
+    # À supprimer lors de la phase finale de migration.
+    category = _find_talent_category_by_name(data.get("_legacy_category_name"))
+    if category:
+        data["category_id"] = category["id"]
+        data["category_name"] = category["name"]
+        return []
+
+    return ["La catégorie est obligatoire et doit correspondre à une catégorie existante."]
+
+
+def _resolve_city_reference(data):
+    """Résout la commune optionnelle d'un talent vers city_id.
+
+    Args:
+        data (dict): Données nettoyées du talent.
+
+    Returns:
+        list[str]:
+            Messages d'erreur de résolution.
+    """
+
+    city_id = _clean_optional_int(data.get("city_id"))
+    if city_id:
+        city = _get_city_by_id(city_id)
+        if not city:
+            return ["La commune sélectionnée est introuvable."]
+        data["city_id"] = city["id"]
+        data["city_name"] = city["nom"]
+        return []
+
+    # Compatibilité temporaire avec l'ancien formulaire qui transmet un nom.
+    # À supprimer lors de la phase finale de migration.
+    legacy_city_name = data.get("_legacy_city_name")
+    if not legacy_city_name:
+        data["city_id"] = None
+        data["city_name"] = None
+        return []
+
+    city = _find_city_by_name(legacy_city_name)
+    if not city:
+        return ["La commune sélectionnée est introuvable."]
+
+    data["city_id"] = city["id"]
+    data["city_name"] = city["nom"]
+    return []
+
+
+def _resolve_taxonomy_references(data):
+    """Résout les références taxonomiques utilisées par les écritures.
+
+    Args:
+        data (dict): Données nettoyées du talent.
+
+    Returns:
+        list[str]:
+            Messages d'erreur de résolution.
+    """
+
+    errors = []
+    errors.extend(_resolve_category_reference(data))
+    errors.extend(_resolve_city_reference(data))
+    return errors
+
+
+def _validate_existing_taxonomy_references(talent):
+    """Valide les références déjà stockées sur un talent.
+
+    Args:
+        talent (sqlite3.Row): Talent récupéré depuis le repository.
+
+    Returns:
+        list[str]:
+            Messages d'erreur de validation.
+    """
+
+    errors = []
+    category_id = talent["category_id"]
+    if not category_id or not talent_category_repository.get_by_id(category_id):
+        errors.append("La catégorie associée au talent est introuvable.")
+
+    city_id = talent["city_id"]
+    if city_id and not _get_city_by_id(city_id):
+        errors.append("La commune associée au talent est introuvable.")
+
+    return errors
+
+
+def validate_talent_data(data, require_category=True):
     """Valide les champs métier minimaux d'un talent.
 
     Args:
         data (dict): Données nettoyées du talent.
+        require_category (bool): Vérifie la présence d'une catégorie résolue.
 
     Returns:
         list[str]:
@@ -172,7 +363,7 @@ def validate_talent_data(data):
         errors.append("Le nom est obligatoire.")
     if not data["slug"]:
         errors.append("Le slug est obligatoire.")
-    if not data["category"]:
+    if require_category and not data.get("category_id"):
         errors.append("La catégorie est obligatoire.")
     if not data["description"]:
         errors.append("La description est obligatoire.")
@@ -213,16 +404,18 @@ def normalize_talent_data(data, existing=None, talent_id=None):
     return {
         "name": name,
         "slug": generate_unique_slug(name, data.get("slug"), exclude_id=talent_id),
-        "category": _clean_text(data.get("category"), 120),
-        "city": _clean_optional_text(data.get("city"), 120),
+        "category_id": _clean_optional_int(data.get("category_id")),
+        "city_id": _clean_optional_int(data.get("city_id")),
+        "_legacy_category_name": _clean_text(data.get("category"), 120),
+        "_legacy_city_name": _clean_optional_text(data.get("city"), 120),
         "description": _clean_text(data.get("description"), 500),
         "bio": _clean_optional_text(data.get("bio")),
         "image": _clean_optional_text(data.get("image"), 255),
-        "instagram_url": _clean_optional_text(data.get("instagram_url"), 255),
-        "youtube_url": _clean_optional_text(data.get("youtube_url"), 255),
-        "tiktok_url": _clean_optional_text(data.get("tiktok_url"), 255),
-        "facebook_url": _clean_optional_text(data.get("facebook_url"), 255),
-        "website_url": _clean_optional_text(data.get("website_url"), 255),
+        "instagram_url": _clean_text(data.get("instagram_url"), 255),
+        "youtube_url": _clean_text(data.get("youtube_url"), 255),
+        "tiktok_url": _clean_text(data.get("tiktok_url"), 255),
+        "facebook_url": _clean_text(data.get("facebook_url"), 255),
+        "website_url": _clean_text(data.get("website_url"), 255),
         "status": status,
         "display_order": _clean_display_order(data.get("display_order")),
         "published_at": published_at,
@@ -248,7 +441,8 @@ def save_talent(data, image_file=None, talent_id=None):
 
     cleaned = normalize_talent_data(data, existing=existing, talent_id=talent_id)
     cleaned["image"] = existing["image"] if existing else cleaned["image"]
-    errors = validate_talent_data(cleaned)
+    errors = validate_talent_data(cleaned, require_category=False)
+    errors.extend(_resolve_taxonomy_references(cleaned))
     if errors:
         return None, errors
 
@@ -262,12 +456,14 @@ def save_talent(data, image_file=None, talent_id=None):
 
     try:
         if talent_id:
+            # Compatibilité temporaire avec les anciennes colonnes category/city.
+            # À supprimer lors de la phase finale de migration.
             talent_repository.update(
                 talent_id,
                 cleaned["name"],
                 cleaned["slug"],
-                cleaned["category"],
-                cleaned["city"],
+                cleaned["category_name"],
+                cleaned["city_name"],
                 cleaned["description"],
                 cleaned["bio"],
                 cleaned["image"],
@@ -282,11 +478,13 @@ def save_talent(data, image_file=None, talent_id=None):
             )
             return talent_id, []
 
+        # Compatibilité temporaire avec les anciennes colonnes category/city.
+        # À supprimer lors de la phase finale de migration.
         new_id = talent_repository.insert(
             cleaned["name"],
             cleaned["slug"],
-            cleaned["category"],
-            cleaned["city"],
+            cleaned["category_name"],
+            cleaned["city_name"],
             cleaned["description"],
             cleaned["bio"],
             cleaned["image"],
@@ -320,12 +518,13 @@ def publish(talent_id):
     if not row:
         return False, ["Talent introuvable."]
 
-    errors = validate_talent_data(
+    errors = _validate_existing_taxonomy_references(row)
+    errors.extend(validate_talent_data(
         {
             "name": row["name"],
             "slug": row["slug"],
-            "category": row["category"],
-            "city": row["city"],
+            "category_id": row["category_id"],
+            "city_id": row["city_id"],
             "description": row["description"],
             "image": row["image"],
             "instagram_url": row["instagram_url"],
@@ -335,7 +534,7 @@ def publish(talent_id):
             "website_url": row["website_url"],
             "status": "published",
         }
-    )
+    ))
     if errors:
         return False, errors
 

@@ -4,12 +4,54 @@ from flask import Blueprint, abort, flash, redirect, render_template, request, s
 
 from ..auth import admin_required
 from ..forms.talent_forms import TalentActionForm, TalentForm
+from ..repositories import site_repository, talent_category_repository
 from ..services import talent_service
 from ..services.talent_service import STATUSES
 from ..utils import parse_positive_int
 
 
 admin_talents_bp = Blueprint("admin_talents", __name__)
+
+
+def _get_category_choices():
+    """Retourne les catégories talents disponibles pour TalentForm.
+
+    Returns:
+        list[tuple[int, str]]:
+            Choix WTForms construits depuis talent_categories.
+    """
+
+    return [(category["id"], category["name"]) for category in talent_category_repository.list_all()]
+
+
+def _get_city_choices():
+    """Retourne les communes disponibles pour TalentForm.
+
+    Returns:
+        list[tuple[str | int, str]]:
+            Choix WTForms construits depuis la table villes.
+    """
+
+    choices = [("", "Non précisée")]
+    for city in site_repository.get_admin_city_filters():
+        row = site_repository.get_city_by_slug(city["slug"])
+        if row:
+            choices.append((row["id"], row["nom"]))
+    return choices
+
+
+def _populate_choices(form):
+    """Alimente les SelectField d'un formulaire talent.
+
+    Args:
+        form (TalentForm): Formulaire à préparer.
+
+    Returns:
+        None
+    """
+
+    form.category_id.choices = _get_category_choices()
+    form.city_id.choices = _get_city_choices()
 
 
 def _form_to_data(form):
@@ -26,8 +68,8 @@ def _form_to_data(form):
     return {
         "name": form.name.data,
         "slug": form.slug.data,
-        "category": form.category.data,
-        "city": form.city.data,
+        "category_id": form.category_id.data,
+        "city_id": form.city_id.data,
         "description": form.description.data,
         "bio": form.bio.data,
         "instagram_url": form.instagram_url.data,
@@ -53,8 +95,8 @@ def _populate_form(form, talent):
 
     form.name.data = talent["name"]
     form.slug.data = talent["slug"]
-    form.category.data = talent["category"]
-    form.city.data = talent["city"]
+    form.category_id.data = talent["category_id"]
+    form.city_id.data = talent["city_id"]
     form.description.data = talent["description"]
     form.bio.data = talent["bio"]
     form.instagram_url.data = talent["instagram_url"]
@@ -127,6 +169,7 @@ def list_talents():
 @admin_required
 def new_talent():
     form = TalentForm()
+    _populate_choices(form)
     if form.validate_on_submit():
         talent_id, errors = talent_service.save_talent(
             _form_to_data(form), image_file=form.image.data
@@ -158,6 +201,7 @@ def edit_talent(talent_id):
         return redirect(url_for("admin_talents.list_talents"))
 
     form = TalentForm()
+    _populate_choices(form)
     if request.method == "GET":
         _populate_form(form, talent)
     elif form.validate_on_submit():

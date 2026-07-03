@@ -43,14 +43,14 @@
 
     <div class="admin-form__group">
       <div class="admin-form__field">
-        {{ form.category.label(class_="admin-form__label") }}
-        {{ form.category(class_="admin-form__input") }}
-        {% for error in form.category.errors %}<span class="admin-form__error">{{ error }}</span>{% endfor %}
+        {{ form.category_id.label(class_="admin-form__label") }}
+        {{ form.category_id(class_="admin-form__input") }}
+        {% for error in form.category_id.errors %}<span class="admin-form__error">{{ error }}</span>{% endfor %}
       </div>
       <div class="admin-form__field">
-        {{ form.city.label(class_="admin-form__label") }}
-        {{ form.city(class_="admin-form__input") }}
-        {% for error in form.city.errors %}<span class="admin-form__error">{{ error }}</span>{% endfor %}
+        {{ form.city_id.label(class_="admin-form__label") }}
+        {{ form.city_id(class_="admin-form__input") }}
+        {% for error in form.city_id.errors %}<span class="admin-form__error">{{ error }}</span>{% endfor %}
       </div>
     </div>
 

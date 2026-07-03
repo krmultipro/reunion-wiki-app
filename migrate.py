@@ -412,6 +412,231 @@ def _normalize_talent_statuses(cur) -> int:
     return updates
 
 
+def _next_available_talent_category_slug(cur, base_slug: str) -> str:
+    """Retourne un slug disponible pour une catégorie de talent.
+
+    Args:
+        cur (sqlite3.Cursor): Curseur de la base cible.
+        base_slug (str): Base de slug générée depuis le nom.
+
+    Returns:
+        str: Slug disponible pour la table talent_categories.
+    """
+
+    base = base_slug or "categorie-talent"
+    candidate = base
+    suffix = 1
+    while True:
+        cur.execute("SELECT 1 FROM talent_categories WHERE slug = ?", (candidate,))
+        if not cur.fetchone():
+            return candidate
+        candidate = f"{base}-{suffix}"
+        suffix += 1
+
+
+def _ensure_talent_category(cur, category_name: str):
+    """Retourne une catégorie talent existante ou la crée.
+
+    Args:
+        cur (sqlite3.Cursor): Curseur de la base cible.
+        category_name (str): Nom de catégorie issu de talents.category.
+
+    Returns:
+        tuple[int, str] | tuple[None, None]:
+            Identifiant et nom canonique, ou None si le nom est vide.
+    """
+
+    normalized = (category_name or "").strip()
+    if not normalized:
+        return None, None
+
+    cur.execute("SELECT id, name FROM talent_categories WHERE name = ?", (normalized,))
+    row = cur.fetchone()
+    if row:
+        return row[0], row[1]
+
+    cur.execute(
+        """
+        SELECT id, name
+        FROM talent_categories
+        WHERE LOWER(TRIM(name)) = LOWER(?)
+        ORDER BY id ASC
+        LIMIT 1
+        """,
+        (normalized,),
+    )
+    row = cur.fetchone()
+    if row:
+        return row[0], row[1]
+
+    slug = _next_available_talent_category_slug(cur, slugify(normalized))
+    cur.execute("INSERT INTO talent_categories (name, slug) VALUES (?, ?)", (normalized, slug))
+    return cur.lastrowid, normalized
+
+
+def _ensure_talent_categories_table(cur) -> None:
+    """Crée la table des catégories talents et ses index.
+
+    Args:
+        cur (sqlite3.Cursor): Curseur de la base cible.
+
+    Returns:
+        None
+    """
+
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS talent_categories (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL UNIQUE,
+            slug TEXT NOT NULL UNIQUE
+        )
+        """
+    )
+    cur.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_talent_categories_slug ON talent_categories(slug)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_talent_categories_name ON talent_categories(name)")
+
+
+def _backfill_talent_categories(cur) -> int:
+    """Alimente talent_categories depuis talents.category.
+
+    Args:
+        cur (sqlite3.Cursor): Curseur de la base cible.
+
+    Returns:
+        int: Nombre de catégories créées.
+    """
+
+    if not column_exists(cur, "talents", "category"):
+        return 0
+
+    before = cur.execute("SELECT COUNT(*) FROM talent_categories").fetchone()[0]
+    cur.execute(
+        """
+        SELECT DISTINCT TRIM(category)
+        FROM talents
+        WHERE category IS NOT NULL
+          AND TRIM(category) != ''
+        ORDER BY TRIM(category) COLLATE NOCASE ASC
+        """
+    )
+    for row in cur.fetchall():
+        _ensure_talent_category(cur, row[0])
+
+    after = cur.execute("SELECT COUNT(*) FROM talent_categories").fetchone()[0]
+    return after - before
+
+
+def _backfill_talent_category_ids(cur) -> int:
+    """Renseigne talents.category_id depuis la colonne legacy category.
+
+    Args:
+        cur (sqlite3.Cursor): Curseur de la base cible.
+
+    Returns:
+        int: Nombre de talents mis à jour.
+    """
+
+    if not column_exists(cur, "talents", "category"):
+        return 0
+
+    cur.execute(
+        """
+        SELECT id, category
+        FROM talents
+        WHERE (category_id IS NULL OR category_id = '')
+          AND category IS NOT NULL
+          AND TRIM(category) != ''
+        ORDER BY id ASC
+        """
+    )
+    rows = cur.fetchall()
+    updated = 0
+
+    for talent_id, category_name in rows:
+        category_id, _category_name = _ensure_talent_category(cur, category_name)
+        if not category_id:
+            continue
+        cur.execute("UPDATE talents SET category_id = ? WHERE id = ?", (category_id, talent_id))
+        updated += 1
+
+    return updated
+
+
+def _resolve_talent_city_id(cur, city_name: str):
+    """Résout une commune talent vers villes.id sans créer de nouvelle ville.
+
+    Args:
+        cur (sqlite3.Cursor): Curseur de la base cible.
+        city_name (str): Nom de commune issu de talents.city.
+
+    Returns:
+        int | None: Identifiant de ville trouvé, ou None.
+    """
+
+    normalized = (city_name or "").strip()
+    if not normalized:
+        return None
+
+    cur.execute("SELECT id FROM villes WHERE nom = ? ORDER BY id ASC LIMIT 1", (normalized,))
+    row = cur.fetchone()
+    if row:
+        return row[0]
+
+    cur.execute(
+        "SELECT id FROM villes WHERE LOWER(TRIM(nom)) = LOWER(?) ORDER BY id ASC LIMIT 1",
+        (normalized,),
+    )
+    row = cur.fetchone()
+    if row:
+        return row[0]
+
+    city_slug = slugify(normalized)
+    if city_slug:
+        cur.execute("SELECT id FROM villes WHERE slug = ? ORDER BY id ASC LIMIT 1", (city_slug,))
+        row = cur.fetchone()
+        if row:
+            return row[0]
+
+    return None
+
+
+def _backfill_talent_city_ids(cur) -> int:
+    """Renseigne talents.city_id depuis la colonne legacy city.
+
+    Args:
+        cur (sqlite3.Cursor): Curseur de la base cible.
+
+    Returns:
+        int: Nombre de talents mis à jour.
+    """
+
+    if not column_exists(cur, "talents", "city"):
+        return 0
+
+    cur.execute(
+        """
+        SELECT id, city
+        FROM talents
+        WHERE (city_id IS NULL OR city_id = '')
+          AND city IS NOT NULL
+          AND TRIM(city) != ''
+        ORDER BY id ASC
+        """
+    )
+    rows = cur.fetchall()
+    updated = 0
+
+    for talent_id, city_name in rows:
+        city_id = _resolve_talent_city_id(cur, city_name)
+        if not city_id:
+            continue
+        cur.execute("UPDATE talents SET city_id = ? WHERE id = ?", (city_id, talent_id))
+        updated += 1
+
+    return updated
+
+
 def _ensure_talents_table(cur) -> None:
     """Fait évoluer la table talents vers le schéma MVP sans recréation.
 
@@ -447,12 +672,16 @@ def _ensure_talents_table(cur) -> None:
         """
     )
 
+    _ensure_talent_categories_table(cur)
+
     rename_column_if_needed(cur, "talents", "pseudo", "name")
     rename_column_if_needed(cur, "talents", "instagram", "instagram_url")
 
     ensure_column(cur, "talents", "slug", "TEXT DEFAULT ''")
     ensure_column(cur, "talents", "category", "TEXT DEFAULT ''")
     ensure_column(cur, "talents", "city", "TEXT DEFAULT ''")
+    ensure_column(cur, "talents", "category_id", "INTEGER")
+    ensure_column(cur, "talents", "city_id", "INTEGER")
     ensure_column(cur, "talents", "bio", "TEXT DEFAULT ''")
     ensure_column(cur, "talents", "image", "TEXT DEFAULT ''")
     ensure_column(cur, "talents", "instagram_url", "TEXT DEFAULT ''")
@@ -472,11 +701,19 @@ def _ensure_talents_table(cur) -> None:
     print(f"🔁 Dédoublonnage talents.slug effectué sur {slugs_deduped} talent(s)")
     statuses_updated = _normalize_talent_statuses(cur)
     print(f"🔁 Normalisation talents.status effectuée sur {statuses_updated} talent(s)")
+    talent_categories_created = _backfill_talent_categories(cur)
+    print(f"🔁 Backfill talent_categories effectué sur {talent_categories_created} catégorie(s)")
+    talent_category_ids_updated = _backfill_talent_category_ids(cur)
+    print(f"🔁 Backfill talents.category_id effectué sur {talent_category_ids_updated} talent(s)")
+    talent_city_ids_updated = _backfill_talent_city_ids(cur)
+    print(f"🔁 Backfill talents.city_id effectué sur {talent_city_ids_updated} talent(s)")
 
     cur.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_talents_slug ON talents(slug)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_talents_status ON talents(status)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_talents_category ON talents(category)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_talents_city ON talents(city)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_talents_category_id ON talents(category_id)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_talents_city_id ON talents(city_id)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_talents_display_order ON talents(display_order)")
 
 

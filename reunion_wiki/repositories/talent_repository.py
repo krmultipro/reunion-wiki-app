@@ -96,12 +96,64 @@ def _insert(query, params=()):
 
 
 ADMIN_SORTS = {
-    "recent": "date_updated DESC, id DESC",
-    "oldest": "date_updated ASC, id ASC",
-    "name_asc": "name COLLATE NOCASE ASC, id ASC",
-    "name_desc": "name COLLATE NOCASE DESC, id DESC",
-    "display_order": "display_order ASC, name COLLATE NOCASE ASC, id ASC",
+    "recent": "t.date_updated DESC, t.id DESC",
+    "oldest": "t.date_updated ASC, t.id ASC",
+    "name_asc": "t.name COLLATE NOCASE ASC, t.id ASC",
+    "name_desc": "t.name COLLATE NOCASE DESC, t.id DESC",
+    "display_order": "t.display_order ASC, t.name COLLATE NOCASE ASC, t.id ASC",
 }
+
+TALENT_SELECT_FIELDS = """
+    t.id,
+    t.name,
+    t.slug,
+    COALESCE(tc.name, t.category) AS category,
+    COALESCE(v.nom, t.city) AS city,
+    t.category_id,
+    t.city_id,
+    t.description,
+    t.bio,
+    t.image,
+    t.instagram_url,
+    t.youtube_url,
+    t.tiktok_url,
+    t.facebook_url,
+    t.website_url,
+    t.status,
+    t.display_order,
+    t.published_at,
+    t.date_created,
+    t.date_updated
+"""
+
+TALENT_JOIN_SQL = """
+    FROM talents t
+    LEFT JOIN talent_categories tc ON tc.id = t.category_id
+    LEFT JOIN villes v ON v.id = t.city_id
+"""
+
+CATEGORY_ALIAS_SQL = "COALESCE(tc.name, t.category)"
+CITY_ALIAS_SQL = "COALESCE(v.nom, t.city)"
+CATEGORY_ID_SQL = """
+    (
+        SELECT id
+        FROM talent_categories
+        WHERE name = ?
+           OR LOWER(TRIM(name)) = LOWER(TRIM(?))
+        ORDER BY id ASC
+        LIMIT 1
+    )
+"""
+CITY_ID_SQL = """
+    (
+        SELECT id
+        FROM villes
+        WHERE nom = ?
+           OR LOWER(TRIM(nom)) = LOWER(TRIM(?))
+        ORDER BY id ASC
+        LIMIT 1
+    )
+"""
 
 
 def _build_admin_filters(status=None, category=None, q=None):
@@ -121,14 +173,14 @@ def _build_admin_filters(status=None, category=None, q=None):
     params = []
 
     if status:
-        clauses.append("status = ?")
+        clauses.append("t.status = ?")
         params.append(status)
     if category:
-        clauses.append("category = ?")
+        clauses.append(f"{CATEGORY_ALIAS_SQL} = ?")
         params.append(category)
     if q:
         like = f"%{q}%"
-        clauses.append("(name LIKE ? OR slug LIKE ?)")
+        clauses.append("(t.name LIKE ? OR t.slug LIKE ?)")
         params.extend([like, like])
 
     return " AND ".join(clauses), params
@@ -145,7 +197,14 @@ def get_by_id(talent_id):
             Talent trouvé ou None si inexistant.
     """
 
-    return _fetchone("SELECT * FROM talents WHERE id = ?", (talent_id,))
+    return _fetchone(
+        f"""
+        SELECT {TALENT_SELECT_FIELDS}
+        {TALENT_JOIN_SQL}
+        WHERE t.id = ?
+        """,
+        (talent_id,),
+    )
 
 
 def get_by_slug(slug):
@@ -159,7 +218,14 @@ def get_by_slug(slug):
             Talent trouvé ou None si inexistant.
     """
 
-    return _fetchone("SELECT * FROM talents WHERE slug = ?", (slug,))
+    return _fetchone(
+        f"""
+        SELECT {TALENT_SELECT_FIELDS}
+        {TALENT_JOIN_SQL}
+        WHERE t.slug = ?
+        """,
+        (slug,),
+    )
 
 
 def get_published_by_slug(slug):
@@ -174,11 +240,11 @@ def get_published_by_slug(slug):
     """
 
     return _fetchone(
-        """
-        SELECT *
-        FROM talents
-        WHERE slug = ?
-          AND status = 'published'
+        f"""
+        SELECT {TALENT_SELECT_FIELDS}
+        {TALENT_JOIN_SQL}
+        WHERE t.slug = ?
+          AND t.status = 'published'
         """,
         (slug,),
     )
@@ -218,11 +284,11 @@ def list_published(limit=None, offset=0):
             Talents publiés, triés pour l'affichage public.
     """
 
-    query = """
-        SELECT *
-        FROM talents
-        WHERE status = 'published'
-        ORDER BY display_order ASC, name COLLATE NOCASE ASC, id ASC
+    query = f"""
+        SELECT {TALENT_SELECT_FIELDS}
+        {TALENT_JOIN_SQL}
+        WHERE t.status = 'published'
+        ORDER BY t.display_order ASC, t.name COLLATE NOCASE ASC, t.id ASC
     """
     if limit is None:
         return _fetchall(query)
@@ -242,12 +308,12 @@ def list_published_by_category(category, limit=None, offset=0):
             Talents publics de la catégorie demandée.
     """
 
-    query = """
-        SELECT *
-        FROM talents
-        WHERE status = 'published'
-          AND category = ?
-        ORDER BY display_order ASC, name COLLATE NOCASE ASC, id ASC
+    query = f"""
+        SELECT {TALENT_SELECT_FIELDS}
+        {TALENT_JOIN_SQL}
+        WHERE t.status = 'published'
+          AND {CATEGORY_ALIAS_SQL} = ?
+        ORDER BY t.display_order ASC, t.name COLLATE NOCASE ASC, t.id ASC
     """
     if limit is None:
         return _fetchall(query, (category,))
@@ -263,14 +329,14 @@ def list_categories():
     """
 
     return _fetchall(
-        """
-        SELECT category, COUNT(*) AS total
-        FROM talents
-        WHERE status = 'published'
-          AND category IS NOT NULL
-          AND TRIM(category) != ''
-        GROUP BY category
-        ORDER BY category COLLATE NOCASE ASC
+        f"""
+        SELECT {CATEGORY_ALIAS_SQL} AS category, COUNT(*) AS total
+        {TALENT_JOIN_SQL}
+        WHERE t.status = 'published'
+          AND {CATEGORY_ALIAS_SQL} IS NOT NULL
+          AND TRIM({CATEGORY_ALIAS_SQL}) != ''
+        GROUP BY {CATEGORY_ALIAS_SQL}
+        ORDER BY {CATEGORY_ALIAS_SQL} COLLATE NOCASE ASC
         """
     )
 
@@ -295,9 +361,19 @@ def list_for_admin(status=None, category=None, q=None, sort="recent", limit=50, 
     order_sql = ADMIN_SORTS.get(sort, ADMIN_SORTS["recent"])
     return _fetchall(
         f"""
-        SELECT id, name, slug, category, city, image, status, display_order,
-               published_at, date_created, date_updated
-        FROM talents
+        SELECT
+            t.id,
+            t.name,
+            t.slug,
+            {CATEGORY_ALIAS_SQL} AS category,
+            {CITY_ALIAS_SQL} AS city,
+            t.image,
+            t.status,
+            t.display_order,
+            t.published_at,
+            t.date_created,
+            t.date_updated
+        {TALENT_JOIN_SQL}
         WHERE {where_sql}
         ORDER BY {order_sql}
         LIMIT ? OFFSET ?
@@ -321,7 +397,11 @@ def count_for_admin(status=None, category=None, q=None):
 
     where_sql, params = _build_admin_filters(status, category, q)
     return _fetchone(
-        f"SELECT COUNT(*) AS total FROM talents WHERE {where_sql}",
+        f"""
+        SELECT COUNT(*) AS total
+        {TALENT_JOIN_SQL}
+        WHERE {where_sql}
+        """,
         tuple(params),
     )
 
@@ -354,15 +434,15 @@ def insert(name, slug, category, city, description, bio, image, instagram_url,
     """
 
     return _insert(
-        """
+        f"""
         INSERT INTO talents (
-            name, slug, category, city, description, bio, image,
+            name, slug, category, city, category_id, city_id, description, bio, image,
             instagram_url, youtube_url, tiktok_url, facebook_url, website_url,
             status, display_order, published_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, {CATEGORY_ID_SQL}, {CITY_ID_SQL}, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
-            name, slug, category, city, description, bio, image,
+            name, slug, category, city, category, category, city, city, description, bio, image,
             instagram_url, youtube_url, tiktok_url, facebook_url, website_url,
             status, display_order, published_at,
         ),
@@ -398,16 +478,19 @@ def update(talent_id, name, slug, category, city, description, bio, image,
     """
 
     return _execute(
-        """
+        f"""
         UPDATE talents SET
-            name = ?, slug = ?, category = ?, city = ?, description = ?,
+            name = ?, slug = ?, category = ?, city = ?,
+            category_id = {CATEGORY_ID_SQL},
+            city_id = {CITY_ID_SQL},
+            description = ?,
             bio = ?, image = ?, instagram_url = ?, youtube_url = ?,
             tiktok_url = ?, facebook_url = ?, website_url = ?, status = ?,
             display_order = ?, published_at = ?, date_updated = DATETIME('now')
         WHERE id = ?
         """,
         (
-            name, slug, category, city, description, bio, image,
+            name, slug, category, city, category, category, city, city, description, bio, image,
             instagram_url, youtube_url, tiktok_url, facebook_url, website_url,
             status, display_order, published_at, talent_id,
         ),

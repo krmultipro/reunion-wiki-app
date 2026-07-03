@@ -10,6 +10,14 @@ from . import _normalize_url, _sanitize_basic, _sanitize_multiline, _strip_filte
 from ..services.talent_service import STATUSES
 
 
+def _coerce_optional_int(value):
+    """Convertit une valeur de SelectField optionnel en entier ou None."""
+
+    if value in (None, ""):
+        return None
+    return int(value)
+
+
 class TalentForm(FlaskForm):
     """Création et édition d'un talent depuis l'administration."""
 
@@ -26,18 +34,17 @@ class TalentForm(FlaskForm):
         [Optional(), Length(max=180, message="Slug trop long.")],
         filters=[_sanitize_basic],
     )
-    category = StringField(
+    category_id = SelectField(
         "Catégorie",
-        [
-            DataRequired(message="La catégorie est obligatoire."),
-            Length(max=120, message="Catégorie trop longue."),
-        ],
-        filters=[_sanitize_basic],
+        choices=[],
+        coerce=int,
+        validators=[DataRequired(message="La catégorie est obligatoire.")],
     )
-    city = StringField(
+    city_id = SelectField(
         "Commune",
-        [Optional(), Length(max=120, message="Commune trop longue.")],
-        filters=[_sanitize_basic],
+        choices=[],
+        coerce=_coerce_optional_int,
+        validators=[Optional()],
     )
     description = TextAreaField(
         "Description courte",
