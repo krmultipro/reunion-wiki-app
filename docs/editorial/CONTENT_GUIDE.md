@@ -149,7 +149,7 @@ Texte affiché sous le résultat Google.
 Exemple :
 
 ```text
-Découvrez les youtubeurs réunionnais les plus suivis et les créateurs qui participent au rayonnement de La Réunion.
+Découvrez des youtubeurs et créateurs de contenu réunionnais qui contribuent à la vie culturelle et numérique de La Réunion.
 ```
 
 Recommandation :
@@ -213,7 +213,7 @@ Exemple :
 ```text
 H1 : Youtubeurs réunionnais
 
-H2 : Les créateurs les plus suivis
+H2 : Créateurs à découvrir
 
 H2 : Créateurs spécialisés voyage
 
@@ -239,7 +239,7 @@ Répondre à de vraies questions :
 - Qui sont-ils ?
 - Que proposent-ils ?
 - Où les suivre ?
-- Pourquoi sont-ils connus ?
+- Quel type de contenu proposent-ils ?
 
 ---
 
@@ -346,7 +346,7 @@ Youtubeurs Réunionnais : Les créateurs de contenu de La Réunion
 ## Meta Description
 
 ```text
-Découvrez les youtubeurs réunionnais les plus suivis et les créateurs qui participent au rayonnement de La Réunion.
+Découvrez des youtubeurs et créateurs de contenu réunionnais qui contribuent à la vie culturelle et numérique de La Réunion.
 ```
 
 ---
@@ -358,7 +358,7 @@ H1 : Youtubeurs réunionnais
 
 Introduction
 
-H2 : Pourquoi les créateurs réunionnais attirent-ils autant d'audience ?
+H2 : Quel type de contenu proposent ces créateurs ?
 
 H2 : Les youtubeurs spécialisés voyage
 
@@ -381,7 +381,7 @@ Youtubeurs réunionnais
 Photographes de La Réunion
 Humoristes réunionnais
 Artistes réunionnais
-Influenceurs réunionnais
+Créateurs de contenu réunionnais
 Que faire à Saint-Denis
 Que faire à Saint-Pierre
 Restaurants à Saint-Pierre
