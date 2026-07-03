@@ -6,7 +6,7 @@ from ..auth import admin_required
 from ..forms.talent_forms import TalentActionForm, TalentForm
 from ..repositories import site_repository, talent_category_repository
 from ..services import talent_service
-from ..services.talent_service import STATUSES
+from ..services.talent_service import ENTITY_TYPES, STATUSES
 from ..utils import parse_positive_int
 
 
@@ -68,6 +68,7 @@ def _form_to_data(form):
     return {
         "name": form.name.data,
         "slug": form.slug.data,
+        "entity_type": form.entity_type.data,
         "category_id": form.category_id.data,
         "city_id": form.city_id.data,
         "description": form.description.data,
@@ -95,6 +96,7 @@ def _populate_form(form, talent):
 
     form.name.data = talent["name"]
     form.slug.data = talent["slug"]
+    form.entity_type.data = talent["entity_type"]
     form.category_id.data = talent["category_id"]
     form.city_id.data = talent["city_id"]
     form.description.data = talent["description"]
@@ -154,6 +156,7 @@ def list_talents():
         items=result["items"],
         action_forms=action_forms,
         statuses=STATUSES,
+        entity_types=dict(ENTITY_TYPES),
         status_filter=status or "",
         category_filter=category or "",
         query_text=query_text,

@@ -17,6 +17,16 @@ STATUSES = [
     ("archived", "Archivé"),
 ]
 STATUS_KEYS = {key for key, _label in STATUSES}
+ENTITY_TYPES = [
+    ("person", "Personne"),
+    ("duo", "Duo"),
+    ("group", "Groupe"),
+    ("youtube_channel", "Chaîne YouTube"),
+    ("media", "Média"),
+    ("association", "Association"),
+    ("podcast", "Podcast"),
+]
+ENTITY_TYPE_KEYS = {key for key, _label in ENTITY_TYPES}
 DEFAULT_TALENT_IMAGE = "icons/icon-192x192.png"
 MAX_LENGTHS = {
     "name": 160,
@@ -303,6 +313,8 @@ def validate_talent_data(data, require_category=True):
         errors.append("La description est obligatoire.")
     if data["status"] not in STATUS_KEYS:
         errors.append("Statut invalide.")
+    if data["entity_type"] not in ENTITY_TYPE_KEYS:
+        errors.append("Type d'entité invalide.")
 
     for field, max_length in MAX_LENGTHS.items():
         value = data.get(field)
@@ -331,6 +343,7 @@ def normalize_talent_data(data, existing=None, talent_id=None):
 
     name = _clean_text(data.get("name"), 160)
     status = _clean_text(data.get("status") or "draft", 40)
+    entity_type = _clean_text(data.get("entity_type") or "person", 40)
     published_at = existing["published_at"] if existing else None
     if status == "published" and not published_at:
         published_at = _now_sql()
@@ -338,6 +351,7 @@ def normalize_talent_data(data, existing=None, talent_id=None):
     return {
         "name": name,
         "slug": generate_unique_slug(name, data.get("slug"), exclude_id=talent_id),
+        "entity_type": entity_type,
         "category_id": _clean_optional_int(data.get("category_id")),
         "city_id": _clean_optional_int(data.get("city_id")),
         "description": _clean_text(data.get("description"), 500),
@@ -392,6 +406,7 @@ def save_talent(data, image_file=None, talent_id=None):
                 talent_id,
                 cleaned["name"],
                 cleaned["slug"],
+                cleaned["entity_type"],
                 cleaned["category_id"],
                 cleaned["city_id"],
                 cleaned["description"],
@@ -411,6 +426,7 @@ def save_talent(data, image_file=None, talent_id=None):
         new_id = talent_repository.insert(
             cleaned["name"],
             cleaned["slug"],
+            cleaned["entity_type"],
             cleaned["category_id"],
             cleaned["city_id"],
             cleaned["description"],
@@ -451,6 +467,7 @@ def publish(talent_id):
         {
             "name": row["name"],
             "slug": row["slug"],
+            "entity_type": row["entity_type"],
             "category_id": row["category_id"],
             "city_id": row["city_id"],
             "description": row["description"],

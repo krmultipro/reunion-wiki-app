@@ -48,6 +48,14 @@
         {% for error in form.category_id.errors %}<span class="admin-form__error">{{ error }}</span>{% endfor %}
       </div>
       <div class="admin-form__field">
+        {{ form.entity_type.label(class_="admin-form__label") }}
+        {{ form.entity_type(class_="admin-form__input") }}
+        {% for error in form.entity_type.errors %}<span class="admin-form__error">{{ error }}</span>{% endfor %}
+      </div>
+    </div>
+
+    <div class="admin-form__group">
+      <div class="admin-form__field">
         {{ form.city_id.label(class_="admin-form__label") }}
         {{ form.city_id(class_="admin-form__input") }}
         {% for error in form.city_id.errors %}<span class="admin-form__error">{{ error }}</span>{% endfor %}

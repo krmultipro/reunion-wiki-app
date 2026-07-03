@@ -107,6 +107,7 @@ TALENT_SELECT_FIELDS = """
     t.id,
     t.name,
     t.slug,
+    t.entity_type,
     tc.name AS category,
     v.nom AS city,
     t.category_id,
@@ -345,6 +346,7 @@ def list_for_admin(status=None, category=None, q=None, sort="recent", limit=50, 
             t.id,
             t.name,
             t.slug,
+            t.entity_type,
             {CATEGORY_ALIAS_SQL} AS category,
             {CITY_ALIAS_SQL} AS city,
             t.image,
@@ -386,7 +388,7 @@ def count_for_admin(status=None, category=None, q=None):
     )
 
 
-def insert(name, slug, category_id, city_id, description, bio, image, instagram_url,
+def insert(name, slug, entity_type, category_id, city_id, description, bio, image, instagram_url,
            youtube_url, tiktok_url, facebook_url, website_url, status,
            display_order, published_at):
     """Insère un talent dans la base.
@@ -394,6 +396,7 @@ def insert(name, slug, category_id, city_id, description, bio, image, instagram_
     Args:
         name (str): Nom affiché du talent.
         slug (str): Slug unique.
+        entity_type (str): Type d'entité représentée.
         category_id (int): Identifiant de catégorie talent.
         city_id (int | None): Identifiant de commune.
         description (str): Courte description.
@@ -416,20 +419,20 @@ def insert(name, slug, category_id, city_id, description, bio, image, instagram_
     return _insert(
         f"""
         INSERT INTO talents (
-            name, slug, category_id, city_id, description, bio, image,
+            name, slug, entity_type, category_id, city_id, description, bio, image,
             instagram_url, youtube_url, tiktok_url, facebook_url, website_url,
             status, display_order, published_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
-            name, slug, category_id, city_id, description, bio, image,
+            name, slug, entity_type, category_id, city_id, description, bio, image,
             instagram_url, youtube_url, tiktok_url, facebook_url, website_url,
             status, display_order, published_at,
         ),
     )
 
 
-def update(talent_id, name, slug, category_id, city_id, description, bio, image,
+def update(talent_id, name, slug, entity_type, category_id, city_id, description, bio, image,
            instagram_url, youtube_url, tiktok_url, facebook_url, website_url,
            status, display_order, published_at):
     """Met à jour un talent existant.
@@ -438,6 +441,7 @@ def update(talent_id, name, slug, category_id, city_id, description, bio, image,
         talent_id (int): Identifiant du talent.
         name (str): Nom affiché du talent.
         slug (str): Slug unique.
+        entity_type (str): Type d'entité représentée.
         category_id (int): Identifiant de catégorie talent.
         city_id (int | None): Identifiant de commune.
         description (str): Courte description.
@@ -460,14 +464,14 @@ def update(talent_id, name, slug, category_id, city_id, description, bio, image,
     return _execute(
         f"""
         UPDATE talents SET
-            name = ?, slug = ?, category_id = ?, city_id = ?, description = ?,
-            bio = ?, image = ?, instagram_url = ?, youtube_url = ?,
-            tiktok_url = ?, facebook_url = ?, website_url = ?, status = ?,
-            display_order = ?, published_at = ?
+            name = ?, slug = ?, entity_type = ?, category_id = ?, city_id = ?,
+            description = ?, bio = ?, image = ?, instagram_url = ?,
+            youtube_url = ?, tiktok_url = ?, facebook_url = ?, website_url = ?,
+            status = ?, display_order = ?, published_at = ?
         WHERE id = ?
         """,
         (
-            name, slug, category_id, city_id, description, bio, image,
+            name, slug, entity_type, category_id, city_id, description, bio, image,
             instagram_url, youtube_url, tiktok_url, facebook_url, website_url,
             status, display_order, published_at, talent_id,
         ),

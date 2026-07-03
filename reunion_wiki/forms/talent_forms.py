@@ -7,7 +7,7 @@ from wtforms import HiddenField, IntegerField, SelectField, StringField, SubmitF
 from wtforms.validators import DataRequired, Length, Optional, URL
 
 from . import _normalize_url, _sanitize_basic, _sanitize_multiline, _strip_filter
-from ..services.talent_service import STATUSES
+from ..services.talent_service import ENTITY_TYPES, STATUSES
 
 
 def _coerce_optional_int(value):
@@ -33,6 +33,13 @@ class TalentForm(FlaskForm):
         "Slug (optionnel, généré automatiquement si vide)",
         [Optional(), Length(max=180, message="Slug trop long.")],
         filters=[_sanitize_basic],
+    )
+    entity_type = SelectField(
+        "Type",
+        choices=ENTITY_TYPES,
+        default="person",
+        validators=[DataRequired(message="Le type est obligatoire.")],
+        filters=[_strip_filter],
     )
     category_id = SelectField(
         "Catégorie",

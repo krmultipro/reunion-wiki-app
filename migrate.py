@@ -452,6 +452,7 @@ def _create_final_talents_table(cur, table_name="talents") -> None:
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
             slug TEXT DEFAULT '',
+            entity_type TEXT NOT NULL DEFAULT 'person',
             category_id INTEGER NOT NULL,
             city_id INTEGER,
             description TEXT NOT NULL,
@@ -538,6 +539,7 @@ def _copy_talents_to_final_table(cur) -> None:
             id,
             name,
             slug,
+            entity_type,
             category_id,
             city_id,
             description,
@@ -556,6 +558,7 @@ def _copy_talents_to_final_table(cur) -> None:
             id,
             name,
             slug,
+            entity_type,
             category_id,
             city_id,
             description,
@@ -613,6 +616,7 @@ def _ensure_talents_table(cur) -> None:
     print(f"🔁 Dédoublonnage talents.slug effectué sur {slugs_deduped} talent(s)")
     statuses_updated = _normalize_talent_statuses(cur)
     print(f"🔁 Normalisation talents.status effectuée sur {statuses_updated} talent(s)")
+    ensure_column(cur, "talents", "entity_type", "TEXT NOT NULL DEFAULT 'person'")
     _validate_talent_foreign_keys(cur)
 
     cur.execute("DROP TABLE IF EXISTS talents_new")
