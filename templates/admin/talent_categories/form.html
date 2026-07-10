@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block seo_title %}{{ page_title }} - Réunion Wiki{% endblock %}
+{% block seo_description %}Gestion des catégories de créateurs Réunion Wiki.{% endblock %}
+
+{% block content %}
+<section class="admin-card">
+  <header class="admin-card__header">
+    <div>
+      <h1>{{ page_title }}</h1>
+    </div>
+    <a class="btn btn-secondary" href="{{ url_for('admin_talent_categories.list_categories') }}">
+      ← Retour aux catégories créateurs
+    </a>
+  </header>
+
+  <form method="post" action="{{ form_action }}" class="admin-form" novalidate>
+    {{ form.hidden_tag() }}
+
+    <div class="admin-form__field">
+      {{ form.name.label(class_="admin-form__label") }}
+      {{ form.name(class_="admin-form__input") }}
+      {% for error in form.name.errors %}
+      <span class="admin-form__error">{{ error }}</span>
+      {% endfor %}
+    </div>
+
+    <div class="admin-form__field">
+      {{ form.slug.label(class_="admin-form__label") }}
+      {{ form.slug(class_="admin-form__input") }}
+      {% for error in form.slug.errors %}
+      <span class="admin-form__error">{{ error }}</span>
+      {% endfor %}
+    </div>
+
+    <div class="admin-form__actions">
+      <button type="submit" class="btn btn-primary">{{ submit_label }}</button>
+    </div>
+  </form>
+</section>
+{% endblock %}

@@ -1,0 +1,42 @@
+@startuml
+title Consultation des sites d'une catégorie
+
+actor "Visiteur" as Visitor
+participant "Navigateur" as Browser
+participant "Route Flask\n/categorie/<slug>" as Route
+participant "Taxonomy" as Taxonomy
+participant "CategoryRepository" as CategoryRepo
+participant "SiteRepository" as SiteRepo
+database "SQLite" as DB
+participant "Template \ncategorie.html" as Template
+
+Visitor -> Browser : Demande une catégorie
+Browser -> Route : GET /categorie/{slug}
+
+Route -> Taxonomy : get_nom_categorie_depuis_slug(slug)
+Taxonomy -> DB : Lire la catégorie correspondant au slug
+DB --> Taxonomy : Nom de catégorie
+Taxonomy --> Route : nom_categorie
+
+alt Catégorie introuvable
+  Route -> Template : render_template("404.html")
+  Template --> Route : HTML 404
+  Route --> Browser : Réponse HTTP 404
+  Browser --> Visitor : Affiche la page 404
+else Catégorie trouvée
+  Route -> CategoryRepo : get_category_by_name(nom_categorie)
+  CategoryRepo -> DB : Lecture de la catégorie
+  DB --> CategoryRepo : category_id
+  CategoryRepo --> Route : category_row
+
+  Route -> SiteRepo : get_sites_by_category_id(category_id)
+  SiteRepo -> DB : SELECT sites validés\n+ catégorie + ville
+  DB --> SiteRepo : Liste des sites
+  SiteRepo --> Route : sites
+
+  Route -> Template : render_template("categorie.html", sites, catégorie)
+  Template --> Route : HTML généré
+  Route --> Browser : Réponse HTTP 200
+  Browser --> Visitor : Affiche les fiches de sites
+end
+@enduml

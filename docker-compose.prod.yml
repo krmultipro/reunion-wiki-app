@@ -16,6 +16,7 @@ services:
       - FLASK_ENV=production
       - RATELIMIT_STORAGE_URL=redis://redis:6379/0
       - DATABASE_PATH=/data/base.db
+      - UPLOAD_FOLDER=/data/uploads
     depends_on:
       - redis
     volumes:
@@ -39,6 +40,7 @@ services:
       - ./certbot/conf:/etc/letsencrypt
       - ./logs/nginx:/var/log/nginx
       - ./static:/var/www/static:ro
+      - ./data_prod/uploads:/var/www/static/uploads:ro # Nginx sert les uploads persistés depuis /data
     depends_on:
       - web
     networks:

@@ -3,7 +3,7 @@
 import os
 from datetime import datetime, timedelta
 
-from flask import Flask, flash, redirect, render_template, request, session, url_for
+from flask import Flask, flash, redirect, render_template, request, send_from_directory, session, url_for
 from flask_wtf.csrf import CSRFError
 
 # Ces imports centralisent les helpers historiques encore exposés par app.py.
@@ -57,6 +57,7 @@ app.config.setdefault("SESSION_COOKIE_HTTPONLY", True)
 app.config.setdefault("SESSION_COOKIE_SAMESITE", "Lax")
 if env == "production":
     app.config.setdefault("SESSION_COOKIE_SECURE", True)
+os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 
 csrf.init_app(app)
 
@@ -129,7 +130,7 @@ def add_cache_headers(response):
     # Le service worker ne doit jamais rester coincé en cache navigateur.
     if request.endpoint == "service_worker":
         response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
-    elif request.endpoint == "static":
+    elif request.endpoint in {"static", "uploaded_file"}:
         response.headers["Cache-Control"] = "public, max-age=31536000"
     elif request.endpoint in ["accueil", "voir_categorie"]:
         # Les pages publiques peuvent être légèrement cachées sans figer les données.
@@ -143,6 +144,12 @@ def add_cache_headers(response):
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["X-XSS-Protection"] = "1; mode=block"
     return response
+
+
+@app.route("/static/uploads/<path:filename>")
+def uploaded_file(filename):
+    """Sert les fichiers uploadés depuis le dossier persistant configuré."""
+    return send_from_directory(app.config["UPLOAD_FOLDER"], filename)
 
 
 def format_date(value, fmt="%d/%m/%Y"):
@@ -208,13 +215,25 @@ def register_legacy_blueprint_endpoints(bp_name, endpoint_names):
 # Imports placés après la création/config de app : les blueprints importent des
 # helpers applicatifs, donc on évite de les charger avant que Flask soit prêt.
 from .routes.admin import admin_bp
+from .routes.admin_content import admin_content_bp
+from .routes.admin_talent_categories import admin_talent_categories_bp
+from .routes.admin_talents import admin_talents_bp
+from .routes.content import content_bp
+from .routes.creators import creators_bp
 from .routes.public import public_bp
 from .routes.seo import seo_bp
 
 # Les routes sont séparées par domaine : admin, public, SEO/fichiers spéciaux.
 app.register_blueprint(admin_bp)
+app.register_blueprint(admin_content_bp)
+app.register_blueprint(admin_talent_categories_bp)
+app.register_blueprint(admin_talents_bp)
+app.register_blueprint(creators_bp)
 app.register_blueprint(public_bp)
 app.register_blueprint(seo_bp)
+# content_bp expose la route de repli /<slug> : enregistrée en dernier pour
+# rester moins spécifique que les routes publiques explicites.
+app.register_blueprint(content_bp)
 
 # Conserve les noms historiques utilisés dans les templates et redirects.
 register_legacy_blueprint_endpoints(
@@ -252,6 +271,12 @@ register_legacy_blueprint_endpoints(
         "voir_ville",
         "most_visited_categories",
         "trends",
+    ],
+)
+register_legacy_blueprint_endpoints(
+    "creators",
+    [
+        "creators_index",
     ],
 )
 register_legacy_blueprint_endpoints(

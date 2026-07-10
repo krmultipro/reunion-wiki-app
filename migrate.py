@@ -11,6 +11,8 @@ app = Flask(__name__)
 env = os.getenv("FLASK_ENV", "development")
 app.config.from_object(config.get(env, config["default"]))
 DATABASE_PATH = app.config["DATABASE_PATH"]
+UPLOAD_FOLDER = app.config["UPLOAD_FOLDER"]
+PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 
 CANONICAL_VILLES = [
     (1, "Les Avirons", "les-avirons"),
@@ -75,6 +77,101 @@ def ensure_column(cur, table_name: str, column_name: str, definition: str) -> No
     if not column_exists(cur, table_name, column_name):
         print(f"➕ Ajout colonne {table_name}.{column_name}")
         cur.execute(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {definition}")
+
+
+def _next_upload_collision_path(path: str) -> str:
+    """Retourne un chemin disponible en cas de collision de fichier uploadé.
+
+    Args:
+        path (str): Chemin cible initial.
+
+    Returns:
+        str:
+            Chemin disponible sans écraser un fichier existant.
+    """
+
+    root, extension = os.path.splitext(path)
+    suffix = 2
+    candidate = f"{root}-legacy-{suffix}{extension}"
+    while os.path.exists(candidate):
+        suffix += 1
+        candidate = f"{root}-legacy-{suffix}{extension}"
+    return candidate
+
+
+def _copy_upload_source(source_dir: str, target_root: str) -> int:
+    """Copie les uploads d'un ancien dossier vers le dossier persistant.
+
+    Args:
+        source_dir (str): Ancienne racine des uploads.
+        target_root (str): Nouvelle racine persistante.
+
+    Returns:
+        int:
+            Nombre de fichiers copiés.
+    """
+
+    if not os.path.isdir(source_dir):
+        return 0
+
+    source_dir = os.path.abspath(source_dir)
+    target_root = os.path.abspath(target_root)
+    if source_dir == target_root:
+        return 0
+
+    copied = 0
+    for current_dir, _dirnames, filenames in os.walk(source_dir):
+        for filename in filenames:
+            source_path = os.path.join(current_dir, filename)
+            relative_path = os.path.relpath(source_path, source_dir)
+            target_path = os.path.join(target_root, relative_path)
+            if os.path.abspath(source_path) == os.path.abspath(target_path):
+                continue
+            os.makedirs(os.path.dirname(target_path), exist_ok=True)
+            if os.path.exists(target_path):
+                if os.path.getsize(source_path) == os.path.getsize(target_path):
+                    continue
+                target_path = _next_upload_collision_path(target_path)
+            shutil.copy2(source_path, target_path)
+            copied += 1
+    return copied
+
+
+def _migrate_upload_files() -> None:
+    """Regroupe les anciens uploads dans le dossier persistant configuré."""
+
+    os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+    sources = [
+        os.path.join(PROJECT_ROOT, "static", "uploads"),
+        os.path.join(PROJECT_ROOT, "uploads_dev"),
+        os.path.join(PROJECT_ROOT, "uploads_prod"),
+    ]
+    total = 0
+    for source in sources:
+        copied = _copy_upload_source(source, UPLOAD_FOLDER)
+        if copied:
+            print(f"🖼️ Uploads copiés depuis {source}: {copied} fichier(s)")
+            total += copied
+    if not total:
+        print("🖼️ Aucun ancien upload à migrer")
+
+
+def rename_column_if_needed(cur, table_name: str, old_name: str, new_name: str) -> None:
+    """Renomme une colonne legacy uniquement si la colonne cible n'existe pas.
+
+    Args:
+        cur (sqlite3.Cursor): Curseur de la base cible.
+        table_name (str): Nom de la table à faire évoluer.
+        old_name (str): Nom actuel de la colonne legacy.
+        new_name (str): Nouveau nom attendu.
+
+    Returns:
+        None
+    """
+
+    if column_exists(cur, table_name, old_name) and not column_exists(cur, table_name, new_name):
+        print(f"✏️ Renommage colonne {table_name}.{old_name} -> {new_name}")
+        cur.execute(f"ALTER TABLE {table_name} RENAME COLUMN {old_name} TO {new_name}")
 
 
 def _next_available_category_slug(cur, base_slug: str) -> str:
@@ -254,12 +351,368 @@ def _drop_sites_ville_column(cur) -> bool:
     return True
 
 
+def _ensure_content_table(cur) -> None:
+    """Crée la table `content` et ses index si nécessaire.
+
+    Table plate et réutilisable qui alimentera les pages SEO publiées depuis
+    l'admin (landing pages, guides, personnalités...). Les images ne sont jamais
+    stockées ici : seul le chemin relatif sur disque est conservé dans
+    `featured_image`.
+
+    Args:
+        cur (sqlite3.Cursor): Curseur de la base cible.
+    """
+
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS content (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            content_type TEXT NOT NULL,
+            title TEXT NOT NULL,
+            slug TEXT NOT NULL UNIQUE,
+            summary TEXT,
+            body TEXT,
+            status TEXT NOT NULL DEFAULT 'draft',
+            meta_title TEXT,
+            meta_description TEXT,
+            featured_image TEXT,
+            published_at DATETIME,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+        """
+    )
+    cur.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_content_slug ON content(slug)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_content_type_status ON content(content_type, status)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_content_status_pub ON content(status, published_at)")
+
+
+def _next_available_talent_slug(cur, base_slug: str, talent_id: int) -> str:
+    """Retourne un slug talent unique en ignorant la ligne en cours.
+
+    Args:
+        cur (sqlite3.Cursor): Curseur de la base cible.
+        base_slug (str): Base de slug générée depuis le nom.
+        talent_id (int): Identifiant du talent en cours de backfill.
+
+    Returns:
+        str: Slug disponible pour la table talents.
+    """
+
+    base = base_slug or f"talent-{talent_id}"
+    candidate = base
+    suffix = 1
+    while True:
+        cur.execute(
+            "SELECT 1 FROM talents WHERE slug = ? AND id != ?",
+            (candidate, talent_id),
+        )
+        if not cur.fetchone():
+            return candidate
+        candidate = f"{base}-{suffix}"
+        suffix += 1
+
+
+def _backfill_talent_slugs(cur) -> int:
+    """Complète les slugs manquants de la table talents à partir du nom.
+
+    Args:
+        cur (sqlite3.Cursor): Curseur de la base cible.
+
+    Returns:
+        int: Nombre de talents mis à jour.
+    """
+
+    cur.execute(
+        """
+        SELECT id, name
+        FROM talents
+        WHERE slug IS NULL OR TRIM(slug) = ''
+        ORDER BY id ASC
+        """
+    )
+    rows = cur.fetchall()
+    updated = 0
+
+    for talent_id, name in rows:
+        slug = _next_available_talent_slug(cur, slugify(name), talent_id)
+        cur.execute("UPDATE talents SET slug = ? WHERE id = ?", (slug, talent_id))
+        updated += 1
+
+    return updated
+
+
+def _dedupe_talent_slugs(cur) -> int:
+    """Rend uniques tous les slugs talents avant la création de l'index.
+
+    Args:
+        cur (sqlite3.Cursor): Curseur de la base cible.
+
+    Returns:
+        int: Nombre de slugs modifiés.
+    """
+
+    cur.execute("SELECT id, name, slug FROM talents ORDER BY id ASC")
+    rows = cur.fetchall()
+    seen = set()
+    updated = 0
+
+    for talent_id, name, slug in rows:
+        base = slugify(slug or "") or slugify(name or "") or f"talent-{talent_id}"
+        candidate = base
+        suffix = 2
+        while candidate in seen:
+            candidate = f"{base}-{suffix}"
+            suffix += 1
+        seen.add(candidate)
+
+        if candidate != (slug or ""):
+            cur.execute("UPDATE talents SET slug = ? WHERE id = ?", (candidate, talent_id))
+            updated += 1
+
+    return updated
+
+
+def _normalize_talent_statuses(cur) -> int:
+    """Convertit les anciens statuts talents vers le workflow courant.
+
+    Args:
+        cur (sqlite3.Cursor): Curseur de la base cible.
+
+    Returns:
+        int: Nombre de talents mis à jour.
+    """
+
+    updates = 0
+    cur.execute("UPDATE talents SET status = 'published' WHERE status = 'valide'")
+    updates += cur.rowcount
+    cur.execute("UPDATE talents SET status = 'draft' WHERE status = 'en_attente'")
+    updates += cur.rowcount
+    return updates
+
+
+def _ensure_talent_categories_table(cur) -> None:
+    """Crée la table des catégories talents et ses index.
+
+    Args:
+        cur (sqlite3.Cursor): Curseur de la base cible.
+
+    Returns:
+        None
+    """
+
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS talent_categories (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL UNIQUE,
+            slug TEXT NOT NULL UNIQUE
+        )
+        """
+    )
+    cur.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_talent_categories_slug ON talent_categories(slug)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_talent_categories_name ON talent_categories(name)")
+
+
+def _create_final_talents_table(cur, table_name="talents") -> None:
+    """Crée une table talents conforme au schéma final normalisé.
+
+    Args:
+        cur (sqlite3.Cursor): Curseur de la base cible.
+        table_name (str): Nom de la table à créer.
+
+    Returns:
+        None
+    """
+
+    cur.execute(
+        f"""
+        CREATE TABLE IF NOT EXISTS {table_name} (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            slug TEXT DEFAULT '',
+            entity_type TEXT NOT NULL DEFAULT 'person',
+            category_id INTEGER NOT NULL,
+            city_id INTEGER,
+            description TEXT NOT NULL,
+            bio TEXT DEFAULT '',
+            image TEXT DEFAULT '',
+            instagram_url TEXT DEFAULT '',
+            youtube_url TEXT DEFAULT '',
+            tiktok_url TEXT DEFAULT '',
+            facebook_url TEXT DEFAULT '',
+            website_url TEXT DEFAULT '',
+            status TEXT NOT NULL DEFAULT 'draft',
+            display_order INTEGER DEFAULT 0,
+            published_at TEXT,
+            FOREIGN KEY(category_id) REFERENCES talent_categories(id),
+            FOREIGN KEY(city_id) REFERENCES villes(id)
+        )
+        """
+    )
+
+
+def _validate_talent_foreign_keys(cur) -> None:
+    """Vérifie que les références talents sont prêtes avant reconstruction.
+
+    Args:
+        cur (sqlite3.Cursor): Curseur de la base cible.
+
+    Raises:
+        RuntimeError:
+            Si une catégorie obligatoire manque ou si une ville est invalide.
+    """
+
+    if not column_exists(cur, "talents", "category_id"):
+        cur.execute("SELECT COUNT(*) FROM talents")
+        total = cur.fetchone()[0]
+        if total:
+            raise RuntimeError("Migration talents impossible: category_id est absent sur des talents existants.")
+        return
+
+    cur.execute(
+        """
+        SELECT COUNT(*)
+        FROM talents t
+        LEFT JOIN talent_categories tc ON tc.id = t.category_id
+        WHERE t.category_id IS NULL OR tc.id IS NULL
+        """
+    )
+    invalid_categories = cur.fetchone()[0]
+    if invalid_categories:
+        raise RuntimeError(
+            "Migration talents impossible: certains talents n'ont pas de category_id valide."
+        )
+
+    if not column_exists(cur, "talents", "city_id"):
+        return
+
+    cur.execute(
+        """
+        SELECT COUNT(*)
+        FROM talents t
+        LEFT JOIN villes v ON v.id = t.city_id
+        WHERE t.city_id IS NOT NULL AND v.id IS NULL
+        """
+    )
+    invalid_cities = cur.fetchone()[0]
+    if invalid_cities:
+        raise RuntimeError(
+            "Migration talents impossible: certains talents ont un city_id invalide."
+        )
+
+
+def _copy_talents_to_final_table(cur) -> None:
+    """Recopie les talents existants vers la table finale reconstruite.
+
+    Args:
+        cur (sqlite3.Cursor): Curseur de la base cible.
+
+    Returns:
+        None
+    """
+
+    cur.execute(
+        """
+        INSERT INTO talents_new (
+            id,
+            name,
+            slug,
+            entity_type,
+            category_id,
+            city_id,
+            description,
+            bio,
+            image,
+            instagram_url,
+            youtube_url,
+            tiktok_url,
+            facebook_url,
+            website_url,
+            status,
+            display_order,
+            published_at
+        )
+        SELECT
+            id,
+            name,
+            slug,
+            entity_type,
+            category_id,
+            city_id,
+            description,
+            bio,
+            image,
+            instagram_url,
+            youtube_url,
+            tiktok_url,
+            facebook_url,
+            website_url,
+            status,
+            display_order,
+            published_at
+        FROM talents
+        """
+    )
+
+
+def _recreate_talent_indexes(cur) -> None:
+    """Recrée les index utiles de la table talents.
+
+    Args:
+        cur (sqlite3.Cursor): Curseur de la base cible.
+
+    Returns:
+        None
+    """
+
+    cur.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_talents_slug ON talents(slug)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_talents_status ON talents(status)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_talents_category_id ON talents(category_id)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_talents_city_id ON talents(city_id)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_talents_display_order ON talents(display_order)")
+
+
+def _ensure_talents_table(cur) -> None:
+    """Reconstruit la table talents avec le schéma final normalisé.
+
+    Args:
+        cur (sqlite3.Cursor): Curseur de la base cible.
+
+    Returns:
+        None
+    """
+
+    _ensure_talent_categories_table(cur)
+    if not table_exists(cur, "talents"):
+        _create_final_talents_table(cur)
+        _recreate_talent_indexes(cur)
+        return
+
+    slugs_updated = _backfill_talent_slugs(cur)
+    print(f"🔁 Backfill talents.slug effectué sur {slugs_updated} talent(s)")
+    slugs_deduped = _dedupe_talent_slugs(cur)
+    print(f"🔁 Dédoublonnage talents.slug effectué sur {slugs_deduped} talent(s)")
+    statuses_updated = _normalize_talent_statuses(cur)
+    print(f"🔁 Normalisation talents.status effectuée sur {statuses_updated} talent(s)")
+    ensure_column(cur, "talents", "entity_type", "TEXT NOT NULL DEFAULT 'person'")
+    _validate_talent_foreign_keys(cur)
+
+    cur.execute("DROP TABLE IF EXISTS talents_new")
+    _create_final_talents_table(cur, "talents_new")
+    _copy_talents_to_final_table(cur)
+    cur.execute("DROP TABLE talents")
+    cur.execute("ALTER TABLE talents_new RENAME TO talents")
+    _recreate_talent_indexes(cur)
+
+
 def main():
     print("📂 DB cible:", DATABASE_PATH)
 
     db_dir = os.path.dirname(DATABASE_PATH)
     if db_dir:
         os.makedirs(db_dir, exist_ok=True)
+    _migrate_upload_files()
 
     # Backup auto
     os.makedirs("backups", exist_ok=True)
@@ -273,6 +726,9 @@ def main():
 
     conn = sqlite3.connect(DATABASE_PATH)
     cur = conn.cursor()
+
+    # WAL améliore la concurrence lecture/écriture. À régler hors transaction.
+    cur.execute("PRAGMA journal_mode=WAL")
 
     try:
         cur.execute("PRAGMA foreign_keys = ON")
@@ -468,6 +924,12 @@ def main():
         cur.execute("CREATE INDEX IF NOT EXISTS idx_site_clicks_site_id ON site_clicks(site_id)")
         cur.execute("CREATE INDEX IF NOT EXISTS idx_site_clicks_clicked_at ON site_clicks(clicked_at)")
         cur.execute("CREATE INDEX IF NOT EXISTS idx_villes_slug ON villes(slug)")
+
+        # Plateforme de contenu SEO (table plate réutilisable).
+        _ensure_content_table(cur)
+
+        # Talents locaux: évolution du prototype Instagram vers un modèle wiki.
+        _ensure_talents_table(cur)
 
         conn.commit()
         print("✅ Migration terminée avec succès")

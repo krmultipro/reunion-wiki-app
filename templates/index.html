@@ -58,6 +58,20 @@ endblock %} {% block nav_home %}{% endblock %} {% block content %}
 </section>
 
 <div class="page-content">
+  <section class="home-creators-teaser" aria-labelledby="home-creators-title">
+    <div class="home-creators-teaser__content">
+      <p class="home-creators-teaser__kicker">Nouvelle exploration</p>
+      <h2 id="home-creators-title">Créateurs réunionnais</h2>
+      <p>
+        Découvrez les talents locaux, youtubeurs, artistes et créateurs de
+        contenu.
+      </p>
+    </div>
+    <a class="home-creators-teaser__link" href="{{ url_for('creators_index') }}">
+      Voir les créateurs →
+    </a>
+  </section>
+
   <div class="home-section-intro" id="toutes-les-categories">
     <div class="section-label">Explorer les ressources locales</div>
     <h2 class="home-section-title">Parcourir les sites par catégorie</h2>

@@ -1,0 +1,116 @@
+@startuml
+left to right direction
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam linetype ortho
+
+class Site <<table>> {
+  +id : INTEGER <<PK>>
+  +nom : TEXT
+  +lien : TEXT
+  +description : TEXT
+  +category_id : INTEGER <<FK>>
+  +ville_id : INTEGER <<FK>>
+  +status : TEXT
+  +date_ajout : DATETIME
+  +en_vedette : INTEGER
+  +click_count : INTEGER
+}
+
+class Category <<table>> {
+  +id : INTEGER <<PK>>
+  +nom : TEXT
+  +slug : TEXT
+  +created_at : DATETIME
+}
+
+class City <<table>> {
+  +id : INTEGER <<PK>>
+  +nom : TEXT
+  +slug : TEXT
+}
+
+class SiteClick <<table>> {
+  +id : INTEGER <<PK>>
+  +site_id : INTEGER <<FK>>
+  +ip_address : TEXT
+  +user_agent : TEXT
+  +clicked_at : DATETIME
+}
+
+class Content <<table>> {
+  +id : INTEGER <<PK>>
+  +content_type : TEXT
+  +title : TEXT
+  +slug : TEXT
+  +summary : TEXT
+  +body : TEXT
+  +status : TEXT
+  +meta_title : TEXT
+  +meta_description : TEXT
+  +featured_image : TEXT
+  +published_at : DATETIME
+}
+
+class TalentCategory <<table>> {
+  +id : INTEGER <<PK>>
+  +name : TEXT
+  +slug : TEXT
+}
+
+class Talent <<table>> {
+  +id : INTEGER <<PK>>
+  +name : TEXT
+  +slug : TEXT
+  +entity_type : TEXT
+  +category_id : INTEGER <<FK>>
+  +city_id : INTEGER <<FK>>
+  +description : TEXT
+  +bio : TEXT
+  +image : TEXT
+  +instagram_url : TEXT
+  +youtube_url : TEXT
+  +tiktok_url : TEXT
+  +facebook_url : TEXT
+  +website_url : TEXT
+  +status : TEXT
+  +display_order : INTEGER
+  +published_at : TEXT
+}
+
+class LoginAttempt <<table>> {
+  +id : INTEGER <<PK>>
+  +username : TEXT
+  +ip : TEXT
+  +success : INTEGER
+  +user_agent : TEXT
+  +created_at : TEXT
+}
+
+Category "0..1" -- "0..*" Site : catégorise
+City "0..1" -- "0..*" Site : localise
+Site "1" -- "0..*" SiteClick : génère
+
+TalentCategory "1" -- "0..*" Talent : catégorise
+City "0..1" -- "0..*" Talent : localise
+
+note right of Talent
+  category_id référence talent_categories.id.
+  city_id référence villes.id.
+
+  entity_type indique le type d'entité :
+  person, duo, group, youtube_channel,
+  media, association, podcast.
+end note
+
+note right of Content
+  Pages SEO publiées via slug.
+  Entité indépendante.
+end note
+
+note right of LoginAttempt
+  Historique des tentatives
+  de connexion admin.
+  Aucune table User dédiée.
+end note
+@enduml

@@ -12,16 +12,19 @@ Structure actuelle :
 app.py
 reunion_wiki/
 ├── app.py
+├── forms/
 ├── routes/
 ├── services/
 ├── repositories/
 ├── auth.py
 ├── db.py
+├── extensions.py
+├── mail.py
 ├── taxonomy.py
 └── utils.py
 ```
 
-Flux cible :
+Flux strict :
 
 ```text
 Routes
@@ -32,6 +35,13 @@ Repositories
 ↓
 SQLite
 ```
+
+Règles générales :
+
+- Aucune requête SQL dans les routes.
+- Les règles métier vivent dans les services.
+- Les repositories contiennent uniquement les accès aux données.
+- Les formulaires WTForms portent la validation de base et les choix UI.
 
 ## Routes
 
@@ -117,6 +127,96 @@ SQL :
 - Conserver SQLite.
 - Ne pas concaténer d'entrée utilisateur directement dans le SQL.
 
+## Module Talents
+
+Le module Talents est stabilisé et normalisé.
+
+Table principale :
+
+```text
+talents
+```
+
+Colonnes de relations :
+
+- `category_id` référence `talent_categories(id)`.
+- `city_id` référence `villes(id)`.
+
+Les anciennes colonnes texte `category` et `city` ont été supprimées de
+`talents`. Les lectures peuvent encore exposer des alias `category` et `city`
+aux templates, mais ces valeurs doivent venir des jointures SQL.
+
+Chaque talent possède aussi :
+
+```text
+entity_type
+```
+
+Valeurs autorisées :
+
+- `person`
+- `duo`
+- `group`
+- `youtube_channel`
+- `media`
+- `association`
+- `podcast`
+
+`entity_type` décrit la nature de l'entité. La catégorie décrit son domaine.
+Ne pas confondre les deux.
+
+## Catégories de Talents
+
+Table :
+
+```text
+talent_categories
+```
+
+Le CRUD admin complet existe pour ces catégories.
+
+Architecture dédiée :
+
+- `talent_category_repository`
+- `talent_category_service`
+- WTForms dédiés
+- routes admin dédiées
+
+Avant suppression d'une catégorie talent, vérifier son usage par `talents`.
+Ne jamais laisser une clé étrangère cassée.
+
+## Uploads
+
+Les fichiers uploadés utilisent la configuration unique :
+
+```text
+UPLOAD_FOLDER
+```
+
+En Docker, les données persistantes sont regroupées dans :
+
+```text
+/data
+├── base.db
+└── uploads/
+```
+
+Les fichiers sont physiquement stockés dans `/data/uploads`, avec des
+sous-dossiers métier comme :
+
+- `uploads/talents/`
+- `uploads/content/`
+
+Les URLs publiques restent :
+
+```text
+/static/uploads/...
+```
+
+La base stocke uniquement des chemins relatifs comme `uploads/talents/...`.
+Pour les sauvegardes, le dossier `data/` ou `data_prod/` est la source de
+vérité : il contient la base SQLite et les uploads.
+
 ## Documentation
 
 Toute nouvelle fonction créée dans :
@@ -178,6 +278,7 @@ Règles :
 - Garder les blueprints par domaine : public, admin, SEO.
 - Les templates ne doivent pas recevoir de changements pendant un refactor backend sauf nécessité.
 - Les formulaires WTForms ne doivent pas être modifiés pendant un refactor d'architecture.
+- Utiliser des `SelectField` ou des relations normalisées plutôt que des chaînes libres quand le domaine est fini.
 
 ## Refactors Futurs
 
@@ -197,6 +298,8 @@ Priorité recommandée :
 - Changement massif des templates.
 - Suppression de routes publiques uniquement parce qu'elles sont peu liées.
 - Mélanger logique métier et SQL dans un même module.
+- Dupliquer une logique déjà présente dans un service ou repository existant.
+- Créer une nouvelle table ou un nouveau CRUD pour un domaine fini si un `SelectField` suffit.
 
 ## Checklist Avant Commit
 
@@ -206,6 +309,7 @@ Priorité recommandée :
 - Toute nouvelle fonction concernée a une docstring.
 - Aucun template ou formulaire modifié sans nécessité.
 - Aucune URL publique changée sans demande explicite.
+- Aucune nouvelle chaîne libre quand une relation, une constante de choix ou un `SelectField` est plus adapté.
 
 ## Tests
 
@@ -236,6 +340,14 @@ Le projet est déployé sur :
 - Flask
 - SQLite
 - Redis
+
+Stockage persistant :
+
+- Docker monte `/data`.
+- SQLite est dans `/data/base.db`.
+- Les uploads sont dans `/data/uploads`.
+- `uploads_dev` et `uploads_prod` ne sont plus les stockages principaux.
+- En production, sauvegarder `data_prod/` suffit pour conserver base + images.
 
 Lors d'un refactor :
 

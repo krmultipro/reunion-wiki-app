@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block seo_title %}Talents - Réunion Wiki{% endblock %}
+{% block seo_description %}Gestion des talents réunionnais.{% endblock %}
+
+{% block content %}
+<section class="admin-dashboard">
+  <header class="admin-dashboard__header">
+    <div class="admin-dashboard__intro">
+      <h1>Talents</h1>
+      <p>Bonjour {{ admin_username or "admin" }}. {{ total }} talent(s).</p>
+    </div>
+    <div class="admin-dashboard__actions">
+      <a class="btn btn-primary" href="{{ url_for('admin_talents.new_talent') }}">+ Nouveau talent</a>
+      <a class="btn btn-secondary" href="{{ url_for('admin_talent_categories.list_categories') }}">Catégories créateurs</a>
+      <a class="btn btn-secondary" href="{{ url_for('admin_dashboard') }}">Tableau de bord</a>
+      <form method="post" action="{{ url_for('admin_logout') }}" class="admin-inline-form">
+        {{ admin_logout_form.hidden_tag() }}
+        <button type="submit" class="btn btn-secondary">Déconnexion</button>
+      </form>
+    </div>
+  </header>
+
+  <form method="get" action="{{ url_for('admin_talents.list_talents') }}" class="admin-filters">
+    <select name="status" class="admin-form__input">
+      <option value="">Tous les statuts</option>
+      {% for key, label in statuses %}
+      <option value="{{ key }}" {{ 'selected' if status_filter == key else '' }}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <input type="text" name="category" value="{{ category_filter }}" placeholder="Catégorie" class="admin-form__input" />
+    <input type="text" name="q" value="{{ query_text }}" placeholder="Rechercher (nom, slug)" class="admin-form__input" />
+    <button type="submit" class="btn btn-secondary">Filtrer</button>
+  </form>
+
+  {% if items %}
+  <div class="admin-table-wrapper">
+    <table class="admin-table admin-table--sites">
+      <thead>
+        <tr>
+          <th>Nom</th>
+          <th>Type</th>
+          <th>Catégorie</th>
+          <th>Commune</th>
+          <th>Statut</th>
+          <th>Ordre</th>
+          <th>Modifié le</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in items %}
+        <tr>
+          <td class="admin-table__cell--title" data-label="Nom">{{ item['name'] }}</td>
+          <td data-label="Type">{{ entity_types.get(item['entity_type'], item['entity_type']) }}</td>
+          <td data-label="Catégorie">{{ item['category'] or "—" }}</td>
+          <td data-label="Commune">{{ item['city'] or "—" }}</td>
+          <td data-label="Statut">{{ item['status'] }}</td>
+          <td data-label="Ordre">{{ item['display_order'] }}</td>
+          <td data-label="Modifié le">{{ item['date_updated']|format_date("%d/%m/%Y %H:%M") }}</td>
+          <td class="admin-table__cell--actions admin-table__cell--actions--compact" data-label="Actions">
+            <a class="btn btn-edit" href="{{ url_for('admin_talents.edit_talent', talent_id=item['id']) }}">Modifier</a>
+
+            {% if item['status'] != 'published' %}
+            <form method="post" action="{{ url_for('admin_talents.publish_talent', talent_id=item['id']) }}" class="admin-table__form">
+              {{ action_forms[item['id']].csrf_token }}
+              {{ action_forms[item['id']].talent_id(value=item['id']) }}
+              <button type="submit" class="btn btn-approve">Publier</button>
+            </form>
+            {% endif %}
+
+            {% if item['status'] != 'archived' %}
+            <form method="post" action="{{ url_for('admin_talents.archive_talent', talent_id=item['id']) }}" class="admin-table__form">
+              {{ action_forms[item['id']].csrf_token }}
+              {{ action_forms[item['id']].talent_id(value=item['id']) }}
+              <button type="submit" class="btn btn-reject">Archiver</button>
+            </form>
+            {% endif %}
+
+            <form method="post" action="{{ url_for('admin_talents.delete_talent', talent_id=item['id']) }}" class="admin-table__form" onsubmit="return confirm('Supprimer définitivement ce talent ?');">
+              {{ action_forms[item['id']].csrf_token }}
+              {{ action_forms[item['id']].talent_id(value=item['id']) }}
+              <button type="submit" class="btn btn-delete">Supprimer</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if total_pages > 1 %}
+  <nav class="admin-pagination">
+    {% for p in range(1, total_pages + 1) %}
+    <a class="btn {{ 'btn-primary' if p == page else 'btn-secondary' }}"
+       href="{{ url_for('admin_talents.list_talents', status=status_filter, category=category_filter, q=query_text, sort=sort_filter, page=p) }}">{{ p }}</a>
+    {% endfor %}
+  </nav>
+  {% endif %}
+  {% else %}
+  <p class="admin-empty">Aucun talent pour le moment.</p>
+  {% endif %}
+</section>
+{% endblock %}

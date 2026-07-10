@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+
+{% block seo_title %}{{ page_title }} - Réunion Wiki{% endblock %}
+{% block seo_description %}Édition d'un talent Réunion Wiki.{% endblock %}
+
+{% block content %}
+<section class="admin-card">
+  <header class="admin-card__header">
+    <div>
+      <h1>{{ page_title }}</h1>
+    </div>
+    <a class="btn btn-secondary" href="{{ url_for('admin_talents.list_talents') }}">← Retour à la liste</a>
+  </header>
+
+  <form method="post" action="{{ form_action }}" class="admin-form" enctype="multipart/form-data" novalidate>
+    {{ form.hidden_tag() }}
+
+    <div class="admin-form__group">
+      <div class="admin-form__field">
+        {{ form.name.label(class_="admin-form__label") }}
+        {{ form.name(class_="admin-form__input") }}
+        {% for error in form.name.errors %}<span class="admin-form__error">{{ error }}</span>{% endfor %}
+      </div>
+      <div class="admin-form__field">
+        {{ form.status.label(class_="admin-form__label") }}
+        {{ form.status(class_="admin-form__input") }}
+        {% for error in form.status.errors %}<span class="admin-form__error">{{ error }}</span>{% endfor %}
+      </div>
+    </div>
+
+    <div class="admin-form__group">
+      <div class="admin-form__field">
+        {{ form.slug.label(class_="admin-form__label") }}
+        {{ form.slug(class_="admin-form__input") }}
+        {% for error in form.slug.errors %}<span class="admin-form__error">{{ error }}</span>{% endfor %}
+      </div>
+      <div class="admin-form__field">
+        {{ form.display_order.label(class_="admin-form__label") }}
+        {{ form.display_order(class_="admin-form__input") }}
+        {% for error in form.display_order.errors %}<span class="admin-form__error">{{ error }}</span>{% endfor %}
+      </div>
+    </div>
+
+    <div class="admin-form__group">
+      <div class="admin-form__field">
+        {{ form.category_id.label(class_="admin-form__label") }}
+        {{ form.category_id(class_="admin-form__input") }}
+        {% for error in form.category_id.errors %}<span class="admin-form__error">{{ error }}</span>{% endfor %}
+      </div>
+      <div class="admin-form__field">
+        {{ form.entity_type.label(class_="admin-form__label") }}
+        {{ form.entity_type(class_="admin-form__input") }}
+        {% for error in form.entity_type.errors %}<span class="admin-form__error">{{ error }}</span>{% endfor %}
+      </div>
+    </div>
+
+    <div class="admin-form__group">
+      <div class="admin-form__field">
+        {{ form.city_id.label(class_="admin-form__label") }}
+        {{ form.city_id(class_="admin-form__input") }}
+        {% for error in form.city_id.errors %}<span class="admin-form__error">{{ error }}</span>{% endfor %}
+      </div>
+    </div>
+
+    <div class="admin-form__field">
+      {{ form.description.label(class_="admin-form__label") }}
+      {{ form.description(class_="admin-form__textarea", rows="3") }}
+      {% for error in form.description.errors %}<span class="admin-form__error">{{ error }}</span>{% endfor %}
+    </div>
+
+    <div class="admin-form__field">
+      {{ form.bio.label(class_="admin-form__label") }}
+      {{ form.bio(class_="admin-form__textarea", rows="8") }}
+      {% for error in form.bio.errors %}<span class="admin-form__error">{{ error }}</span>{% endfor %}
+    </div>
+
+    <div class="admin-form__field">
+      {{ form.image.label(class_="admin-form__label") }}
+      {{ form.image(class_="admin-form__input") }}
+      {% for error in form.image.errors %}<span class="admin-form__error">{{ error }}</span>{% endfor %}
+      {% if current_image %}
+      <p>Image actuelle :</p>
+      <img class="admin-form__preview" src="{{ url_for('static', filename=current_image) }}" alt="Image actuelle du talent" />
+      {% endif %}
+    </div>
+
+    <div class="admin-form__group">
+      <div class="admin-form__field">
+        {{ form.instagram_url.label(class_="admin-form__label") }}
+        {{ form.instagram_url(class_="admin-form__input") }}
+        {% for error in form.instagram_url.errors %}<span class="admin-form__error">{{ error }}</span>{% endfor %}
+      </div>
+      <div class="admin-form__field">
+        {{ form.youtube_url.label(class_="admin-form__label") }}
+        {{ form.youtube_url(class_="admin-form__input") }}
+        {% for error in form.youtube_url.errors %}<span class="admin-form__error">{{ error }}</span>{% endfor %}
+      </div>
+    </div>
+
+    <div class="admin-form__group">
+      <div class="admin-form__field">
+        {{ form.tiktok_url.label(class_="admin-form__label") }}
+        {{ form.tiktok_url(class_="admin-form__input") }}
+        {% for error in form.tiktok_url.errors %}<span class="admin-form__error">{{ error }}</span>{% endfor %}
+      </div>
+      <div class="admin-form__field">
+        {{ form.facebook_url.label(class_="admin-form__label") }}
+        {{ form.facebook_url(class_="admin-form__input") }}
+        {% for error in form.facebook_url.errors %}<span class="admin-form__error">{{ error }}</span>{% endfor %}
+      </div>
+    </div>
+
+    <div class="admin-form__field">
+      {{ form.website_url.label(class_="admin-form__label") }}
+      {{ form.website_url(class_="admin-form__input") }}
+      {% for error in form.website_url.errors %}<span class="admin-form__error">{{ error }}</span>{% endfor %}
+    </div>
+
+    <div class="admin-form__actions">
+      <button type="submit" class="btn btn-primary">{{ submit_label }}</button>
+    </div>
+  </form>
+</section>
+{% endblock %}

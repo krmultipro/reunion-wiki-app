@@ -171,3 +171,8 @@ report/
 
 # Backups base
 backups/
+
+# Images uploadées via la plateforme de contenu (persistées sur disque/volume, pas en git)
+static/uploads/
+uploads_dev/
+uploads_prod/

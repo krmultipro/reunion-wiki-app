@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block seo_title %}Créateurs réunionnais - Réunion Wiki{% endblock %}
+{% block seo_description %}Découvrez des talents réunionnais, artistes, humoristes, photographes, youtubeurs, musiciens et personnalités locales.{% endblock %}
+{% block intro_text %}{% endblock %}
+
+{% block content %}
+<main class="creators-page">
+  <section class="creators-hero" aria-labelledby="creators-title">
+    <div class="creators-hero__content">
+      <p class="creators-hero__eyebrow">Guide découverte</p>
+      <h1 id="creators-title" class="creators-hero__title">Créateurs réunionnais</h1>
+      <p class="creators-hero__subtitle">
+        Répertoire de créateurs réunionnais :
+        youtubeurs, artistes, humoristes,
+        photographes et profils locaux.
+      </p>
+      <p class="creators-hero__note">
+        Cette page présente une première sélection de talents référencés,
+        avec leur catégorie, leur commune et une courte description.
+      </p>
+    </div>
+
+    <dl class="creators-stats" aria-label="Repères de découverte">
+      <div class="creators-stats__item">
+        <dt>Talents référencés</dt>
+        <dd>{{ stats.creator_count }}</dd>
+      </div>
+      <div class="creators-stats__item">
+        <dt>Catégories</dt>
+        <dd>{{ stats.category_count }}</dd>
+      </div>
+      <div class="creators-stats__item">
+        <dt>Communes représentées</dt>
+        <dd>{{ stats.city_count }}</dd>
+      </div>
+    </dl>
+  </section>
+
+  <section class="creator-grid-section" aria-labelledby="creator-grid-title">
+    <div class="creators-section-head">
+      <p class="creators-section-kicker">Index des talents</p>
+      <h2 id="creator-grid-title">Talents à découvrir</h2>
+      <p>Découvrez des créateurs réunionnais référencés sur Réunion Wiki.</p>
+    </div>
+
+    {% if creators %}
+    <div id="creator-grid" class="creator-grid">
+      {% for creator in creators %}
+      <a class="creator-card" href="{{ url_for('creators.creator_detail', slug=creator.slug) }}">
+        <img
+          class="creator-card__image"
+          src="{{ url_for('static', filename=creator.image) }}"
+          alt="Portrait temporaire de {{ creator.name }}"
+          loading="lazy"
+        />
+        <div class="creator-card__body">
+          <h3 class="creator-card__name">{{ creator.name }}</h3>
+          <p class="creator-card__category">{{ creator.category }}</p>
+          <p class="creator-card__city">
+            <img
+              class="creator-card__city-icon"
+              src="{{ url_for('static', filename='icons/map.svg') }}"
+              alt=""
+              aria-hidden="true"
+            />
+            <span>{{ creator.city }}</span>
+          </p>
+          <p class="creator-card__description">{{ creator.description }}</p>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="creator-empty">
+      Aucun talent publié pour le moment. Les premiers profils apparaîtront ici après validation.
+    </p>
+    {% endif %}
+  </section>
+</main>
+{% endblock %}

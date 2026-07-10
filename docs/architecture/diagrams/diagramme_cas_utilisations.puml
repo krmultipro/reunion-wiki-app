@@ -1,0 +1,62 @@
+
+@startuml
+left to right direction
+
+skinparam packageStyle rectangle
+skinparam shadowing false
+
+actor "Visiteur" as Visitor
+actor "Administrateur" as Admin
+
+Admin --|> Visitor
+
+rectangle "Réunion Wiki" {
+
+  package "Espace public" {
+
+    usecase "Consulter l'accueil" as UC_Home
+    usecase "Parcourir les sites par catégorie" as UC_Categories
+    usecase "Rechercher un site" as UC_Search
+    usecase "Consulter les tendances" as UC_Trends
+    usecase "Accéder à un site externe" as UC_Go
+    usecase "Consulter les créateurs réunionnais" as UC_Talents
+    usecase "Consulter les pages SEO" as UC_Content
+    usecase "Proposer un site" as UC_Submit
+  }
+
+  package "Administration" {
+
+    usecase "Se connecter" as UC_Login
+    usecase "Consulter le tableau de bord" as UC_Dashboard
+    usecase "Gérer les sites" as UC_Sites
+    usecase "Modérer les propositions" as UC_Moderation
+    usecase "Gérer les catégories" as UC_CategoriesAdmin
+    usecase "Gérer les contenus SEO" as UC_ContentAdmin
+    usecase "Gérer les talents" as UC_TalentsAdmin
+    usecase "Consulter les statistiques" as UC_Stats
+    usecase "Se déconnecter" as UC_Logout
+  }
+
+}
+
+Visitor --> UC_Home
+Visitor --> UC_Categories
+Visitor --> UC_Search
+Visitor --> UC_Trends
+Visitor --> UC_Go
+Visitor --> UC_Talents
+Visitor --> UC_Content
+Visitor --> UC_Submit
+
+Admin --> UC_Login
+Admin --> UC_Dashboard
+Admin --> UC_Sites
+Admin --> UC_Moderation
+Admin --> UC_CategoriesAdmin
+Admin --> UC_ContentAdmin
+Admin --> UC_TalentsAdmin
+Admin --> UC_Stats
+Admin --> UC_Logout
+
+UC_Moderation ..> UC_Sites : <<include>>
+@enduml

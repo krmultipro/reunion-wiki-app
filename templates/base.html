@@ -120,6 +120,15 @@
           </li>
           <li>
             <a
+              href="{{ url_for('creators_index') }}"
+              class="{{ 'active' if request.path.startswith(url_for('creators_index')) else '' }}"
+              aria-current="{{ 'page' if request.path.startswith(url_for('creators_index')) else '' }}"
+            >
+              Créateurs
+            </a>
+          </li>
+          <li>
+            <a
               href="https://www.instagram.com/kery.rdd"
               class="nav-link--cta"
               target="_blank"
