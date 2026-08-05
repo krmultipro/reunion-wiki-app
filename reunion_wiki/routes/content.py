@@ -39,4 +39,5 @@ def show(slug):
         canonical=canonical,
         social_guide=context["social_guide"],
         dynamic_creators=context["dynamic_creators"],
+        related_social_guides=context["related_social_guides"],
     )

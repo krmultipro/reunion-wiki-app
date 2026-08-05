@@ -24,17 +24,19 @@ SOCIAL_GUIDES = {
         "profile_link_label": "Voir la sélection YouTube",
         "title": "Youtubeurs réunionnais",
         "summary": (
-            "Découvrez les youtubeurs et chaînes de La Réunion qui partagent vidéos, "
-            "divertissement, musique, documentaires et culture locale."
+            "Explorez les chaînes YouTube de créateurs réunionnais actifs dans l'humour, "
+            "la musique, le voyage, la cuisine, les médias et la culture locale."
         ),
         "body": (
-            "<h2>Découvrir la création vidéo réunionnaise</h2>"
-            "<p>La Réunion compte des chaînes YouTube aux univers variés : humour, musique, "
-            "voyage, cuisine, pêche, médias et documentaires. Cette sélection permet de "
-            "retrouver leurs fiches et leurs liens officiels.</p>"
-            "<h2>Une sélection locale mise à jour</h2>"
-            "<p>La liste évolue automatiquement lorsque de nouveaux talents publiés ajoutent "
-            "leur chaîne YouTube sur Réunion Wiki.</p>"
+            "<h2>La création réunionnaise en vidéo</h2>"
+            "<p>YouTube met en lumière des vidéastes, artistes, humoristes, musiciens et "
+            "médias de La Réunion. Leurs vidéos racontent l'île, ses talents et ses "
+            "initiatives à travers des univers variés : divertissement, voyage, cuisine, "
+            "culture et documentaires.</p>"
+            "<h2>Retrouver les chaînes officielles</h2>"
+            "<p>Chaque carte mène vers une fiche Réunion Wiki et vers les liens officiels du "
+            "créateur. La sélection se met à jour automatiquement avec les nouvelles chaînes "
+            "YouTube ajoutées aux fiches publiées.</p>"
         ),
         "meta_title": "Youtubeurs réunionnais : chaînes et créateurs | Réunion Wiki",
         "meta_description": (

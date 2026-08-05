@@ -5065,6 +5065,34 @@ main {
   margin-top: 1.25rem;
 }
 
+.content-page__related-guides {
+  margin-top: clamp(2rem, 6vw, 3.5rem);
+  padding: clamp(1.4rem, 4vw, 2rem);
+  border: 1px solid rgba(11, 132, 87, 0.14);
+  border-radius: 0.65rem;
+  background: linear-gradient(135deg, rgba(232, 245, 239, 0.62), rgba(250, 247, 241, 0.86));
+}
+
+.content-page__related-grid {
+  width: 100%;
+}
+
+.content-page__related-grid .social-guide-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.content-page__related-grid .social-guide-card__link {
+  margin-top: auto;
+  padding-top: 0.8rem;
+}
+
+@media (min-width: 720px) {
+  .content-page__related-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 640px) {
   .content-page {
     padding: 1.2rem 0.95rem 2rem;
@@ -5085,5 +5113,9 @@ main {
 
   .content-page__body blockquote {
     padding: 0.85rem 0.9rem;
+  }
+
+  .content-page__related-guides {
+    padding: 1rem;
   }
 }

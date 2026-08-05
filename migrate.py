@@ -426,6 +426,102 @@ def _ensure_social_content_pages(cur) -> None:
     print(f"🌐 Sélections sociales créées: {created}")
 
 
+def _normalize_editorial_value(value: str | None) -> str:
+    """Normalise les espaces pour reconnaître un ancien texte éditorial.
+
+    Args:
+        value (str | None): Valeur enregistrée dans la base.
+
+    Returns:
+        str: Valeur sans espaces de présentation significatifs.
+    """
+
+    return re.sub(r"\s+", " ", (value or "").strip())
+
+
+def _upgrade_youtube_default_copy(cur) -> None:
+    """Actualise uniquement les anciens textes YouTube non personnalisés.
+
+    Les anciennes installations possèdent soit le texte historique de la page,
+    soit la première version du guide dynamique. Chaque champ est remplacé
+    seulement s'il correspond encore à l'une de ces valeurs connues, afin de ne
+    pas écraser une personnalisation réalisée dans l'administration.
+
+    Args:
+        cur (sqlite3.Cursor): Curseur de la base cible.
+
+    Returns:
+        None
+    """
+
+    guide = SOCIAL_GUIDES["youtube"]
+    legacy_summaries = {
+        _normalize_editorial_value(
+            "Découvrez plusieurs youtubeurs réunionnais et créateurs de contenu "
+            "qui participent au rayonnement de La Réunion sur les réseaux sociaux."
+        ),
+        _normalize_editorial_value(
+            "Découvrez les youtubeurs et chaînes de La Réunion qui partagent vidéos, "
+            "divertissement, musique, documentaires et culture locale."
+        ),
+    }
+    legacy_bodies = {
+        _normalize_editorial_value(
+            """
+            <p>
+            La Réunion compte de nombreux créateurs de contenu actifs sur YouTube,
+            TikTok et Instagram. Ils partagent leur quotidien, leur humour,
+            leurs voyages et leur vision de l'île.
+            </p>
+
+            <h2>Pourquoi suivre les créateurs réunionnais ?</h2>
+
+            <p>
+            Ils permettent de découvrir La Réunion sous un angle local et authentique.
+            </p>
+            """
+        ),
+        _normalize_editorial_value(
+            "<h2>Découvrir la création vidéo réunionnaise</h2>"
+            "<p>La Réunion compte des chaînes YouTube aux univers variés : humour, musique, "
+            "voyage, cuisine, pêche, médias et documentaires. Cette sélection permet de "
+            "retrouver leurs fiches et leurs liens officiels.</p>"
+            "<h2>Une sélection locale mise à jour</h2>"
+            "<p>La liste évolue automatiquement lorsque de nouveaux talents publiés ajoutent "
+            "leur chaîne YouTube sur Réunion Wiki.</p>"
+        ),
+    }
+
+    cur.execute(
+        "SELECT summary, body FROM content WHERE slug = ?",
+        (guide["slug"],),
+    )
+    row = cur.fetchone()
+    if not row:
+        return
+
+    current_summary, current_body = row
+    new_summary = current_summary
+    new_body = current_body
+    if _normalize_editorial_value(current_summary) in legacy_summaries:
+        new_summary = guide["summary"]
+    if _normalize_editorial_value(current_body) in legacy_bodies:
+        new_body = guide["body"]
+
+    if new_summary == current_summary and new_body == current_body:
+        return
+
+    cur.execute(
+        """
+        UPDATE content
+        SET summary = ?, body = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE slug = ?
+        """,
+        (new_summary, new_body, guide["slug"]),
+    )
+    print("✍️ Texte par défaut du guide YouTube actualisé")
+
+
 def _next_available_talent_slug(cur, base_slug: str, talent_id: int) -> str:
     """Retourne un slug talent unique en ignorant la ligne en cours.
 
@@ -967,6 +1063,7 @@ def main():
         # Plateforme de contenu SEO (table plate réutilisable).
         _ensure_content_table(cur)
         _ensure_social_content_pages(cur)
+        _upgrade_youtube_default_copy(cur)
 
         # Talents locaux: évolution du prototype Instagram vers un modèle wiki.
         _ensure_talents_table(cur)

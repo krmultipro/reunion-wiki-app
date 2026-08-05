@@ -113,6 +113,13 @@ Page déjà présente
 Il est donc possible d'exécuter plusieurs fois `python migrate.py` sans créer de
 doublon et sans écraser un texte personnalisé dans l'administration.
 
+Une migration éditoriale ciblée peut exceptionnellement faire évoluer un ancien
+texte par défaut. Elle doit alors reconnaître précisément les versions
+historiques connues et mettre à jour chaque champ séparément. C'est le cas de
+`_upgrade_youtube_default_copy()` : le nouveau résumé ou le nouveau corps
+YouTube est appliqué seulement si le champ contient encore une ancienne valeur
+par défaut. Un champ personnalisé dans l'administration reste inchangé.
+
 Les pages sont enregistrées comme des contenus standards de type `seo_landing`.
 Elles profitent ainsi du CRUD, des statuts et du sitemap déjà existants.
 
@@ -189,8 +196,9 @@ ajoute au contexte :
 
 ```python
 {
-    "social_guide": ...,       # configuration du réseau
-    "dynamic_creators": ...,  # cartes calculées depuis les talents
+    "social_guide": ...,           # configuration du réseau
+    "dynamic_creators": ...,      # cartes calculées depuis les talents
+    "related_social_guides": ..., # autres guides publiés
 }
 ```
 
@@ -229,6 +237,12 @@ affiche le contenu éditorial de la page, puis les cartes dynamiques des talents
 
 Chaque carte conduit vers la fiche Réunion Wiki du talent. Le système favorise
 ainsi la navigation interne avant la sortie éventuelle vers le réseau social.
+
+En bas de chaque guide, un bloc « Explorez les créateurs sur d'autres réseaux »
+propose toutes les autres pages sociales publiées. Le guide courant est exclu.
+Chaque page renvoie ainsi vers les trois autres lorsque les quatre guides sont
+publiés, ce qui forme un maillage interne continu sans lien mort. Les cartes
+reprennent le titre, le résumé et le compteur dynamiques de chaque sélection.
 
 ### Fiches talents
 

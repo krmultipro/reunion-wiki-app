@@ -374,16 +374,23 @@ def get_public_page_context(slug):
 
     social_guide = SOCIAL_GUIDES_BY_SLUG.get(row["slug"])
     dynamic_creators = None
+    related_social_guides = []
     if social_guide:
         dynamic_creators = talent_service.get_public_social_creator_cards(
             social_guide["key"]
         )
+        related_social_guides = [
+            guide
+            for guide in talent_service.get_public_social_guides()
+            if guide["key"] != social_guide["key"]
+        ]
 
     return {
         "content": row,
         "seo": build_seo_context(row),
         "social_guide": social_guide,
         "dynamic_creators": dynamic_creators,
+        "related_social_guides": related_social_guides,
     }
 
 

@@ -66,6 +66,35 @@
     <p class="creator-empty">{{ social_guide.empty_message }}</p>
     {% endif %}
   </section>
+
+  {% if related_social_guides %}
+  <nav class="content-page__related-guides" aria-labelledby="related-social-guides-title">
+    <div class="creators-section-head">
+      <p class="creators-section-kicker">Continuez votre découverte</p>
+      <h2 id="related-social-guides-title">Explorez les créateurs sur d’autres réseaux</h2>
+      <p>
+        Retrouvez d’autres talents réunionnais à travers nos sélections sociales.
+      </p>
+    </div>
+
+    <div class="social-guides-grid content-page__related-grid">
+      {% for guide in related_social_guides %}
+      <a
+        class="social-guide-card social-guide-card--{{ guide.key }}"
+        href="{{ url_for('content.show', slug=guide.slug) }}"
+      >
+        <div class="social-guide-card__meta">
+          <span>{{ guide.platform }}</span>
+          <span>{{ guide.total }} profil{{ 's' if guide.total != 1 else '' }}</span>
+        </div>
+        <h3>{{ guide.title }}</h3>
+        <p>{{ guide.description }}</p>
+        <span class="social-guide-card__link">Découvrir cette sélection →</span>
+      </a>
+      {% endfor %}
+    </div>
+  </nav>
+  {% endif %}
   {% endif %}
 </article>
 {% endblock %}
