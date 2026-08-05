@@ -24,6 +24,9 @@ métadonnées. Leur slug est volontairement verrouillé afin de préserver l'URL
 Les fiches affichées sont alimentées automatiquement : un talent publié apparaît
 dans chaque sélection correspondant aux URLs sociales renseignées dans sa fiche.
 
+La documentation technique complète de ce mécanisme se trouve dans
+`docs/development/SOCIAL_SEO_GUIDES.md`.
+
 ---
 
 # 1. Créer un nouveau contenu

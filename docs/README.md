@@ -5,6 +5,9 @@ Ce dossier regroupe la documentation technique et éditoriale du projet.
 - `development/AGENTS.md`  
   Guide de développement, d'architecture et de bonnes pratiques techniques.
 
+- `development/SOCIAL_SEO_GUIDES.md`
+  Architecture, administration et déploiement des guides SEO sociaux dynamiques.
+
 - `architecture/README.md`  
   Index des diagrammes techniques et de leurs exports.
 
