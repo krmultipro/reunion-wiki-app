@@ -161,7 +161,8 @@ def save_content(data, image_file=None, content_id=None):
 
     Args:
         data (dict): Valeurs du formulaire (content_type, title, slug, summary,
-            body, meta_title, meta_description, status).
+            body, meta_title, meta_description, status,
+            remove_featured_image).
         image_file: FileStorage optionnel pour l'image à la une.
         content_id (int | None): Identifiant si mise à jour, None si création.
 
@@ -197,18 +198,25 @@ def save_content(data, image_file=None, content_id=None):
     meta_title = (data.get("meta_title") or "").strip() or None
     meta_description = (data.get("meta_description") or "").strip() or None
 
-    # Image : nouvelle image valide, sinon on conserve l'existante.
-    featured_image = existing["featured_image"] if existing else None
+    # Image : un nouvel upload remplace l'ancienne image ; sans nouvel upload,
+    # la case de retrait permet de vider explicitement le champ.
+    previous_featured_image = existing["featured_image"] if existing else None
+    featured_image = previous_featured_image
+    uploaded_image = None
     if image_file is not None and getattr(image_file, "filename", ""):
         try:
-            featured_image = image_storage.save_upload(image_file, namespace="content")
+            uploaded_image = image_storage.save_upload(image_file, namespace="content")
+            featured_image = uploaded_image
         except image_storage.ImageStorageError as exc:
             return None, [str(exc)]
+    elif data.get("remove_featured_image"):
+        featured_image = None
 
     # Exigences SEO uniquement à la publication ; les brouillons restent libres.
     if status == "published":
         publish_errors = _publish_errors(title, slug, meta_title, meta_description)
         if publish_errors:
+            image_storage.delete_upload(uploaded_image)
             return None, publish_errors
 
     # published_at posé à la première publication, conservé ensuite.
@@ -217,16 +225,27 @@ def save_content(data, image_file=None, content_id=None):
         published_at = _now_sql()
 
     if content_id:
-        content_repository.update(
-            content_id, content_type, title, slug, summary, body, status,
-            meta_title, meta_description, featured_image, published_at,
-        )
+        try:
+            content_repository.update(
+                content_id, content_type, title, slug, summary, body, status,
+                meta_title, meta_description, featured_image, published_at,
+            )
+        except Exception:
+            image_storage.delete_upload(uploaded_image)
+            raise
+
+        if previous_featured_image and previous_featured_image != featured_image:
+            image_storage.delete_upload(previous_featured_image)
         return content_id, []
 
-    new_id = content_repository.insert(
-        content_type, title, slug, summary, body, status,
-        meta_title, meta_description, featured_image, published_at,
-    )
+    try:
+        new_id = content_repository.insert(
+            content_type, title, slug, summary, body, status,
+            meta_title, meta_description, featured_image, published_at,
+        )
+    except Exception:
+        image_storage.delete_upload(uploaded_image)
+        raise
     return new_id, []
 
 

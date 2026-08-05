@@ -31,6 +31,7 @@ def _form_to_data(form):
         "meta_title": form.meta_title.data,
         "meta_description": form.meta_description.data,
         "status": form.status.data,
+        "remove_featured_image": form.remove_featured_image.data,
     }
 
 
