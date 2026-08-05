@@ -8,6 +8,24 @@ L'objectif est de publier des pages utiles aux habitants et visiteurs de La Réu
 
 ---
 
+## Sélections sociales dynamiques
+
+Les pages suivantes sont créées automatiquement par la migration :
+
+- Youtubeurs réunionnais
+- Créateurs Instagram réunionnais
+- TikTokeurs réunionnais
+- Créateurs réunionnais sur Facebook
+
+Il ne faut pas les recréer manuellement. Elles restent modifiables dans
+`Admin → Contenu SEO` pour personnaliser le titre, le résumé, le contenu et les
+métadonnées. Leur slug est volontairement verrouillé afin de préserver l'URL.
+
+Les fiches affichées sont alimentées automatiquement : un talent publié apparaît
+dans chaque sélection correspondant aux URLs sociales renseignées dans sa fiche.
+
+---
+
 # 1. Créer un nouveau contenu
 
 Depuis l'administration :

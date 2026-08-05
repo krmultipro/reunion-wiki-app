@@ -135,6 +135,27 @@ def get_published_by_slug(slug):
     )
 
 
+def get_published_by_slugs(slugs):
+    """Récupère plusieurs contenus publiés à partir de leurs slugs.
+
+    Args:
+        slugs (list[str] | tuple[str, ...]): Slugs publics recherchés.
+
+    Returns:
+        list[sqlite3.Row]:
+            Contenus publiés correspondant aux slugs fournis.
+    """
+
+    cleaned_slugs = [slug for slug in slugs if slug]
+    if not cleaned_slugs:
+        return []
+    placeholders = ",".join("?" for _slug in cleaned_slugs)
+    return _fetchall(
+        f"SELECT * FROM content WHERE status = 'published' AND slug IN ({placeholders})",
+        tuple(cleaned_slugs),
+    )
+
+
 def slug_exists(slug, exclude_id=None):
     """Indique si un slug est déjà utilisé.
 

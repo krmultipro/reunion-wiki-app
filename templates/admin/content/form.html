@@ -39,7 +39,12 @@
 
     <div class="admin-form__field">
       {{ form.slug.label(class_="admin-form__label") }}
+      {% if locked_slug %}
+      {{ form.slug(class_="admin-form__input", readonly=true) }}
+      <small>URL permanente de cette sélection dynamique. Le texte et les métadonnées restent modifiables.</small>
+      {% else %}
       {{ form.slug(class_="admin-form__input") }}
+      {% endif %}
       {% for error in form.slug.errors %}<span class="admin-form__error">{{ error }}</span>{% endfor %}
     </div>
 

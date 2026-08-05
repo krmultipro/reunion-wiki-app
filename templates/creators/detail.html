@@ -79,19 +79,24 @@
   </section>
   {% endif %}
 
-  {% if youtube_guide_slug %}
-  <section class="creator-detail-section creator-detail-section--guide" aria-labelledby="youtube-guide-title">
-    <p class="creators-section-kicker">Guide thématique</p>
-    <h2 id="youtube-guide-title">Découvrir les youtubeurs réunionnais</h2>
+  {% if social_guide_links %}
+  <section class="creator-detail-section creator-detail-section--guide" aria-labelledby="social-guide-links-title">
+    <p class="creators-section-kicker">Sélections thématiques</p>
+    <h2 id="social-guide-links-title">Retrouvez ce créateur dans nos guides</h2>
     <p class="creator-detail-section__intro">
-      Retrouvez cette fiche et d'autres chaînes locales dans notre sélection de youtubeurs de La Réunion.
+      Explorez d'autres talents réunionnais présents sur les mêmes réseaux sociaux.
     </p>
-    <a
-      class="creator-guide-link"
-      href="{{ url_for('content.show', slug=youtube_guide_slug) }}"
-    >
-      Voir tous les youtubeurs réunionnais →
-    </a>
+    <div class="creator-guide-links">
+      {% for guide in social_guide_links %}
+      <a
+        class="creator-guide-link creator-guide-link--{{ guide.key }}"
+        href="{{ url_for('content.show', slug=guide.slug) }}"
+      >
+        <span>{{ guide.platform }}</span>
+        <span>{{ guide.label }} →</span>
+      </a>
+      {% endfor %}
+    </div>
   </section>
   {% endif %}
 

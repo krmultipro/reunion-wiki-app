@@ -9,7 +9,7 @@ from ..forms import SiteForm
 from ..mail import send_submission_notification
 from ..queries import get_derniers_sites_global, get_sites_en_vedette, get_top_sites
 from ..repositories import category_repository, click_repository, site_repository
-from ..services import click_service
+from ..services import click_service, talent_service
 from ..taxonomy import (
     get_categories,
     get_city_choices,
@@ -40,6 +40,7 @@ def accueil():
     data, category_stats = get_sites_en_vedette()
     derniers_sites = get_derniers_sites_global(3)
     top_sites = get_top_sites(5)
+    youtube_guide = talent_service.get_public_social_guide("youtube")
     form_inline = SiteForm()
     form_inline.categorie.choices = [(cat, cat) for cat in get_categories()]
     form_inline.categorie.choices.insert(0, ('', 'Sélectionnez une catégorie'))
@@ -50,6 +51,7 @@ def accueil():
         category_stats=category_stats,
         derniers_sites=derniers_sites,
         top_sites=top_sites,
+        youtube_guide=youtube_guide,
         form_inline=form_inline
     )
 

@@ -5,6 +5,7 @@ import sqlite3
 from datetime import datetime
 from flask import Flask
 from config import config
+from social_guides import SOCIAL_GUIDES
 
 # Charge la config Flask
 app = Flask(__name__)
@@ -385,6 +386,44 @@ def _ensure_content_table(cur) -> None:
     cur.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_content_slug ON content(slug)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_content_type_status ON content(content_type, status)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_content_status_pub ON content(status, published_at)")
+
+
+def _ensure_social_content_pages(cur) -> None:
+    """Crée les sélections sociales avec des textes éditoriaux par défaut.
+
+    Les contenus existants ne sont jamais modifiés afin de préserver toutes les
+    personnalisations réalisées depuis l'administration.
+
+    Args:
+        cur (sqlite3.Cursor): Curseur de la base cible.
+
+    Returns:
+        None
+    """
+
+    created = 0
+    for guide in SOCIAL_GUIDES.values():
+        cur.execute("SELECT 1 FROM content WHERE slug = ?", (guide["slug"],))
+        if cur.fetchone():
+            continue
+        cur.execute(
+            """
+            INSERT INTO content (
+                content_type, title, slug, summary, body, status,
+                meta_title, meta_description, featured_image, published_at
+            ) VALUES ('seo_landing', ?, ?, ?, ?, 'published', ?, ?, NULL, CURRENT_TIMESTAMP)
+            """,
+            (
+                guide["title"],
+                guide["slug"],
+                guide["summary"],
+                guide["body"],
+                guide["meta_title"],
+                guide["meta_description"],
+            ),
+        )
+        created += 1
+    print(f"🌐 Sélections sociales créées: {created}")
 
 
 def _next_available_talent_slug(cur, base_slug: str, talent_id: int) -> str:
@@ -927,6 +966,7 @@ def main():
 
         # Plateforme de contenu SEO (table plate réutilisable).
         _ensure_content_table(cur)
+        _ensure_social_content_pages(cur)
 
         # Talents locaux: évolution du prototype Instagram vers un modèle wiki.
         _ensure_talents_table(cur)

@@ -27,20 +27,17 @@
   </div>
   {% endif %}
 
-  {% if youtube_creators is not none %}
-  <section class="content-page__creators" aria-labelledby="youtube-creators-title">
+  {% if social_guide %}
+  <section class="content-page__creators" aria-labelledby="social-guide-creators-title">
     <div class="creators-section-head">
       <p class="creators-section-kicker">Fiches Réunion Wiki</p>
-      <h2 id="youtube-creators-title">Chaînes YouTube réunionnaises à découvrir</h2>
-      <p>
-        Ces profils sont ajoutés automatiquement depuis les fiches publiées qui
-        possèdent une chaîne YouTube.
-      </p>
+      <h2 id="social-guide-creators-title">{{ social_guide.collection_title }}</h2>
+      <p>{{ social_guide.collection_intro }}</p>
     </div>
 
-    {% if youtube_creators %}
+    {% if dynamic_creators %}
     <div class="creator-grid content-page__creator-grid">
-      {% for creator in youtube_creators %}
+      {% for creator in dynamic_creators %}
       <a class="creator-card" href="{{ url_for('creators.creator_detail', slug=creator.slug) }}">
         <img
           class="creator-card__image"
@@ -66,9 +63,7 @@
       {% endfor %}
     </div>
     {% else %}
-    <p class="creator-empty">
-      Les premières fiches apparaîtront ici dès qu'une chaîne YouTube publiée sera disponible.
-    </p>
+    <p class="creator-empty">{{ social_guide.empty_message }}</p>
     {% endif %}
   </section>
   {% endif %}

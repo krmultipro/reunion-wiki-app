@@ -276,29 +276,66 @@ def list_published(limit=None, offset=0):
     return _fetchall(f"{query} LIMIT ? OFFSET ?", (limit, offset))
 
 
-def list_published_with_youtube(limit=None, offset=0):
-    """Liste les talents publics possédant une chaîne YouTube.
+SOCIAL_URL_COLUMNS = {
+    "instagram_url",
+    "youtube_url",
+    "tiktok_url",
+    "facebook_url",
+}
+
+
+def list_published_with_social_url(url_field, limit=None, offset=0):
+    """Liste les talents publics possédant un réseau social donné.
 
     Args:
+        url_field (str): Colonne sociale autorisée à filtrer.
         limit (int | None): Nombre maximum de talents.
         offset (int): Décalage de pagination.
 
     Returns:
         list[sqlite3.Row]:
-            Talents publiés avec une URL YouTube, triés pour l'affichage public.
+            Talents publiés avec cette URL sociale, triés pour l'affichage.
     """
+
+    if url_field not in SOCIAL_URL_COLUMNS:
+        return []
 
     query = f"""
         SELECT {TALENT_SELECT_FIELDS}
         {TALENT_JOIN_SQL}
         WHERE t.status = 'published'
-          AND t.youtube_url IS NOT NULL
-          AND TRIM(t.youtube_url) != ''
+          AND t.{url_field} IS NOT NULL
+          AND TRIM(t.{url_field}) != ''
         ORDER BY t.display_order ASC, t.name COLLATE NOCASE ASC, t.id ASC
     """
     if limit is None:
         return _fetchall(query)
     return _fetchall(f"{query} LIMIT ? OFFSET ?", (limit, offset))
+
+
+def count_published_with_social_url(url_field):
+    """Compte les talents publics possédant un réseau social donné.
+
+    Args:
+        url_field (str): Colonne sociale autorisée à filtrer.
+
+    Returns:
+        int:
+            Nombre de talents publiés avec cette URL sociale.
+    """
+
+    if url_field not in SOCIAL_URL_COLUMNS:
+        return 0
+    row = _fetchone(
+        f"""
+        SELECT COUNT(*) AS total
+        FROM talents t
+        WHERE t.status = 'published'
+          AND t.{url_field} IS NOT NULL
+          AND TRIM(t.{url_field}) != ''
+        """
+    )
+    return row["total"]
 
 
 def list_published_by_category(category, limit=None, offset=0):

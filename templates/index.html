@@ -71,12 +71,14 @@ endblock %} {% block nav_home %}{% endblock %} {% block content %}
       <a class="home-creators-teaser__link" href="{{ url_for('creators_index') }}">
         Voir les créateurs →
       </a>
-      <a
-        class="home-creators-teaser__link home-creators-teaser__link--youtube"
-        href="{{ url_for('content.show', slug='youtubeurs-reunionnais') }}"
-      >
-        Voir les youtubeurs →
-      </a>
+      {% if youtube_guide %}
+        <a
+          class="home-creators-teaser__link home-creators-teaser__link--youtube"
+          href="{{ url_for('content.show', slug=youtube_guide.slug) }}"
+        >
+          Voir les youtubeurs →
+        </a>
+      {% endif %}
     </div>
   </section>
 

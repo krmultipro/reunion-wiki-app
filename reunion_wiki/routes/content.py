@@ -37,5 +37,6 @@ def show(slug):
         seo_title=seo["seo_title"],
         seo_description=seo["seo_description"],
         canonical=canonical,
-        youtube_creators=context["youtube_creators"],
+        social_guide=context["social_guide"],
+        dynamic_creators=context["dynamic_creators"],
     )

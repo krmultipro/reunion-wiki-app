@@ -3,6 +3,8 @@
 import re
 from datetime import datetime
 
+from social_guides import SOCIAL_GUIDES_BY_SLUG
+
 from ..repositories import content_repository
 from ..utils import slugify
 from . import image_storage, talent_service
@@ -192,7 +194,10 @@ def save_content(data, image_file=None, content_id=None):
     if content_id and not existing:
         return None, ["Contenu introuvable."]
 
-    slug = generate_unique_slug(title, data.get("slug"), exclude_id=content_id)
+    if existing and existing["slug"] in SOCIAL_GUIDES_BY_SLUG:
+        slug = existing["slug"]
+    else:
+        slug = generate_unique_slug(title, data.get("slug"), exclude_id=content_id)
     summary = (data.get("summary") or "").strip() or None
     body = sanitize_html(data.get("body") or "") or None
     meta_title = (data.get("meta_title") or "").strip() or None
@@ -334,11 +339,25 @@ def get_public_page(slug):
     return content_repository.get_published_by_slug(slug)
 
 
+def is_social_guide_slug(slug):
+    """Indique si un slug appartient à une sélection sociale système.
+
+    Args:
+        slug (str | None): Slug de contenu à vérifier.
+
+    Returns:
+        bool:
+            True pour une page sociale dont l'URL doit rester stable.
+    """
+
+    return slug in SOCIAL_GUIDES_BY_SLUG
+
+
 def get_public_page_context(slug):
     """Prépare une page SEO publiée et ses éventuels contenus dynamiques.
 
-    La page dédiée aux youtubeurs est enrichie automatiquement avec les
-    talents publiés qui possèdent une URL YouTube. Les autres pages conservent
+    Les sélections sociales sont enrichies automatiquement avec les talents
+    publiés qui possèdent le réseau correspondant. Les autres pages conservent
     le rendu éditorial générique.
 
     Args:
@@ -353,14 +372,18 @@ def get_public_page_context(slug):
     if not row:
         return None
 
-    youtube_creators = None
-    if row["slug"] == talent_service.YOUTUBE_CREATORS_CONTENT_SLUG:
-        youtube_creators = talent_service.get_public_youtube_creator_cards()
+    social_guide = SOCIAL_GUIDES_BY_SLUG.get(row["slug"])
+    dynamic_creators = None
+    if social_guide:
+        dynamic_creators = talent_service.get_public_social_creator_cards(
+            social_guide["key"]
+        )
 
     return {
         "content": row,
         "seo": build_seo_context(row),
-        "youtube_creators": youtube_creators,
+        "social_guide": social_guide,
+        "dynamic_creators": dynamic_creators,
     }
 
 
