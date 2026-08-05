@@ -79,6 +79,22 @@
   </section>
   {% endif %}
 
+  {% if youtube_guide_slug %}
+  <section class="creator-detail-section creator-detail-section--guide" aria-labelledby="youtube-guide-title">
+    <p class="creators-section-kicker">Guide thématique</p>
+    <h2 id="youtube-guide-title">Découvrir les youtubeurs réunionnais</h2>
+    <p class="creator-detail-section__intro">
+      Retrouvez cette fiche et d'autres chaînes locales dans notre sélection de youtubeurs de La Réunion.
+    </p>
+    <a
+      class="creator-guide-link"
+      href="{{ url_for('content.show', slug=youtube_guide_slug) }}"
+    >
+      Voir tous les youtubeurs réunionnais →
+    </a>
+  </section>
+  {% endif %}
+
   {% if similar_talents %}
   <section class="creator-detail-section" aria-labelledby="similar-creators-title">
     <p class="creators-section-kicker">À explorer aussi</p>

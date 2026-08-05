@@ -6,7 +6,12 @@ from urllib.parse import urlparse
 
 from flask import current_app
 
-from ..repositories import site_repository, talent_category_repository, talent_repository
+from ..repositories import (
+    content_repository,
+    site_repository,
+    talent_category_repository,
+    talent_repository,
+)
 from ..utils import slugify
 from . import image_storage
 
@@ -36,6 +41,7 @@ SOCIAL_LINK_DEFINITIONS = (
     ("website_url", "Site web", "Site web"),
 )
 DEFAULT_TALENT_IMAGE = "icons/icon-192x192.png"
+YOUTUBE_CREATORS_CONTENT_SLUG = "youtubeurs-reunionnais"
 MAX_LENGTHS = {
     "name": 160,
     "slug": 180,
@@ -598,6 +604,10 @@ def get_public_talent_detail_context(slug):
         limit=3,
     )
     seo = _build_talent_seo(talent)
+    youtube_guide_slug = None
+    if talent["youtube_url"]:
+        if content_repository.get_published_by_slug(YOUTUBE_CREATORS_CONTENT_SLUG):
+            youtube_guide_slug = YOUTUBE_CREATORS_CONTENT_SLUG
 
     return {
         "talent": talent,
@@ -607,6 +617,7 @@ def get_public_talent_detail_context(slug):
         "primary_social": _primary_social_link(social_links),
         "secondary_social_links": social_links[1:],
         "similar_talents": [build_public_card(row) for row in similar_rows],
+        "youtube_guide_slug": youtube_guide_slug,
         "seo_title": seo["title"],
         "seo_description": seo["description"],
     }
@@ -625,6 +636,18 @@ def list_public_talents(limit=None, offset=0):
     """
 
     return talent_repository.list_published(limit=limit, offset=offset)
+
+
+def get_public_youtube_creator_cards():
+    """Prépare les fiches des talents publiés ayant une chaîne YouTube.
+
+    Returns:
+        list[dict]:
+            Cartes publiques prêtes pour la page SEO des youtubeurs.
+    """
+
+    talents = talent_repository.list_published_with_youtube()
+    return [build_public_card(talent) for talent in talents]
 
 
 def list_public_talents_by_category(category, limit=None, offset=0):

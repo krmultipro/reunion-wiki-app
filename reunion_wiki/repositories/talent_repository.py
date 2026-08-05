@@ -276,6 +276,31 @@ def list_published(limit=None, offset=0):
     return _fetchall(f"{query} LIMIT ? OFFSET ?", (limit, offset))
 
 
+def list_published_with_youtube(limit=None, offset=0):
+    """Liste les talents publics possédant une chaîne YouTube.
+
+    Args:
+        limit (int | None): Nombre maximum de talents.
+        offset (int): Décalage de pagination.
+
+    Returns:
+        list[sqlite3.Row]:
+            Talents publiés avec une URL YouTube, triés pour l'affichage public.
+    """
+
+    query = f"""
+        SELECT {TALENT_SELECT_FIELDS}
+        {TALENT_JOIN_SQL}
+        WHERE t.status = 'published'
+          AND t.youtube_url IS NOT NULL
+          AND TRIM(t.youtube_url) != ''
+        ORDER BY t.display_order ASC, t.name COLLATE NOCASE ASC, t.id ASC
+    """
+    if limit is None:
+        return _fetchall(query)
+    return _fetchall(f"{query} LIMIT ? OFFSET ?", (limit, offset))
+
+
 def list_published_by_category(category, limit=None, offset=0):
     """Liste les talents publics d'une catégorie.
 

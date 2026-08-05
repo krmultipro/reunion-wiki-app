@@ -5,7 +5,7 @@ from datetime import datetime
 
 from ..repositories import content_repository
 from ..utils import slugify
-from . import image_storage
+from . import image_storage, talent_service
 
 
 # Liste fixe des types de contenu pour la V1 (extensible sans migration).
@@ -313,6 +313,36 @@ def get_public_page(slug):
     """
 
     return content_repository.get_published_by_slug(slug)
+
+
+def get_public_page_context(slug):
+    """Prépare une page SEO publiée et ses éventuels contenus dynamiques.
+
+    La page dédiée aux youtubeurs est enrichie automatiquement avec les
+    talents publiés qui possèdent une URL YouTube. Les autres pages conservent
+    le rendu éditorial générique.
+
+    Args:
+        slug (str): Slug public demandé.
+
+    Returns:
+        dict | None:
+            Contexte métier de la page, ou None si elle n'est pas publiée.
+    """
+
+    row = get_public_page(slug)
+    if not row:
+        return None
+
+    youtube_creators = None
+    if row["slug"] == talent_service.YOUTUBE_CREATORS_CONTENT_SLUG:
+        youtube_creators = talent_service.get_public_youtube_creator_cards()
+
+    return {
+        "content": row,
+        "seo": build_seo_context(row),
+        "youtube_creators": youtube_creators,
+    }
 
 
 def build_seo_context(row):
