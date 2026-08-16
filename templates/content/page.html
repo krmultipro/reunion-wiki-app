@@ -6,22 +6,22 @@
 {% block og_url %}{{ canonical }}{% endblock %}
 
 {% block content %}
-<article class="content-page">
+<article class="content-page{% if social_guide %} content-page--social-guide{% endif %}">
   <header class="content-page__header">
     <h1>{{ content['title'] }}</h1>
-    {% if content['summary'] %}
+    {% if content['summary'] and not social_guide %}
     <p class="content-page__summary">{{ content['summary'] }}</p>
     {% endif %}
   </header>
 
-  {% if content['featured_image'] %}
+  {% if content['featured_image'] and not social_guide %}
   <img class="content-page__image"
        src="{{ url_for('static', filename=content['featured_image']) }}"
        alt="{{ content['title'] }}"
        loading="lazy" />
   {% endif %}
 
-  {% if content['body'] %}
+  {% if content['body'] and not social_guide %}
   <div class="content-page__body">
     {{ content['body']|safe }}
   </div>
@@ -29,13 +29,16 @@
 
   {% if social_guide %}
   <section class="content-page__creators" aria-labelledby="social-guide-creators-title">
-    <div class="creators-section-head">
-      <p class="creators-section-kicker">Fiches Réunion Wiki</p>
-      <h2 id="social-guide-creators-title">{{ social_guide.collection_title }}</h2>
-      <p>{{ social_guide.collection_intro }}</p>
-    </div>
+    <h2 id="social-guide-creators-title" class="content-page__visually-hidden">
+      {{ social_guide.collection_title }}
+    </h2>
 
     {% if dynamic_creators %}
+    {% set creator_count = dynamic_creators|length %}
+    <p class="content-page__collection-intro">
+      <strong>{{ creator_count }}</strong>
+      {{ social_guide.count_label_singular if creator_count == 1 else social_guide.count_label_plural }}
+    </p>
     <div class="creator-grid content-page__creator-grid">
       {% for creator in dynamic_creators %}
       <a class="creator-card" href="{{ url_for('creators.creator_detail', slug=creator.slug) }}">

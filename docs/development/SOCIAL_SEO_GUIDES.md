@@ -68,6 +68,7 @@ Chaque entrée définit notamment :
 - `platform` : nom du réseau ;
 - `hub_title` et `hub_description` : présentation dans le hub ;
 - `collection_title` et `collection_intro` : présentation de la sélection ;
+- `count_label_singular` et `count_label_plural` : phrase compacte après le compteur ;
 - `empty_message` : texte affiché lorsqu'aucun talent ne correspond ;
 - `profile_link_label` : texte du lien inverse sur une fiche talent ;
 - `title`, `summary` et `body` : contenu éditorial initial ;
@@ -233,7 +234,19 @@ l'administration est donc immédiatement reflétée dans le hub.
 ### Pages SEO sociales
 
 Le template `templates/content/page.html` est commun aux quatre réseaux. Il
-affiche le contenu éditorial de la page, puis les cartes dynamiques des talents.
+affiche le titre de la page, puis immédiatement les cartes dynamiques des
+talents. Sur un guide social, le résumé, l'image à la une et le corps éditorial
+ne sont pas rendus sur la page publique afin de garder un accès direct aux
+profils. Le résumé reste utilisé dans le hub des créateurs et dans les
+métadonnées SEO. Les valeurs restent enregistrées et modifiables dans
+l'administration. Les pages de contenu classiques conservent leur affichage
+éditorial complet.
+
+Entre le titre principal et les cartes, une seule phrase compacte indique le
+nombre de résultats et décrit la sélection. Le nombre vient de
+`dynamic_creators|length`, tandis que les variantes singulière et plurielle sont
+définies par `count_label_singular` et `count_label_plural` dans
+`social_guides.py`. La phrase n'est pas affichée lorsque la sélection est vide.
 
 Chaque carte conduit vers la fiche Réunion Wiki du talent. Le système favorise
 ainsi la navigation interne avant la sortie éventuelle vers le réseau social.

@@ -16,6 +16,14 @@ SOCIAL_GUIDES = {
         "hub_title": "Youtubeurs réunionnais",
         "hub_description": "Chaînes locales, divertissement, musique, médias et documentaires.",
         "collection_title": "Chaînes YouTube réunionnaises à découvrir",
+        "count_label_singular": (
+            "chaîne réunionnaise autour de l'humour, la musique, la culture et des "
+            "découvertes locales."
+        ),
+        "count_label_plural": (
+            "chaînes réunionnaises autour de l'humour, la musique, la culture et des "
+            "découvertes locales."
+        ),
         "collection_intro": (
             "Ces profils sont ajoutés automatiquement depuis les fiches publiées "
             "qui possèdent une chaîne YouTube."
@@ -51,6 +59,12 @@ SOCIAL_GUIDES = {
         "hub_title": "Créateurs Instagram réunionnais",
         "hub_description": "Photographie, art, lifestyle, humour et création visuelle locale.",
         "collection_title": "Créateurs réunionnais sur Instagram",
+        "count_label_singular": (
+            "profil de photographe, artiste ou créateur visuel réunionnais."
+        ),
+        "count_label_plural": (
+            "profils de photographes, artistes et créateurs visuels réunionnais."
+        ),
         "collection_intro": (
             "Cette sélection rassemble automatiquement les talents publiés dont la fiche "
             "contient un compte Instagram officiel."
@@ -84,6 +98,12 @@ SOCIAL_GUIDES = {
         "hub_title": "TikTokeurs réunionnais",
         "hub_description": "Formats courts, humour péi, tendances, musique et découvertes locales.",
         "collection_title": "TikTokeurs réunionnais à découvrir",
+        "count_label_singular": (
+            "profil autour de l'humour, la musique, des tendances et du quotidien péi."
+        ),
+        "count_label_plural": (
+            "profils autour de l'humour, la musique, des tendances et du quotidien péi."
+        ),
         "collection_intro": (
             "Les fiches ci-dessous sont ajoutées automatiquement lorsqu'un talent publié "
             "renseigne son compte TikTok officiel."
@@ -117,6 +137,12 @@ SOCIAL_GUIDES = {
         "hub_title": "Créateurs réunionnais sur Facebook",
         "hub_description": "Pages de créateurs, médias, artistes et communautés locales.",
         "collection_title": "Pages Facebook réunionnaises à découvrir",
+        "count_label_singular": (
+            "page d'artiste, média, association ou créateur local à découvrir."
+        ),
+        "count_label_plural": (
+            "pages d'artistes, médias, associations et créateurs locaux à découvrir."
+        ),
         "collection_intro": (
             "Cette liste rassemble automatiquement les talents publiés qui disposent d'une "
             "page Facebook officielle."
