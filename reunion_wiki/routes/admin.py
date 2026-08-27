@@ -6,15 +6,10 @@ from flask import Blueprint, abort, current_app, flash, redirect, render_templat
 from ..auth import admin_required, verify_admin_credentials
 from ..db import get_db_connection
 from ..extensions import limiter
-from ..forms import (
-    AdminLoginForm,
-    AdminLogoutForm,
-    AdminSiteForm,
-    CategoryForm,
-    DeleteCategoryForm,
-    DeleteClickForm,
-    ModerationActionForm,
-)
+from ..forms.auth_forms import AdminLoginForm, AdminLogoutForm
+from ..forms.category_forms import CategoryForm, DeleteCategoryForm
+from ..forms.click_forms import DeleteClickForm
+from ..forms.site_forms import AdminSiteForm, ModerationActionForm
 from ..repositories import category_repository, click_repository, site_repository
 from ..taxonomy import (
     generate_unique_category_slug,

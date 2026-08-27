@@ -5,7 +5,7 @@ from flask import Blueprint, abort, current_app, flash, redirect, render_templat
 
 from ..db import get_db_connection
 from ..extensions import limiter
-from ..forms import SiteForm
+from ..forms.site_forms import SiteForm
 from ..mail import send_submission_notification
 from ..queries import get_derniers_sites_global, get_sites_en_vedette, get_top_sites
 from ..repositories import category_repository, click_repository, site_repository
