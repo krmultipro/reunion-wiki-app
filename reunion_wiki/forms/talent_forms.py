@@ -6,7 +6,7 @@ from flask_wtf.file import FileAllowed, FileField, FileSize
 from wtforms import HiddenField, IntegerField, SelectField, StringField, SubmitField, TextAreaField
 from wtforms.validators import DataRequired, Length, Optional, URL
 
-from . import _normalize_url, _sanitize_basic, _sanitize_multiline, _strip_filter
+from .filters import _normalize_url, _sanitize_basic, _sanitize_multiline, _strip_filter
 from ..services.talent_service import ENTITY_TYPES, STATUSES
 
 

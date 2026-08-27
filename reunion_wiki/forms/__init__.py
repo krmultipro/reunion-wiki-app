@@ -4,45 +4,13 @@ Formulaires avec validation pour Réunion Wiki
 SÉCURITÉ : Validation côté serveur pour éviter les injections
 """
 
+import re
+
 from flask_wtf import FlaskForm
 from wtforms import BooleanField, HiddenField, PasswordField, SelectField, StringField, SubmitField, TextAreaField
 from wtforms.validators import DataRequired, Length, URL, ValidationError
-import re
 
-
-def _strip_filter(value):
-    return value.strip() if isinstance(value, str) else value
-
-
-def _sanitize_basic(value):
-    if not isinstance(value, str):
-        return value
-    value = value.strip()
-    # Supprime les balises HTML et les caractères de contrôle invisibles
-    value = re.sub(r"<[^>]+>", "", value)
-    value = re.sub(r"[\x00-\x08\x0B\x0C\x0E-\x1F]", "", value)
-    return value
-
-
-def _sanitize_multiline(value):
-    if not isinstance(value, str):
-        return value
-    value = value.strip()
-    value = re.sub(r"<[^>]+>", "", value)
-    value = re.sub(r"[\x00-\x08\x0B\x0C\x0E-\x1F]", "", value)
-    value = value.replace("\r\n", "\n").replace("\r", "\n")
-    value = re.sub(r"\n{3,}", "\n\n", value)
-    return value
-
-def _normalize_url(value):
-    if not isinstance(value, str):
-        return value
-    value = _sanitize_basic(value)
-    if not value:
-        return value
-    if not value.startswith(("http://", "https://")):
-        value = "https://" + value
-    return value
+from .filters import _normalize_url, _sanitize_basic, _sanitize_multiline, _strip_filter
 
 
 class SiteForm(FlaskForm):

@@ -5,7 +5,7 @@ from flask_wtf import FlaskForm
 from wtforms import HiddenField, StringField, SubmitField
 from wtforms.validators import DataRequired, Length, Optional
 
-from . import _sanitize_basic
+from .filters import _sanitize_basic
 
 
 class TalentCategoryForm(FlaskForm):

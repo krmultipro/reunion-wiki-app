@@ -10,13 +10,8 @@ from flask_wtf.file import FileAllowed, FileField, FileSize
 from wtforms import BooleanField, HiddenField, SelectField, StringField, SubmitField, TextAreaField
 from wtforms.validators import DataRequired, Length, Optional
 
-from . import _sanitize_basic, _sanitize_multiline
+from .filters import _sanitize_basic, _sanitize_multiline, _strip_filter
 from ..services.content_service import CONTENT_TYPES, STATUSES
-
-
-def _strip_filter(value):
-    """Nettoie les espaces sans toucher au HTML (assaini ensuite par le service)."""
-    return value.strip() if isinstance(value, str) else value
 
 
 class ContentForm(FlaskForm):
