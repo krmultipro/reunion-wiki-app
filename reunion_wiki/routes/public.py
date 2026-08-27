@@ -7,9 +7,8 @@ from ..db import get_db_connection
 from ..extensions import limiter
 from ..forms.site_forms import SiteForm
 from ..mail import send_submission_notification
-from ..queries import get_derniers_sites_global, get_sites_en_vedette, get_top_sites
 from ..repositories import category_repository, click_repository, site_repository
-from ..services import click_service, talent_service
+from ..services import click_service, site_service, talent_service
 from ..taxonomy import (
     get_categories,
     get_city_choices,
@@ -37,9 +36,7 @@ def blog():
 
 @public_bp.route("/")
 def accueil():
-    data, category_stats = get_sites_en_vedette()
-    derniers_sites = get_derniers_sites_global(3)
-    top_sites = get_top_sites(5)
+    homepage_data = site_service.get_homepage_data(latest_limit=3, top_limit=5)
     youtube_guide = talent_service.get_public_social_guide("youtube")
     form_inline = SiteForm()
     form_inline.categorie.choices = [(cat, cat) for cat in get_categories()]
@@ -47,10 +44,10 @@ def accueil():
     form_inline.ville.choices = get_city_choices()
     return render_template(
         "index.html",
-        data=data,
-        category_stats=category_stats,
-        derniers_sites=derniers_sites,
-        top_sites=top_sites,
+        data=homepage_data["sites_by_category"],
+        category_stats=homepage_data["category_stats"],
+        derniers_sites=homepage_data["latest_sites"],
+        top_sites=homepage_data["top_sites"],
         youtube_guide=youtube_guide,
         form_inline=form_inline
     )
@@ -123,7 +120,7 @@ def redirect_site(site_id):
 
 @public_bp.route("/sites-ajoutes-recemment")
 def recently_added_sites():
-    sites = site_repository.get_latest_sites()
+    sites = site_service.get_latest_sites()
 
     return render_template("recently-added-sites.html", sites=sites)
 
@@ -136,7 +133,7 @@ def legal_notices():
 
 @public_bp.route("/sites-les-plus-visites")
 def most_visited_sites():
-    sites = site_repository.get_top_sites()
+    sites = site_service.get_top_sites()
 
     return render_template("most-visited-sites.html", sites=sites)
 

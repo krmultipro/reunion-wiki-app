@@ -15,7 +15,6 @@ from .db import get_db_connection, init_db_schema
 from .extensions import csrf, limiter
 from .forms.auth_forms import AdminLogoutForm
 from .mail import send_submission_notification
-from .queries import get_derniers_sites_global, get_sites_en_vedette, get_top_sites
 from .taxonomy import (
     generate_unique_category_slug,
     get_categories,
