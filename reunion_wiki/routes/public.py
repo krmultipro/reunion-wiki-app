@@ -6,9 +6,8 @@ from flask import Blueprint, abort, current_app, flash, redirect, render_templat
 from ..db import get_db_connection
 from ..extensions import limiter
 from ..forms.site_forms import SiteForm
-from ..mail import send_submission_notification
 from ..repositories import category_repository, click_repository, site_repository
-from ..services import click_service, site_service, talent_service
+from ..services import click_service, mail_service, site_service, talent_service
 from ..taxonomy import (
     get_categories,
     get_city_choices,
@@ -204,7 +203,7 @@ def website_submission_form():
                 status="en_attente",
             )
 
-            send_submission_notification({
+            mail_service.send_submission_notification({
                 "nom": nom,
                 "ville": resolved_city_name,
                 "lien": lien,

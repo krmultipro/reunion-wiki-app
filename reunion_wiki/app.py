@@ -14,7 +14,6 @@ from .auth import admin_required, verify_admin_credentials
 from .db import get_db_connection, init_db_schema
 from .extensions import csrf, limiter
 from .forms.auth_forms import AdminLogoutForm
-from .mail import send_submission_notification
 from .taxonomy import (
     generate_unique_category_slug,
     get_categories,
