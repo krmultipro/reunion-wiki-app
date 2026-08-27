@@ -4,8 +4,8 @@ from flask import Blueprint, abort, flash, redirect, render_template, request, s
 
 from ..auth import admin_required
 from ..forms.talent_forms import TalentActionForm, TalentForm
-from ..repositories import site_repository, talent_category_repository
-from ..services import talent_service
+from ..repositories import talent_category_repository
+from ..services import city_service, talent_service
 from ..services.talent_service import ENTITY_TYPES, STATUSES
 from ..utils import parse_positive_int
 
@@ -32,12 +32,7 @@ def _get_city_choices():
             Choix WTForms construits depuis la table villes.
     """
 
-    choices = [("", "Non précisée")]
-    for city in site_repository.get_admin_city_filters():
-        row = site_repository.get_city_by_slug(city["slug"])
-        if row:
-            choices.append((row["id"], row["nom"]))
-    return choices
+    return city_service.get_id_choices()
 
 
 def _populate_choices(form):

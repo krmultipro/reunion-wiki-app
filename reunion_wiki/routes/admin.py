@@ -4,20 +4,13 @@ import sqlite3
 from flask import Blueprint, abort, current_app, flash, redirect, render_template, request, session, url_for
 
 from ..auth import admin_required, verify_admin_credentials
-from ..db import get_db_connection
 from ..extensions import limiter
 from ..forms.auth_forms import AdminLoginForm, AdminLogoutForm
 from ..forms.category_forms import CategoryForm, DeleteCategoryForm
 from ..forms.click_forms import DeleteClickForm
 from ..forms.site_forms import AdminSiteForm, ModerationActionForm
-from ..repositories import category_repository, click_repository, site_repository
-from ..taxonomy import (
-    generate_unique_category_slug,
-    get_categories,
-    get_city_choices,
-    resolve_category,
-    resolve_city,
-)
+from ..repositories import category_repository, city_repository, click_repository, site_repository
+from ..services import category_service, city_service
 from ..utils import is_safe_next_url, mask_ip, parse_positive_int
 
 
@@ -116,7 +109,7 @@ def admin_sites():
         query_text = query_text[:120]
 
     try:
-        cities = site_repository.get_admin_city_filters()
+        cities = city_repository.get_all_cities()
 
         allowed_city_slugs = {row["slug"] for row in cities}
         if city_filter != "all" and city_filter not in allowed_city_slugs:
@@ -339,28 +332,18 @@ def admin_categories():
 def admin_create_category():
     form = CategoryForm()
     if form.validate_on_submit():
-        conn = get_db_connection()
-        if not conn:
-            flash("Impossible de se connecter à la base de données.", "error")
-            return redirect(url_for("admin_categories"))
         try:
-            cur = conn.cursor()
             if category_repository.get_category_by_name(form.nom.data):
                 flash("Cette catégorie existe déjà.", "error")
-                conn.close()
                 return redirect(url_for("admin_categories"))
 
-            slug = generate_unique_category_slug(cur, form.nom.data)
-            conn.commit()
+            slug = category_service.generate_unique_slug(form.nom.data)
             category_repository.create_category(form.nom.data, slug)
             flash("Catégorie créée.", "success")
             return redirect(url_for("admin_categories"))
         except sqlite3.Error as e:
-            conn.rollback()
             current_app.logger.error(f"Erreur lors de la création d'une catégorie: {e}")
             flash("Erreur lors de la création de la catégorie.", "error")
-        finally:
-            conn.close()
 
     return render_template(
         "admin/edit_category.html",
@@ -375,21 +358,15 @@ def admin_create_category():
 @admin_required
 def admin_edit_category(category_id):
     form = CategoryForm()
-    conn = get_db_connection()
-    if not conn:
-        flash("Impossible de se connecter à la base de données.", "error")
-        return redirect(url_for("admin_categories"))
 
     try:
         category = category_repository.get_category_by_id(category_id)
     except sqlite3.Error as e:
-        conn.close()
         current_app.logger.error(f"Erreur lors du chargement de la catégorie {category_id}: {e}")
         flash("Impossible de charger la catégorie.", "error")
         return redirect(url_for("admin_categories"))
 
     if not category:
-        conn.close()
         flash("Catégorie introuvable.", "error")
         return redirect(url_for("admin_categories"))
 
@@ -397,26 +374,22 @@ def admin_edit_category(category_id):
         form.nom.data = category["nom"]
     elif form.validate_on_submit():
         try:
-            cur = conn.cursor()
             if category_repository.get_category_by_name_excluding_id(form.nom.data, category_id):
                 flash("Une autre catégorie porte déjà ce nom.", "error")
-                conn.close()
                 return redirect(url_for("admin_categories"))
 
-            slug = generate_unique_category_slug(cur, form.nom.data, exclude_id=category_id)
-            conn.commit()
+            slug = category_service.generate_unique_slug(
+                form.nom.data,
+                exclude_id=category_id,
+            )
             category_repository.update_category(category_id, form.nom.data, slug)
             flash("Catégorie mise à jour.", "success")
-            conn.close()
             return redirect(url_for("admin_categories"))
         except sqlite3.Error as e:
-            conn.rollback()
-            conn.close()
             current_app.logger.error(f"Erreur lors de la mise à jour de la catégorie {category_id}: {e}")
             flash("Erreur lors de la mise à jour.", "error")
             return redirect(url_for("admin_categories"))
 
-    conn.close()
     return render_template(
         "admin/edit_category.html",
         form=form,
@@ -442,32 +415,22 @@ def admin_delete_category(category_id):
     if category_id != category_id_form:
         abort(400)
 
-    conn = get_db_connection()
-    if not conn:
-        flash("Impossible de se connecter à la base de données.", "error")
-        return redirect(url_for("admin_categories"))
-
     try:
         row = category_repository.get_category_by_id(category_id)
         if not row:
             flash("Catégorie introuvable.", "error")
-            conn.close()
             return redirect(url_for("admin_categories"))
 
         usage = category_repository.count_sites_by_category(category_id)["total"]
         if usage > 0:
             flash("Impossible de supprimer : des sites utilisent encore cette catégorie.", "error")
-            conn.close()
             return redirect(url_for("admin_categories"))
 
         category_repository.delete_category(category_id)
         flash("Catégorie supprimée.", "success")
     except sqlite3.Error as e:
-        conn.rollback()
         current_app.logger.error(f"Erreur lors de la suppression de la catégorie {category_id}: {e}")
         flash("Erreur lors de la suppression.", "error")
-    finally:
-        conn.close()
 
     return redirect(url_for("admin_categories"))
 
@@ -537,10 +500,10 @@ def admin_edit_site(site_id):
 
     form = AdminSiteForm()
     form.honeypot.data = ""
-    categories_list = get_categories()
+    categories_list = category_service.get_category_names()
     form.categorie.choices = [(cat, cat) for cat in categories_list]
     form.categorie.choices.insert(0, ("", "Sélectionnez une catégorie"))
-    form.ville.choices = get_city_choices()
+    form.ville.choices = city_service.get_name_choices()
     posted_category = request.form.get("categorie")
     posted_ville = request.form.get("ville")
     if posted_category and posted_category not in [choice[0] for choice in form.categorie.choices]:
@@ -562,32 +525,21 @@ def admin_edit_site(site_id):
             form.categorie.choices.append((current_category, current_category))
         form.categorie.data = current_category
     elif form.validate_on_submit():
-        conn_to_update = get_db_connection()
-        if not conn_to_update:
-            flash("Impossible de se connecter à la base de données.", "error")
-            return redirect(url_for("admin_dashboard"))
         # Sécurise la catégorie envoyée (doit exister)
         if form.categorie.data not in [choice[0] for choice in form.categorie.choices if choice[0]]:
             flash("Catégorie non valide.", "error")
-            conn_to_update.close()
             return redirect(url_for("admin_dashboard"))
         try:
-            cur_update = conn_to_update.cursor()
-            resolved = resolve_category(cur_update, form.categorie.data)
+            resolved = category_service.resolve_category(form.categorie.data)
             if not resolved:
                 flash("Catégorie non valide.", "error")
-                conn_to_update.rollback()
-                conn_to_update.close()
                 return redirect(url_for("admin_dashboard"))
             resolved_category_id, _resolved_category_name = resolved
-            resolved_city = resolve_city(cur_update, form.ville.data)
+            resolved_city = city_service.resolve_city(form.ville.data)
             if (form.ville.data or "").strip() and not resolved_city:
                 flash("Ville non valide.", "error")
-                conn_to_update.rollback()
-                conn_to_update.close()
                 return redirect(url_for("admin_dashboard"))
             resolved_city_id = resolved_city[0] if resolved_city else None
-            conn_to_update.commit()
             rowcount = site_repository.update_site(
                 site_id,
                 form.nom.data,
@@ -602,11 +554,8 @@ def admin_edit_site(site_id):
                 flash("La mise à jour a échoué : proposition introuvable.", "error")
             else:
                 flash("Proposition mise à jour avec succès.", "success")
-            conn_to_update.close()
             return redirect(url_for("admin_dashboard"))
         except sqlite3.Error as e:
-            conn_to_update.rollback()
-            conn_to_update.close()
             current_app.logger.error(f"Erreur lors de la mise à jour du site {site_id}: {e}")
             flash("Erreur lors de la mise à jour.", "error")
             return redirect(url_for("admin_dashboard"))
@@ -630,10 +579,10 @@ def admin_edit_site(site_id):
 def admin_create_site():
     form = AdminSiteForm()
     form.honeypot.data = ""
-    categories_list = get_categories()
+    categories_list = category_service.get_category_names()
     form.categorie.choices = [(cat, cat) for cat in categories_list]
     form.categorie.choices.insert(0, ("", "Sélectionnez une catégorie"))
-    form.ville.choices = get_city_choices()
+    form.ville.choices = city_service.get_name_choices()
     posted_category = request.form.get("categorie")
     posted_ville = request.form.get("ville")
     if posted_category and posted_category not in [choice[0] for choice in form.categorie.choices]:
@@ -645,23 +594,17 @@ def admin_create_site():
         if form.categorie.data not in [choice[0] for choice in form.categorie.choices if choice[0]]:
             flash("Catégorie non valide.", "error")
             return redirect(url_for("admin_create_site"))
-        conn = get_db_connection()
-        if not conn:
-            flash("Impossible de se connecter à la base de données.", "error")
-            return redirect(url_for("admin_dashboard"))
         try:
-            cur = conn.cursor()
-            resolved = resolve_category(cur, form.categorie.data)
+            resolved = category_service.resolve_category(form.categorie.data)
             if not resolved:
                 flash("Catégorie non valide.", "error")
                 return redirect(url_for("admin_create_site"))
             resolved_category_id, _resolved_category_name = resolved
-            resolved_city = resolve_city(cur, form.ville.data)
+            resolved_city = city_service.resolve_city(form.ville.data)
             if (form.ville.data or "").strip() and not resolved_city:
                 flash("Ville non valide.", "error")
                 return redirect(url_for("admin_create_site"))
             resolved_city_id = resolved_city[0] if resolved_city else None
-            conn.commit()
             site_repository.create_site(
                 form.nom.data,
                 resolved_city_id,
@@ -674,11 +617,8 @@ def admin_create_site():
             flash(f"Nouveau site ajouté (statut : {form.status.data}).", "success")
             return redirect(url_for("admin_dashboard"))
         except sqlite3.Error as e:
-            conn.rollback()
             current_app.logger.error(f"Erreur lors de la création d'un site depuis l'admin: {e}")
             flash("Erreur lors de l'ajout du site.", "error")
-        finally:
-            conn.close()
 
     return render_template(
         "admin/edit_site.html",

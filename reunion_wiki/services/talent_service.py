@@ -9,8 +9,8 @@ from flask import current_app
 from social_guides import SOCIAL_GUIDES
 
 from ..repositories import (
+    city_repository,
     content_repository,
-    site_repository,
     talent_category_repository,
     talent_repository,
 )
@@ -201,7 +201,7 @@ def generate_unique_slug(name, slug_input=None, exclude_id=None):
 
 
 def _get_city_by_id(city_id):
-    """Récupère une ville par identifiant via les repositories existants.
+    """Récupère une ville par identifiant.
 
     Args:
         city_id (int | None): Identifiant de ville.
@@ -213,12 +213,7 @@ def _get_city_by_id(city_id):
 
     if not city_id:
         return None
-
-    for city in site_repository.get_admin_city_filters():
-        row = site_repository.get_city_by_slug(city["slug"])
-        if row and row["id"] == city_id:
-            return row
-    return None
+    return city_repository.get_city_by_id(city_id)
 
 
 def _resolve_category_reference(data):

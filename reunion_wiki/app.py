@@ -13,15 +13,7 @@ from config import config
 from .auth import admin_required, verify_admin_credentials
 from .extensions import csrf, limiter
 from .forms.auth_forms import AdminLogoutForm
-from .taxonomy import (
-    generate_unique_category_slug,
-    get_categories,
-    get_categories_slug,
-    get_city_choices,
-    get_nom_categorie_depuis_slug,
-    resolve_category,
-    resolve_city,
-)
+from .services import category_service
 from .utils import get_client_ip, is_safe_next_url, mask_ip, parse_positive_int, slugify, slugify_ville
 
 
@@ -94,8 +86,8 @@ def inject_admin_logout_form():
 def inject_categories():
     """Variables de navigation utilisées sur plusieurs templates publics."""
     return {
-        "categories": get_categories(),
-        "categories_slug": get_categories_slug(),
+        "categories": category_service.get_category_names(),
+        "categories_slug": category_service.get_category_slug_map(),
         "ICON_MAP": ICON_MAP,
     }
 

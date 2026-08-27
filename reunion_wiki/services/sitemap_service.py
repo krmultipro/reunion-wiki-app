@@ -4,7 +4,7 @@ from xml.sax.saxutils import escape
 
 from flask import url_for
 
-from ..repositories import category_repository, content_repository, site_repository
+from ..repositories import category_repository, city_repository, content_repository
 
 
 # Pages publiques stables à toujours inclure dans le sitemap.
@@ -56,7 +56,7 @@ def build_sitemap_xml():
     for category in category_repository.get_all_categories():
         entries.append(_url_entry(url_for("voir_categorie", slug=category["slug"], _external=True)))
 
-    for city in site_repository.get_admin_city_filters():
+    for city in city_repository.get_all_cities():
         entries.append(_url_entry(url_for("voir_ville", slug=city["slug"], _external=True)))
 
     for page in content_repository.get_published_for_sitemap():
