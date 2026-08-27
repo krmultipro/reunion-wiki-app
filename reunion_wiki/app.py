@@ -11,7 +11,6 @@ from flask_wtf.csrf import CSRFError
 # noms ici évite de casser un script externe qui ferait encore `from app import ...`.
 from config import config
 from .auth import admin_required, verify_admin_credentials
-from .db import get_db_connection, init_db_schema
 from .extensions import csrf, limiter
 from .forms.auth_forms import AdminLogoutForm
 from .taxonomy import (
