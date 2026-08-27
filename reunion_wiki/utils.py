@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 
-import re
-import unicodedata
 from urllib.parse import urlparse
 
 from flask import request
+
+# Réexport conservé pour les imports historiques depuis reunion_wiki.utils.
+from slug_utils import slugify
 
 
 def get_client_ip() -> str:
@@ -45,17 +46,6 @@ def mask_ip(ip_value: str) -> str:
     if len(parts) == 4:
         return f"{parts[0]}.{parts[1]}.x.x"
     return "—"
-
-
-def slugify(nom):
-    nom = nom.replace("&", "et")
-    nom = "".join(ch for ch in nom if ch.isalnum() or ch.isspace() or ch in "-_")
-    nom = unicodedata.normalize("NFKD", nom).encode("ascii", "ignore").decode("ascii")
-    nom = nom.lower().strip()
-    nom = re.sub(r"[\s_]+", "-", nom)
-    nom = re.sub(r"[^a-z0-9-]", "", nom)
-    nom = re.sub(r"-{2,}", "-", nom).strip("-")
-    return nom
 
 
 def slugify_ville(nom: str) -> str:

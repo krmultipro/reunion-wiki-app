@@ -6,6 +6,7 @@ from datetime import datetime
 from flask import Flask
 from config import config
 from social_guides import SOCIAL_GUIDES
+from slug_utils import slugify
 
 # Charge la config Flask
 app = Flask(__name__)
@@ -41,24 +42,6 @@ CANONICAL_VILLES = [
     (23, "Le Tampon", "le-tampon"),
     (24, "Trois-Bassins", "trois-bassins"),
 ]
-
-
-def slugify(text: str) -> str:
-    s = (text or "").strip().lower()
-    replacements = {
-        "à": "a", "â": "a", "ä": "a",
-        "é": "e", "è": "e", "ê": "e", "ë": "e",
-        "î": "i", "ï": "i",
-        "ô": "o", "ö": "o",
-        "ù": "u", "û": "u", "ü": "u",
-        "ç": "c",
-    }
-    for k, v in replacements.items():
-        s = s.replace(k, v)
-    s = s.replace("'", "").replace("’", "").replace(".", "").replace(",", "")
-    s = re.sub(r"\s+", "-", s)
-    s = re.sub(r"-+", "-", s).strip("-")
-    return s
 
 
 def table_exists(cur, table_name: str) -> bool:
