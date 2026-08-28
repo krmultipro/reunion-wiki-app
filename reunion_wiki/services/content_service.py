@@ -3,9 +3,8 @@
 import re
 from datetime import datetime
 
-from social_guides import SOCIAL_GUIDES_BY_SLUG
-
 from ..repositories import content_repository
+from ..social_guides import SOCIAL_GUIDES_BY_SLUG
 from ..utils import slugify
 from . import image_storage, talent_service
 

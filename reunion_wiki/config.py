@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 # Chargement des variables d'environnement
 load_dotenv()
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 class Config:
     print("Chargement de la configuration...")
@@ -22,10 +22,10 @@ class Config:
     
     if not DATABASE_PATH:
         # Si aucune variable => utilise site/data/base.db
-        DATABASE_PATH = os.path.join(BASE_DIR, 'data', 'base.db')
+        DATABASE_PATH = os.path.join(PROJECT_ROOT, 'data', 'base.db')
     elif not os.path.isabs(DATABASE_PATH):
         # Si chemin relatif => le rendre absolu depuis le projet
-        DATABASE_PATH = os.path.join(BASE_DIR, DATABASE_PATH)
+        DATABASE_PATH = os.path.join(PROJECT_ROOT, DATABASE_PATH)
         
     print("DATABASE_PATH final:", DATABASE_PATH)
 
@@ -33,7 +33,7 @@ class Config:
     if not UPLOAD_FOLDER:
         UPLOAD_FOLDER = os.path.join(os.path.dirname(DATABASE_PATH), "uploads")
     elif not os.path.isabs(UPLOAD_FOLDER):
-        UPLOAD_FOLDER = os.path.join(BASE_DIR, UPLOAD_FOLDER)
+        UPLOAD_FOLDER = os.path.join(PROJECT_ROOT, UPLOAD_FOLDER)
     
     # NOTIFICATIONS : configuration email (désactivée par défaut)
     MAIL_ENABLED = os.getenv('MAIL_ENABLED', 'false').lower() == 'true'

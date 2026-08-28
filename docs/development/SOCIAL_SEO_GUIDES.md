@@ -58,7 +58,7 @@ La responsabilité de chaque couche reste distincte :
 
 ## Configuration centrale
 
-Le fichier `social_guides.py` contient `SOCIAL_GUIDES`, la configuration unique
+Le fichier `reunion_wiki/social_guides.py` contient `SOCIAL_GUIDES`, la configuration unique
 des quatre réseaux.
 
 Chaque entrée définit notamment :
@@ -124,7 +124,7 @@ par défaut. Un champ personnalisé dans l'administration reste inchangé.
 Les pages sont enregistrées comme des contenus standards de type `seo_landing`.
 Elles profitent ainsi du CRUD, des statuts et du sitemap déjà existants.
 
-Attention : modifier les textes par défaut dans `social_guides.py` ne met pas à
+Attention : modifier les textes par défaut dans `reunion_wiki/social_guides.py` ne met pas à
 jour les lignes déjà créées dans la base. Une page existante doit être modifiée
 depuis l'administration, ou faire l'objet d'une migration explicite si une mise
 à jour automatique devient nécessaire.
@@ -246,7 +246,7 @@ Entre le titre principal et les cartes, une seule phrase compacte indique le
 nombre de résultats et décrit la sélection. Le nombre vient de
 `dynamic_creators|length`, tandis que les variantes singulière et plurielle sont
 définies par `count_label_singular` et `count_label_plural` dans
-`social_guides.py`. La phrase n'est pas affichée lorsque la sélection est vide.
+`reunion_wiki/social_guides.py`. La phrase n'est pas affichée lorsque la sélection est vide.
 
 Chaque carte conduit vers la fiche Réunion Wiki du talent. Le système favorise
 ainsi la navigation interne avant la sortie éventuelle vers le réseau social.
@@ -382,7 +382,7 @@ nécessaire de modifier les pages SEO.
 
 | Fichier | Responsabilité |
 | --- | --- |
-| `social_guides.py` | Configuration commune et contenus initiaux |
+| `reunion_wiki/social_guides.py` | Configuration commune et contenus initiaux |
 | `migrate.py` | Création idempotente des pages absentes |
 | `reunion_wiki/repositories/talent_repository.py` | Requêtes des talents par réseau et compteurs |
 | `reunion_wiki/repositories/content_repository.py` | Lecture groupée des pages publiées |

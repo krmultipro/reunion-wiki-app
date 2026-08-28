@@ -6,14 +6,13 @@ from urllib.parse import urlparse
 
 from flask import current_app
 
-from social_guides import SOCIAL_GUIDES
-
 from ..repositories import (
     city_repository,
     content_repository,
     talent_category_repository,
     talent_repository,
 )
+from ..social_guides import SOCIAL_GUIDES
 from ..utils import slugify
 from . import image_storage
 

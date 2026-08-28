@@ -4,9 +4,9 @@ import shutil
 import sqlite3
 from datetime import datetime
 from flask import Flask
-from config import config
-from social_guides import SOCIAL_GUIDES
-from slug_utils import slugify
+from reunion_wiki.config import config
+from reunion_wiki.slug_utils import slugify
+from reunion_wiki.social_guides import SOCIAL_GUIDES
 
 # Charge la config Flask
 app = Flask(__name__)

@@ -5,7 +5,7 @@ from urllib.parse import urlparse
 from flask import request
 
 # Réexport conservé pour les imports historiques depuis reunion_wiki.utils.
-from slug_utils import slugify
+from .slug_utils import slugify
 
 
 def get_client_ip() -> str:

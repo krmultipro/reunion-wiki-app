@@ -12,6 +12,9 @@ Structure actuelle :
 app.py
 reunion_wiki/
 ├── app.py
+├── config.py
+├── slug_utils.py
+├── social_guides.py
 ├── forms/
 ├── routes/
 ├── services/
@@ -19,8 +22,6 @@ reunion_wiki/
 ├── auth.py
 ├── db.py
 ├── extensions.py
-├── mail.py
-├── taxonomy.py
 └── utils.py
 ```
 

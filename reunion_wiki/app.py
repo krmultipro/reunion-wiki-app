@@ -5,7 +5,7 @@ from datetime import timedelta
 
 from flask import Flask
 
-from config import config
+from .config import config
 from .blueprints import register_blueprints
 from .extensions import csrf, limiter
 from .http_handlers import register_http_handlers
