@@ -2,9 +2,9 @@
 
 | Métadonnée | Valeur |
 | --- | --- |
-| Version | 0.1 |
+| Version | 0.2 |
 | Statut | Brouillon |
-| Dernière mise à jour | 2 septembre 2026 |
+| Dernière mise à jour | 15 septembre 2026 |
 
 ## Vision
 
@@ -57,16 +57,22 @@ Les conditions précises d'admissibilité sont définies dans
 Avant de considérer le parcours prêt, une vraie fiche pilote doit être traitée
 de bout en bout :
 
-1. recueillir les informations et les liens du talent ;
-2. vérifier son lien avec La Réunion ;
-3. enregistrer et afficher au moins une source pertinente ;
-4. documenter la provenance de l'image et conserver l'autorisation ;
-5. rédiger une présentation neutre ;
-6. enregistrer la fiche en brouillon ;
-7. relire et corriger la fiche ;
-8. publier la fiche ;
-9. vérifier son affichage sur mobile et ordinateur ainsi que tous ses liens ;
-10. vérifier qu'elle peut ensuite être corrigée ou archivée.
+1. choisir un proche créateur ou influenceur disponible pour relire sa fiche ;
+2. recueillir les informations et les liens du talent ;
+3. vérifier un ou plusieurs rattachements avec La Réunion ;
+4. enregistrer et afficher au moins une source pertinente ;
+5. si un portrait spécifique est utilisé, vérifier manuellement sa provenance et
+   ses droits ; sinon utiliser l'image générique ;
+6. rédiger une présentation neutre ;
+7. enregistrer obligatoirement la fiche en brouillon ;
+8. relire et corriger la fiche ;
+9. publier la fiche au moyen d'une action distincte ;
+10. vérifier son affichage sur mobile et ordinateur ainsi que tous ses liens ;
+11. vérifier qu'elle peut ensuite être corrigée ou archivée ;
+12. confirmer que tout le parcours fonctionne sans modification manuelle de la
+    base de données ;
+13. faire valider le contenu affiché par le talent et conserver ses remarques
+    dans des notes d'amélioration.
 
 Cette fiche pilote est un test grandeur nature du parcours, pas une nouvelle
 fonctionnalité.
@@ -86,4 +92,5 @@ l'objet d'un ADR.
 
 | Version | Date | Statut | Modification |
 | --- | --- | --- | --- |
+| 0.2 | 15 septembre 2026 | Brouillon | Précision du parcours pilote talents, du brouillon obligatoire, de la validation par le talent et du recours possible à l'image générique. |
 | 0.1 | 2 septembre 2026 | Brouillon | Création du cahier des charges Docs as Code et définition du parcours pilote des talents. |

@@ -225,6 +225,20 @@ Avant de publier une fiche, vérifier que :
 - le temps employé reflète correctement une activité actuelle ou passée ;
 - l'origine de l'image et les autorisations nécessaires sont documentées.
 
+## Images et phase de lancement
+
+Une fiche peut être publiée sans portrait. En l'absence d'une autorisation ou
+d'une licence permettant clairement la réutilisation, utiliser l'image générique
+Réunion Wiki.
+
+Une utilisation temporaire ou expérimentale n'est pas une exception : la
+présence publique d'une image et la mention de son auteur ne suffisent pas à
+autoriser sa reproduction. Toute image spécifique sans base d'utilisation
+documentée doit être retirée ou remplacée sans délai.
+
+La décision complète est consignée dans
+[`ADR-002`](../decisions/ADR-002-droits-images-talents-au-lancement.md).
+
 ---
 
 # Philosophie

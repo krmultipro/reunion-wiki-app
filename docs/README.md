@@ -15,6 +15,8 @@ Ce dossier constitue la documentation versionnée du projet selon une approche
 - [`PRODUCT.md`](PRODUCT.md) : vision, périmètre et exigences du produit.
 - [`BUSINESS_RULES.md`](BUSINESS_RULES.md) : règles métier et critères
   d'acceptation.
+- [`business-rules/RULES_CATALOG.md`](business-rules/RULES_CATALOG.md) :
+  catalogue complet des 69 règles, périmètres et états d'implémentation.
 - [`EDITORIAL_GUIDE.md`](EDITORIAL_GUIDE.md) : point d'entrée du guide
   éditorial.
 - [`ARCHITECTURE.md`](ARCHITECTURE.md) : point d'entrée de la documentation

@@ -17,3 +17,5 @@ Ce dossier conserve les décisions structurantes du projet.
 
 - [`ADR-001`](ADR-001-documentation-as-code-et-tracabilite.md) — Documentation
   as Code et traçabilité des décisions.
+- [`ADR-002`](ADR-002-droits-images-talents-au-lancement.md) — Droits des images
+  de talents et règle applicable pendant le lancement.
