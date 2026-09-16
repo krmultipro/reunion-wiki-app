@@ -2,7 +2,7 @@
 
 | Métadonnée | Valeur |
 | --- | --- |
-| Version | 1.0 |
+| Version | 1.1 |
 | Statut | Validé |
 | Dernière mise à jour | 16 septembre 2026 |
 | Domaine | Annuaire des sites réunionnais |
@@ -68,6 +68,24 @@ Réunion Wiki. Il complète le
 - **Critère d'acceptation :** un doublon exact n'est pas enregistré ; un domaine
   déjà connu ne bloque pas automatiquement une URL distincte.
 
+### Amendement 1.1 — Paramètres, fragments et destination finale
+
+- **Statut :** Actif
+- **Paramètres supprimés :** `utm_*`, `fbclid`, `gclid` et les autres paramètres
+  publicitaires connus sont retirés. Les paramètres nécessaires au
+  fonctionnement de la page sont conservés.
+- **Fragment :** la partie située après `#` est supprimée lors de la
+  normalisation.
+- **Casse :** la casse du domaine est ignorée, mais celle du chemin est
+  conservée, car elle peut être significative pour le serveur.
+- **Préfixe `www` :** les variantes avec et sans `www` ne sont considérées comme
+  identiques que lorsqu'une redirection effective relie l'une à l'autre. Dans
+  le cas contraire, un avertissement non bloquant est affiché à
+  l'administrateur.
+- **Destination finale :** après une redirection valide, l'administrateur peut
+  choisir de conserver l'URL finale, en privilégiant HTTPS. L'URL initialement
+  proposée reste dans l'historique privé.
+
 ## RM-SITE-004 — Catégorisation
 
 - **Version :** 1.0
@@ -125,6 +143,19 @@ Réunion Wiki. Il complète le
 - **Critère d'acceptation :** seuls les sites `published` sont visibles dans
   l'espace public ; un site archivé reste disponible dans l'administration.
 
+### Amendement 1.1 — Transitions autorisées
+
+- **Statut :** Actif
+- **Transitions :**
+  - `draft` → `published` ou `archived` ;
+  - `pending` → `published` ou `refused` ;
+  - `published` → `archived` ;
+  - `refused` → `pending` lors d'un réexamen administratif ;
+  - `archived` → `published`.
+- **Interdiction :** toute autre transition est refusée. En particulier, un
+  site publié ne passe pas directement à `refused` et une proposition refusée
+  reste invisible publiquement.
+
 ## RM-SITE-007 — Recherche, filtres et découverte
 
 - **Version :** 1.0
@@ -143,6 +174,18 @@ Réunion Wiki. Il complète le
 - **Critère d'acceptation :** une recherche telle que `restaurant`, filtrée sur
   `Gastronomie` et `Saint-Denis`, ne renvoie que les sites publiés respectant
   simultanément ces critères.
+
+### Amendement 1.1 — Normalisation des termes de recherche
+
+- **Statut :** Actif
+- **Accents et casse :** la recherche ignore les accents et les majuscules ;
+  `REUNION`, `Réunion` et `reunion` sont équivalents.
+- **Plusieurs termes :** l'ordre des mots n'est pas imposé. Les résultats qui
+  correspondent au plus grand nombre de termes sont classés en premier.
+- **Mots incomplets :** une correspondance partielle est acceptée dans le MVP ;
+  par exemple, `restau` peut retrouver `restaurant`.
+- **Fautes :** la correction orthographique et les suggestions du type
+  « vouliez-vous dire » sont reportées après le MVP.
 
 ## RM-SITE-008 — Clics, popularité et tendances
 
@@ -166,6 +209,20 @@ Réunion Wiki. Il complète le
 - **Critère d'acceptation :** un clic admissible crée un seul événement et un
   seul incrément ; sa suppression retire également cet incrément.
 
+### Amendement 1.1 — Identification des robots et des répétitions
+
+- **Statut :** Actif
+- **Robots :** ils sont identifiés à partir du `User-Agent` et d'une liste de
+  signatures connues. Un robot identifié ne crée aucun événement de clic.
+- **Visiteur répété :** la déduplication utilise un identifiant technique dérivé
+  de l'adresse IP et du `User-Agent`, associé au site pendant 30 minutes.
+  L'adresse IP brute n'est pas conservée lorsqu'elle n'est pas nécessaire.
+- **Cookies :** aucun cookie publicitaire n'est nécessaire à la déduplication
+  du MVP, qui est réalisée côté serveur.
+- **Administrateurs :** tous les clics d'un administrateur authentifié sont
+  exclus, qu'ils proviennent de l'administration, d'une prévisualisation ou de
+  la page publique.
+
 ## RM-SITE-009 — Dates métier
 
 - **Version :** 1.0
@@ -184,6 +241,28 @@ Réunion Wiki. Il complète le
   publication.
 - **Critère d'acceptation :** proposition, première publication et modification
   peuvent être distinguées sans déduire une date à partir d'une autre.
+
+### Amendement 1.1 — Première publication et nouvelle publication
+
+- **Statut :** Actif
+- **Remplacement ciblé :** cet amendement remplace la définition de
+  `published_at` donnée dans la version 1.0, sans supprimer sa trace.
+- **Dates :**
+  - `submitted_at` conserve la date de la proposition publique ;
+  - `first_published_at` conserve la toute première publication et ne change
+    jamais ;
+  - `published_at` est la date utilisée pour les nouveautés ;
+  - `updated_at` conserve la dernière modification.
+- **Première publication :** `first_published_at` et `published_at` reçoivent la
+  même date.
+- **Republication normale :** le retour de `archived` à `published` ne modifie
+  pas `published_at`.
+- **Nouvelle publication :** une action ou une case explicite « Traiter comme
+  une nouvelle publication », jamais sélectionnée par défaut, actualise
+  `published_at` et fait réapparaître le site dans les nouveautés.
+- **Conservation :** `first_published_at`, les clics et l'historique restent
+  inchangés. L'action de nouvelle publication, sa date et l'administrateur sont
+  consignés dans l'historique privé.
 
 ## RM-SITE-010 — Proposition publique et modération
 
@@ -210,6 +289,13 @@ Réunion Wiki. Il complète le
 - **Critère d'acceptation :** un envoi public valide crée un élément `pending`,
   invisible publiquement, que l'administrateur peut corriger, publier ou refuser.
 
+### Amendement 1.1 — Correction sans transition
+
+- **Statut :** Actif
+- **Règle :** l'administrateur peut corriger une proposition tout en la laissant
+  au statut `pending`. La modification des données ne déclenche aucune
+  publication ni transition implicite.
+
 ## RM-SITE-011 — Contrôles avant publication
 
 - **Version :** 1.0
@@ -230,6 +316,20 @@ Réunion Wiki. Il complète le
 - **Critère d'acceptation :** aucune erreur de validation ne peut produire un
   statut `published`, y compris lors d'une création directe par un
   administrateur.
+
+### Amendement 1.1 — Vérification HTTP de l'accessibilité
+
+- **Statut :** Actif
+- **Succès automatique :** une URL est confirmée accessible lorsque la réponse
+  finale possède un code HTTP compris entre `200` et `299`.
+- **Redirections :** le contrôle suit au maximum cinq redirections. La
+  destination finale doit répondre avec un code `2xx`.
+- **Indisponibilité :** une réponse `404` ou `410` rend le site inaccessible.
+- **Vérification manuelle :** une réponse `401` ou `403` exige une vérification
+  par l'administrateur et ne provoque pas un refus automatique.
+- **Erreur temporaire :** une réponse `429`, une erreur `5xx` ou un délai dépassé
+  conserve le site en `draft` ou `pending` afin de permettre un nouveau contrôle.
+- **HTTPS :** un certificat invalide bloque la publication jusqu'à vérification.
 
 ## RM-SITE-012 — Parcours pilote grandeur nature
 
@@ -259,4 +359,5 @@ Réunion Wiki. Il complète le
 
 | Version | Date | Modification |
 | --- | --- | --- |
+| 1.1 | 16 septembre 2026 | Ajout des transitions de statut, de la vérification HTTP, de la normalisation avancée des URL, du comportement de recherche, de la déduplication des clics et du traitement explicite des nouvelles publications. |
 | 1.0 | 16 septembre 2026 | Première validation détaillée de l'admissibilité, des doublons, catégories, localisations, statuts, recherches, clics, dates, propositions, contrôles de publication et du parcours pilote des sites. |

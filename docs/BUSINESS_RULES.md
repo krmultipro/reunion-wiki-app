@@ -2,7 +2,7 @@
 
 | Métadonnée | Valeur |
 | --- | --- |
-| Version du document | 1.3 |
+| Version du document | 1.4 |
 | Statut | Validé |
 | Dernière mise à jour | 16 septembre 2026 |
 
@@ -248,6 +248,7 @@ systèmes d'identifiants est conservée à la fin du catalogue.
 
 | Version | Date | Modification |
 | --- | --- | --- |
+| 1.4 | 16 septembre 2026 | Ajout des décisions de cas limites pour les sites : transitions de statut, accessibilité HTTP, redirections et normalisation, recherche, identification des clics répétés et nouvelle publication explicite. |
 | 1.3 | 16 septembre 2026 | Validation des décisions relatives aux sites : admissibilité, données minimales, normalisation et doublons, catégorie unique, portée géographique, statuts, recherche, clics, dates, modération, contrôles de publication et parcours pilote. |
 | 1.2 | 15 septembre 2026 | Validation des décisions talents : rattachements multiples, sources publiques, Twitch, recherche et filtres, demandes de correction, brouillon obligatoire, contrôles de publication et fiche pilote. Report de la gestion structurée des droits d'image. |
 | 1.1 | 14 septembre 2026 | Ajout du catalogue complet des 69 règles et clarification juridique de RM-TAL-004 pour le lancement. |

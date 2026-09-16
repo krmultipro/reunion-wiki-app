@@ -35,6 +35,8 @@ Ce dossier constitue la documentation versionnée du projet selon une approche
 - `development/SOCIAL_SEO_GUIDES.md` documente les guides SEO sociaux.
 - `testing/TALENT_TEST_CASES.md` conserve les cas de test fonctionnels du
   parcours des talents et leur suivi d'exécution.
+- `testing/SITE_TEST_CASES.md` conserve les cas de test prioritaires du parcours
+  des sites, leur ordre d'automatisation et leur suivi d'exécution.
 
 ## Règles de modification
 

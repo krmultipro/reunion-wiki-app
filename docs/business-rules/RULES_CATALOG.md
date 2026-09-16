@@ -2,7 +2,7 @@
 
 | Métadonnée | Valeur |
 | --- | --- |
-| Version | 1.2 |
+| Version | 1.3 |
 | Statut | Référence versionnée |
 | Date du relevé | 16 septembre 2026 |
 | Origine | Base Notion « Règles métiers Réunion Wiki » et audit statique du dépôt |
@@ -29,32 +29,32 @@ automatisés correspondant à ce catalogue n'a été trouvée dans le dépôt.
 
 | ID | Périmètre | Implémentation | Règle | Critère d'acceptation |
 | --- | --- | --- | --- | --- |
-| RM-01 | MVP | Implémentée | Un site ne peut être publié que s'il possède un nom, une URL valide, une description et au moins une catégorie. | La publication est refusée si l'un de ces quatre éléments manque ou est invalide. |
+| RM-01 | MVP | En cours | Un site ne peut être publié que s'il possède un nom, une URL valide et accessible, une description neutre et une catégorie principale. | La publication est refusée si l'un des quatre éléments manque ou si l'accessibilité HTTP ne peut pas être confirmée automatiquement ou manuellement. |
 | RM-02 | MVP | En cours | Un site référencé satisfait au moins un critère de lien réel avec La Réunion : organisme réunionnais, contenu local régulier, offre nationale spécifique ou ressource particulièrement utile au public réunionnais. | L'administrateur confirme le lien avant publication. La justification et son éventuelle URL de preuve sont facultatives, conservées en privé et jamais affichées au public. |
-| RM-03 | MVP | À faire | Une même URL normalisée ne peut être enregistrée qu'une seule fois. La comparaison ignore la casse du domaine, le `/` final, les ports standards, les paramètres publicitaires et la différence HTTP/HTTPS lorsque le domaine et le chemin sont identiques. | Un doublon exact est bloqué lors d'une proposition, d'une création admin ou d'une modification ; un même domaine avec un chemin distinct produit seulement un avertissement. |
+| RM-03 | MVP | À faire | Une même URL normalisée ne peut être enregistrée qu'une seule fois. La normalisation retire le fragment et les paramètres publicitaires, ignore la casse du domaine, mais conserve la casse du chemin et les paramètres fonctionnels. | Un doublon exact est bloqué lors d'une proposition, d'une création admin ou d'une modification. Les variantes avec et sans `www` ne sont fusionnées automatiquement que si une redirection les relie. |
 | RM-04 | MVP | Implémentée | En MVP, un site possède exactement une catégorie principale ; ses autres activités sont décrites dans sa présentation. Les catégories secondaires sont reportées en V2. | Une catégorie principale est obligatoire et aucune catégorie secondaire n'est proposée dans le MVP. |
 | RM-05 | V2 | À faire | Seules les catégories actives peuvent être attribuées à un nouveau site ; une catégorie désactivée conserve ses sites existants. | Une catégorie inactive n'apparaît plus dans les formulaires. Une catégorie utilisée ne peut être supprimée sans réaffectation et peut être archivée. |
 | RM-06 | MVP | En cours | La localisation d'un site est facultative et distingue une commune du référentiel, `Toute La Réunion`, `En ligne` et `Non précisée`. | Une commune vide signifie `Non précisée`. Les portées `Toute La Réunion` et `En ligne` sont des choix explicites et ne sont jamais déduites d'une valeur vide. |
 | RM-07 | MVP | Implémentée | Seuls les sites publiés sont visibles publiquement. | Un site dont le statut n'est pas publié est absent des listes, recherches et classements publics. |
-| RM-08 | MVP | En cours | Un site peut être brouillon, en attente, publié, refusé ou archivé. | Les cinq statuts sont disponibles et seules les transitions autorisées peuvent être appliquées. |
+| RM-08 | MVP | En cours | Un site peut être brouillon, en attente, publié, refusé ou archivé. Les transitions autorisées sont `draft` vers `published` ou `archived`, `pending` vers `published` ou `refused`, `published` vers `archived`, `refused` vers `pending` et `archived` vers `published`. | Toute autre transition est refusée. Une correction de proposition peut conserver le statut `pending` et ne déclenche aucune transition implicite. |
 | RM-09 | MVP | À faire | Un site fermé, durablement inaccessible, obsolète ou non conforme peut être archivé. | L'archivage retire le site du public sans supprimer son historique ni ses statistiques, et le conserve dans l'administration. |
 
 ## Recherche, clics et tendances
 
 | ID | Périmètre | Implémentation | Règle | Critère d'acceptation |
 | --- | --- | --- | --- | --- |
-| RM-10 | MVP | En cours | Un visiteur peut rechercher un site par nom, description, catégorie, commune, domaine ou URL et éventuels mots-clés. | Une recherche renvoie uniquement les sites publiés correspondant à au moins un de ces champs. |
+| RM-10 | MVP | En cours | Un visiteur peut rechercher un site par nom, description, catégorie, commune, domaine ou URL et éventuels mots-clés. La recherche ignore les accents, la casse et l'ordre des mots, et accepte les termes partiels. | Une recherche renvoie uniquement les sites publiés et classe d'abord ceux qui correspondent au plus grand nombre de termes. La correction orthographique est hors MVP. |
 | RM-11 | MVP | Implémentée | La recherche publique ne retourne que les sites publiés. | Aucun site en attente, refusé, brouillon ou archivé n'apparaît dans les résultats. |
 | RM-12 | MVP | En cours | Les résultats peuvent être filtrés par catégorie principale, commune et portée géographique. | Les filtres se combinent avec la recherche et limitent les résultats aux sites publiés respectant simultanément les critères. |
 | RM-13 | V1 | En cours | Les résultats peuvent être triés par pertinence, popularité, ordre alphabétique ou date de publication. | Le visiteur peut sélectionner chaque tri et l'ordre affiché correspond au choix. |
 | RM-14 | V1 | À faire | Une recherche sans résultat propose des catégories proches ou la proposition d'un nouveau site. | Lorsque la recherche ne retourne rien, au moins une suggestion utile et le lien de proposition sont affichés. |
 | RM-15 | MVP | Implémentée | Un clic est comptabilisé uniquement lorsqu'un visiteur utilise le lien sortant géré par Réunion Wiki vers un site publié. | Un clic admissible crée un événement et incrémente une seule fois le compteur du site. |
-| RM-16 | MVP | En cours | Les clics des administrateurs authentifiés et des robots identifiés ne sont pas comptabilisés. | Ces accès ne modifient ni le compteur ni l'historique des clics. |
-| RM-17 | MVP | Implémentée | Les clics répétés d'un même visiteur vers un même site pendant une courte période ne comptent qu'une fois. | Une même adresse IP ne produit qu'un clic par site pendant une fenêtre de 30 minutes. |
+| RM-16 | MVP | En cours | Les clics des administrateurs authentifiés et des robots identifiés par leur `User-Agent` ne sont pas comptabilisés. | Ces accès ne créent aucun événement, qu'ils proviennent de l'administration, d'une prévisualisation ou de la page publique. |
+| RM-17 | MVP | En cours | Les clics répétés d'un même visiteur vers un même site pendant 30 minutes ne comptent qu'une fois. | La déduplication côté serveur utilise un identifiant dérivé de l'adresse IP, du `User-Agent` et du site, sans cookie publicitaire ni conservation inutile de l'adresse IP brute. |
 | RM-18 | MVP | En cours | Les tendances sont calculées à partir des clics admissibles : tendance sur 7 jours, progression par comparaison avec les 7 jours précédents et popularité stable sur 30 jours. | Chaque indicateur utilise sa période définie ; un site sans clic reste absent des classements principaux, mais demeure visible dans les nouveautés et sa catégorie. |
 | RM-19 | MVP | Implémentée | Seuls les sites publiés peuvent apparaître dans les tendances. | Aucun site non publié n'est présent dans les classements calculés. |
-| RM-20 | MVP | À faire | Une proposition, une première publication et une modification possèdent des dates distinctes : `submitted_at`, `published_at` et `updated_at`. | Une modification ne change pas `published_at`. Une republication ne lui attribue une nouvelle valeur que sur décision explicite de l'administrateur. |
-| RM-21 | MVP | En cours | Les derniers sites ajoutés sont classés du plus récemment publié au plus ancien. | La liste publique est ordonnée par `published_at` décroissant et non par la date de proposition ou de modification. |
+| RM-20 | MVP | À faire | Une proposition, une première publication, une publication utilisée pour les nouveautés et une modification possèdent des dates distinctes : `submitted_at`, `first_published_at`, `published_at` et `updated_at`. | `first_published_at` ne change jamais. `published_at` n'est renouvelée que par l'action explicite « Traiter comme une nouvelle publication », jamais sélectionnée par défaut. |
+| RM-21 | MVP | En cours | Les derniers sites ajoutés sont classés du plus récemment publié au plus ancien à partir de `published_at`. | Une republication normale ne replace pas le site dans les nouveautés. Une nouvelle publication explicite actualise `published_at`, sans effacer les clics ni l'historique. |
 
 ## Proposition et modération des sites
 
@@ -160,8 +160,8 @@ de ses réponses, de ses permissions et de sa politique de conservation.
 
 | État | Nombre de règles |
 | --- | ---: |
-| Implémentée | 28 |
-| En cours | 26 |
+| Implémentée | 26 |
+| En cours | 28 |
 | À faire | 15 |
 | Testée | 0 |
 
@@ -201,6 +201,7 @@ et sont reliées comme suit.
 
 | Version | Date | Modification |
 | --- | --- | --- |
+| 1.3 | 16 septembre 2026 | Précision des transitions, contrôles HTTP, règles de normalisation et de recherche, identification des clics répétés et dates de republication. Les états d'implémentation sont réévalués selon ces critères plus stricts. |
 | 1.2 | 16 septembre 2026 | Intégration des décisions validées pour l'annuaire des sites et alignement des périmètres, critères d'acceptation et états d'implémentation sur les règles détaillées `RM-SITE`. |
 | 1.1 | 15 septembre 2026 | Intégration des réponses validées pour RM-31, RM-32, RM-38, RM-39 et RM-40, et report de la gestion structurée des images. |
 | 1.0 | 14 septembre 2026 | Première transcription complète des 69 règles, ajout des périmètres, critères d'acceptation et états issus de l'audit du code. |
