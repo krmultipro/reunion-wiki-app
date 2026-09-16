@@ -31,6 +31,7 @@ def _form_to_data(form):
         "meta_title": form.meta_title.data,
         "meta_description": form.meta_description.data,
         "status": form.status.data,
+        "remove_featured_image": form.remove_featured_image.data,
     }
 
 
@@ -88,6 +89,7 @@ def new_content():
         form_action=url_for("admin_content.new_content"),
         page_title="Créer un contenu",
         submit_label="Créer le contenu",
+        locked_slug=False,
         admin_username=session.get("admin_username"),
     )
 
@@ -133,6 +135,7 @@ def edit_content(content_id):
         form_action=url_for("admin_content.edit_content", content_id=content_id),
         page_title=f"Éditer « {row['title']} »",
         submit_label="Enregistrer les modifications",
+        locked_slug=content_service.is_social_guide_slug(row["slug"]),
         admin_username=session.get("admin_username"),
     )
 

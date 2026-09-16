@@ -7,16 +7,11 @@ appliquée dans le service, pas ici : un brouillon peut rester incomplet.
 
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileAllowed, FileField, FileSize
-from wtforms import HiddenField, SelectField, StringField, SubmitField, TextAreaField
+from wtforms import BooleanField, HiddenField, SelectField, StringField, SubmitField, TextAreaField
 from wtforms.validators import DataRequired, Length, Optional
 
-from . import _sanitize_basic, _sanitize_multiline
+from .filters import _sanitize_basic, _sanitize_multiline, _strip_filter
 from ..services.content_service import CONTENT_TYPES, STATUSES
-
-
-def _strip_filter(value):
-    """Nettoie les espaces sans toucher au HTML (assaini ensuite par le service)."""
-    return value.strip() if isinstance(value, str) else value
 
 
 class ContentForm(FlaskForm):
@@ -59,6 +54,7 @@ class ContentForm(FlaskForm):
             FileSize(max_size=3 * 1024 * 1024, message="Image trop lourde (3 Mo maximum)."),
         ],
     )
+    remove_featured_image = BooleanField("Supprimer l’image actuelle")
     meta_title = StringField(
         "Meta title",
         [Optional(), Length(max=120, message="Meta title trop long")],

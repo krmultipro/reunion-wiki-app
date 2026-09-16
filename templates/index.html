@@ -67,9 +67,19 @@ endblock %} {% block nav_home %}{% endblock %} {% block content %}
         contenu.
       </p>
     </div>
-    <a class="home-creators-teaser__link" href="{{ url_for('creators_index') }}">
-      Voir les créateurs →
-    </a>
+    <div class="home-creators-teaser__actions">
+      <a class="home-creators-teaser__link" href="{{ url_for('creators_index') }}">
+        Voir les créateurs →
+      </a>
+      {% if youtube_guide %}
+        <a
+          class="home-creators-teaser__link home-creators-teaser__link--youtube"
+          href="{{ url_for('content.show', slug=youtube_guide.slug) }}"
+        >
+          Voir les youtubeurs →
+        </a>
+      {% endif %}
+    </div>
   </section>
 
   <div class="home-section-intro" id="toutes-les-categories">

@@ -6,13 +6,11 @@ PERFORMANCE : Ajoute des index pour accélérer les requêtes
 """
 
 import sqlite3
-import os
-from dotenv import load_dotenv
 
-# Chargement des variables d'environnement
-load_dotenv()
+from reunion_wiki.config import Config
 
-DATABASE_PATH = os.getenv('DATABASE_PATH', 'base.db')
+
+DATABASE_PATH = Config.DATABASE_PATH
 
 def optimize_database():
     """Ajoute des index pour optimiser les performances"""

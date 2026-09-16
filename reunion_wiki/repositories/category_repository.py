@@ -69,6 +69,21 @@ def get_category_by_name(nom):
     return _fetchone("SELECT id, nom, slug FROM categories WHERE nom = ?", (nom,))
 
 
+def get_category_by_normalized_name(nom):
+    """Recherche une catégorie sans tenir compte de la casse ni des espaces extérieurs."""
+
+    return _fetchone(
+        """
+        SELECT id, nom, slug
+        FROM categories
+        WHERE LOWER(TRIM(nom)) = LOWER(?)
+        ORDER BY id ASC
+        LIMIT 1
+        """,
+        ((nom or "").strip(),),
+    )
+
+
 def get_category_by_name_excluding_id(nom, category_id):
     """
     Récupère une catégorie par nom en excluant un identifiant donné.
@@ -83,6 +98,24 @@ def get_category_by_name_excluding_id(nom, category_id):
     """
 
     return _fetchone("SELECT id FROM categories WHERE nom = ? AND id != ?", (nom, category_id))
+
+
+def get_category_by_slug(slug):
+    """Récupère une catégorie à partir de son slug."""
+
+    return _fetchone(
+        "SELECT id, nom, slug FROM categories WHERE slug = ?",
+        (slug,),
+    )
+
+
+def get_category_by_slug_excluding_id(slug, category_id):
+    """Recherche un slug en ignorant la catégorie en cours d'édition."""
+
+    return _fetchone(
+        "SELECT id, nom, slug FROM categories WHERE slug = ? AND id != ?",
+        (slug, category_id),
+    )
 
 
 def get_all_categories():

@@ -23,11 +23,12 @@ def show(slug):
         Réponse HTML de la page, ou 404 si absente/non publiée.
     """
 
-    row = content_service.get_public_page(slug)
-    if not row:
+    context = content_service.get_public_page_context(slug)
+    if not context:
         return render_template("404.html"), 404
 
-    seo = content_service.build_seo_context(row)
+    row = context["content"]
+    seo = context["seo"]
     canonical = url_for("content.show", slug=row["slug"], _external=True)
 
     return render_template(
@@ -36,4 +37,7 @@ def show(slug):
         seo_title=seo["seo_title"],
         seo_description=seo["seo_description"],
         canonical=canonical,
+        social_guide=context["social_guide"],
+        dynamic_creators=context["dynamic_creators"],
+        related_social_guides=context["related_social_guides"],
     )

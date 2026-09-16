@@ -176,60 +176,6 @@ def get_sites_by_category_id(category_id):
     )
 
 
-def get_city_stats():
-    """
-    Retourne les statistiques publiques des villes.
-
-    Returns:
-        list[sqlite3.Row]:
-            Liste des villes avec nombre de sites validés et total de clics.
-    """
-
-    return _fetchall(
-        """
-        SELECT
-          v.id,
-          v.nom,
-          v.slug,
-          COUNT(s.id) AS nb_sites,
-          COALESCE(SUM(s.click_count), 0) AS total_clicks
-        FROM villes v
-        LEFT JOIN sites s
-          ON s.ville_id = v.id
-         AND s.status = 'valide'
-        GROUP BY v.id, v.nom, v.slug
-        ORDER BY total_clicks DESC, nb_sites DESC, v.nom COLLATE NOCASE ASC
-        """
-    )
-
-
-def get_city_by_slug(slug):
-    """
-    Récupère une ville à partir de son slug.
-
-    Args:
-        slug (str): Slug de la ville.
-
-    Returns:
-        sqlite3.Row | None:
-            Ville trouvée ou None si inexistante.
-    """
-
-    return _fetchone("SELECT id, nom, slug FROM villes WHERE slug = ?", (slug,))
-
-
-def get_admin_city_filters():
-    """
-    Retourne les villes disponibles pour les filtres d'administration.
-
-    Returns:
-        list[sqlite3.Row]:
-            Liste des villes triées par nom.
-    """
-
-    return _fetchall("SELECT nom, slug FROM villes ORDER BY nom COLLATE NOCASE ASC")
-
-
 def get_sites_by_city_id(ville_id):
     """
     Retourne les sites validés associés à une ville.
@@ -250,28 +196,6 @@ def get_sites_by_city_id(ville_id):
         LEFT JOIN villes v ON v.id = s.ville_id
         WHERE s.status = 'valide' AND s.ville_id = ?
         ORDER BY s.en_vedette DESC, s.date_ajout DESC
-        """,
-        (ville_id,),
-    )
-
-
-def get_total_clicks_by_city_id(ville_id):
-    """
-    Retourne le total des clics des sites validés d'une ville.
-
-    Args:
-        ville_id (int): Identifiant de la ville.
-
-    Returns:
-        sqlite3.Row:
-            Ligne contenant total_clicks.
-    """
-
-    return _fetchone(
-        """
-        SELECT COALESCE(SUM(click_count), 0) AS total_clicks
-        FROM sites
-        WHERE status = 'valide' AND ville_id = ?
         """,
         (ville_id,),
     )

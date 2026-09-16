@@ -6,7 +6,13 @@ from urllib.parse import urlparse
 
 from flask import current_app
 
-from ..repositories import site_repository, talent_category_repository, talent_repository
+from ..repositories import (
+    city_repository,
+    content_repository,
+    talent_category_repository,
+    talent_repository,
+)
+from ..social_guides import SOCIAL_GUIDES
 from ..utils import slugify
 from . import image_storage
 
@@ -194,7 +200,7 @@ def generate_unique_slug(name, slug_input=None, exclude_id=None):
 
 
 def _get_city_by_id(city_id):
-    """Récupère une ville par identifiant via les repositories existants.
+    """Récupère une ville par identifiant.
 
     Args:
         city_id (int | None): Identifiant de ville.
@@ -206,12 +212,7 @@ def _get_city_by_id(city_id):
 
     if not city_id:
         return None
-
-    for city in site_repository.get_admin_city_filters():
-        row = site_repository.get_city_by_slug(city["slug"])
-        if row and row["id"] == city_id:
-            return row
-    return None
+    return city_repository.get_city_by_id(city_id)
 
 
 def _resolve_category_reference(data):
@@ -598,6 +599,19 @@ def get_public_talent_detail_context(slug):
         limit=3,
     )
     seo = _build_talent_seo(talent)
+    guide_slugs = [guide["slug"] for guide in SOCIAL_GUIDES.values()]
+    published_guide_slugs = {
+        row["slug"] for row in content_repository.get_published_by_slugs(guide_slugs)
+    }
+    social_guide_links = []
+    for key, guide in SOCIAL_GUIDES.items():
+        if talent[guide["field"]] and guide["slug"] in published_guide_slugs:
+            social_guide_links.append({
+                "key": key,
+                "slug": guide["slug"],
+                "platform": guide["platform"],
+                "label": guide["profile_link_label"],
+            })
 
     return {
         "talent": talent,
@@ -607,6 +621,7 @@ def get_public_talent_detail_context(slug):
         "primary_social": _primary_social_link(social_links),
         "secondary_social_links": social_links[1:],
         "similar_talents": [build_public_card(row) for row in similar_rows],
+        "social_guide_links": social_guide_links,
         "seo_title": seo["title"],
         "seo_description": seo["description"],
     }
@@ -625,6 +640,82 @@ def list_public_talents(limit=None, offset=0):
     """
 
     return talent_repository.list_published(limit=limit, offset=offset)
+
+
+def get_public_social_creator_cards(network_key):
+    """Prépare les fiches publiques associées à un réseau social.
+
+    Args:
+        network_key (str): Clé déclarée dans ``SOCIAL_GUIDES``.
+
+    Returns:
+        list[dict]:
+            Cartes publiques prêtes pour la page SEO du réseau.
+    """
+
+    guide = SOCIAL_GUIDES.get(network_key)
+    if not guide:
+        return []
+    talents = talent_repository.list_published_with_social_url(guide["field"])
+    return [build_public_card(talent) for talent in talents]
+
+
+def get_public_social_guides():
+    """Retourne les sélections sociales publiées pour le hub créateurs.
+
+    Returns:
+        list[dict]:
+            Guides publiés avec leurs libellés et nombre de profils.
+    """
+
+    guide_slugs = [guide["slug"] for guide in SOCIAL_GUIDES.values()]
+    published_pages = {
+        row["slug"]: row
+        for row in content_repository.get_published_by_slugs(guide_slugs)
+    }
+    guides = []
+    for key, guide in SOCIAL_GUIDES.items():
+        page = published_pages.get(guide["slug"])
+        if not page:
+            continue
+        total = talent_repository.count_published_with_social_url(guide["field"])
+        guides.append({
+            "key": key,
+            "slug": guide["slug"],
+            "platform": guide["platform"],
+            "title": page["title"] or guide["hub_title"],
+            "description": page["summary"] or guide["hub_description"],
+            "total": total,
+        })
+    return guides
+
+
+def get_public_social_guide(network_key):
+    """Retourne un guide social publié, notamment pour une mise en avant.
+
+    Args:
+        network_key (str): Clé déclarée dans ``SOCIAL_GUIDES``.
+
+    Returns:
+        dict | None:
+            Guide publié et son total de profils, ou None.
+    """
+
+    guide = SOCIAL_GUIDES.get(network_key)
+    if not guide:
+        return None
+    page = content_repository.get_published_by_slug(guide["slug"])
+    if not page:
+        return None
+    total = talent_repository.count_published_with_social_url(guide["field"])
+    return {
+        "key": network_key,
+        "slug": guide["slug"],
+        "platform": guide["platform"],
+        "title": page["title"] or guide["hub_title"],
+        "description": page["summary"] or guide["hub_description"],
+        "total": total,
+    }
 
 
 def list_public_talents_by_category(category, limit=None, offset=0):
@@ -786,6 +877,7 @@ def get_public_index_context():
 
     return {
         "creators": cards,
+        "social_guides": get_public_social_guides(),
         "stats": {
             "creator_count": len(cards),
             "category_count": category_count,

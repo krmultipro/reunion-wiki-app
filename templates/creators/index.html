@@ -37,6 +37,34 @@
     </dl>
   </section>
 
+  {% if social_guides %}
+  <section class="social-guides-section" aria-labelledby="social-guides-title">
+    <div class="creators-section-head">
+      <p class="creators-section-kicker">Explorer par réseau</p>
+      <h2 id="social-guides-title">Créateurs réunionnais sur les réseaux sociaux</h2>
+      <p>
+        Parcourez les sélections mises à jour automatiquement depuis les fiches publiées.
+      </p>
+    </div>
+    <div class="social-guides-grid">
+      {% for guide in social_guides %}
+      <a
+        class="social-guide-card social-guide-card--{{ guide.key }}"
+        href="{{ url_for('content.show', slug=guide.slug) }}"
+      >
+        <div class="social-guide-card__meta">
+          <span>{{ guide.platform }}</span>
+          <span>{{ guide.total }} profil{{ 's' if guide.total != 1 else '' }}</span>
+        </div>
+        <h3>{{ guide.title }}</h3>
+        <p>{{ guide.description }}</p>
+        <span class="social-guide-card__link">Explorer la sélection →</span>
+      </a>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
   <section class="creator-grid-section" aria-labelledby="creator-grid-title">
     <div class="creators-section-head">
       <p class="creators-section-kicker">Index des talents</p>

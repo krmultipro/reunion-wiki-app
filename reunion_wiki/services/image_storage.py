@@ -94,3 +94,43 @@ def save_upload(file_storage, namespace=None):
 
     # Toujours en séparateurs URL pour un usage direct dans les templates.
     return os.path.join("uploads", relative_dir, unique_name).replace(os.sep, "/")
+
+
+def delete_upload(relative_path):
+    """Supprime un fichier uploadé en restant dans le dossier configuré.
+
+    Args:
+        relative_path (str | None): Chemin public stocké en base, généralement
+            préfixé par ``uploads/``.
+
+    Returns:
+        bool:
+            True si un fichier a été supprimé, False s'il était absent ou si
+            le chemin fourni ne désignait pas un upload autorisé.
+    """
+
+    if not relative_path:
+        return False
+
+    normalized_path = str(relative_path).replace("\\", "/").lstrip("/")
+    if not normalized_path.startswith("uploads/"):
+        return False
+
+    upload_root = os.path.abspath(current_app.config["UPLOAD_FOLDER"])
+    relative_upload_path = normalized_path.removeprefix("uploads/")
+    absolute_path = os.path.abspath(os.path.join(upload_root, relative_upload_path))
+
+    try:
+        if os.path.commonpath([upload_root, absolute_path]) != upload_root:
+            return False
+    except ValueError:
+        return False
+
+    try:
+        os.remove(absolute_path)
+    except FileNotFoundError:
+        return False
+    except OSError:
+        current_app.logger.warning("Impossible de supprimer l'image uploadée %s", normalized_path)
+        return False
+    return True

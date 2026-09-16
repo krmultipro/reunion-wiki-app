@@ -28,6 +28,41 @@ L'objectif est de répondre à la question :
 
 ---
 
+# Admissibilité des talents
+
+Réunion Wiki peut référencer une personne, un collectif ou une structure :
+
+- connue ou émergente ;
+- actuellement active ou non ;
+- sans condition de nombre d'abonnés, d'audience ou de récompense.
+
+Le critère déterminant est l'existence d'un lien réel, significatif et
+publiquement vérifiable avec La Réunion.
+
+Ce lien est considéré comme établi lorsque le talent répond à au moins un des
+critères suivants :
+
+- être né, avoir grandi ou résider à La Réunion ;
+- avoir résidé durablement à La Réunion ;
+- exercer ou avoir exercé une part significative de son activité à La Réunion ;
+- produire une œuvre, un projet ou un contenu directement lié à La Réunion ;
+- contribuer ou avoir contribué de manière identifiable à la vie culturelle,
+  sociale, économique, sportive ou numérique de La Réunion.
+
+Le lien doit pouvoir être confirmé par au moins une source publique : site
+officiel, profil officiel, entretien, média identifiable, organisme reconnu ou
+archive consultable.
+
+Un séjour touristique, un passage ponctuel, une collaboration isolée ou une
+simple affirmation non vérifiable ne suffisent pas à rendre un talent
+admissible.
+
+L'absence d'activité récente n'empêche pas la création ou le maintien d'une
+fiche. Dans ce cas, la rédaction doit employer le passé et ne pas laisser croire
+que le talent est toujours actif.
+
+---
+
 # À privilégier
 
 Décrire :
@@ -107,7 +142,7 @@ Généralement 2 phrases.
 La première présente le créateur et son activité principale.
 
 La seconde décrit le type de contenus, les projets ou les plateformes sur
-lesquels il est actif.
+lesquels son travail est ou a été diffusé.
 
 Environ :
 
@@ -181,10 +216,28 @@ Exemple :
 Avant de publier une fiche, vérifier que :
 
 - les informations sont publiques ;
+- le lien avec La Réunion est réel, significatif et appuyé par au moins une
+  source publique ;
 - le texte est neutre ;
 - aucune opinion personnelle n'est présente ;
 - aucune formulation marketing n'est utilisée ;
-- la description correspond réellement au contenu du créateur.
+- la description correspond réellement au contenu du créateur ;
+- le temps employé reflète correctement une activité actuelle ou passée ;
+- l'origine de l'image et les autorisations nécessaires sont documentées.
+
+## Images et phase de lancement
+
+Une fiche peut être publiée sans portrait. En l'absence d'une autorisation ou
+d'une licence permettant clairement la réutilisation, utiliser l'image générique
+Réunion Wiki.
+
+Une utilisation temporaire ou expérimentale n'est pas une exception : la
+présence publique d'une image et la mention de son auteur ne suffisent pas à
+autoriser sa reproduction. Toute image spécifique sans base d'utilisation
+documentée doit être retirée ou remplacée sans délai.
+
+La décision complète est consignée dans
+[`ADR-002`](../decisions/ADR-002-droits-images-talents-au-lancement.md).
 
 ---
 

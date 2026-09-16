@@ -4,7 +4,9 @@ import shutil
 import sqlite3
 from datetime import datetime
 from flask import Flask
-from config import config
+from reunion_wiki.config import config
+from reunion_wiki.slug_utils import slugify
+from reunion_wiki.social_guides import SOCIAL_GUIDES
 
 # Charge la config Flask
 app = Flask(__name__)
@@ -40,24 +42,6 @@ CANONICAL_VILLES = [
     (23, "Le Tampon", "le-tampon"),
     (24, "Trois-Bassins", "trois-bassins"),
 ]
-
-
-def slugify(text: str) -> str:
-    s = (text or "").strip().lower()
-    replacements = {
-        "à": "a", "â": "a", "ä": "a",
-        "é": "e", "è": "e", "ê": "e", "ë": "e",
-        "î": "i", "ï": "i",
-        "ô": "o", "ö": "o",
-        "ù": "u", "û": "u", "ü": "u",
-        "ç": "c",
-    }
-    for k, v in replacements.items():
-        s = s.replace(k, v)
-    s = s.replace("'", "").replace("’", "").replace(".", "").replace(",", "")
-    s = re.sub(r"\s+", "-", s)
-    s = re.sub(r"-+", "-", s).strip("-")
-    return s
 
 
 def table_exists(cur, table_name: str) -> bool:
@@ -385,6 +369,140 @@ def _ensure_content_table(cur) -> None:
     cur.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_content_slug ON content(slug)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_content_type_status ON content(content_type, status)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_content_status_pub ON content(status, published_at)")
+
+
+def _ensure_social_content_pages(cur) -> None:
+    """Crée les sélections sociales avec des textes éditoriaux par défaut.
+
+    Les contenus existants ne sont jamais modifiés afin de préserver toutes les
+    personnalisations réalisées depuis l'administration.
+
+    Args:
+        cur (sqlite3.Cursor): Curseur de la base cible.
+
+    Returns:
+        None
+    """
+
+    created = 0
+    for guide in SOCIAL_GUIDES.values():
+        cur.execute("SELECT 1 FROM content WHERE slug = ?", (guide["slug"],))
+        if cur.fetchone():
+            continue
+        cur.execute(
+            """
+            INSERT INTO content (
+                content_type, title, slug, summary, body, status,
+                meta_title, meta_description, featured_image, published_at
+            ) VALUES ('seo_landing', ?, ?, ?, ?, 'published', ?, ?, NULL, CURRENT_TIMESTAMP)
+            """,
+            (
+                guide["title"],
+                guide["slug"],
+                guide["summary"],
+                guide["body"],
+                guide["meta_title"],
+                guide["meta_description"],
+            ),
+        )
+        created += 1
+    print(f"🌐 Sélections sociales créées: {created}")
+
+
+def _normalize_editorial_value(value: str | None) -> str:
+    """Normalise les espaces pour reconnaître un ancien texte éditorial.
+
+    Args:
+        value (str | None): Valeur enregistrée dans la base.
+
+    Returns:
+        str: Valeur sans espaces de présentation significatifs.
+    """
+
+    return re.sub(r"\s+", " ", (value or "").strip())
+
+
+def _upgrade_youtube_default_copy(cur) -> None:
+    """Actualise uniquement les anciens textes YouTube non personnalisés.
+
+    Les anciennes installations possèdent soit le texte historique de la page,
+    soit la première version du guide dynamique. Chaque champ est remplacé
+    seulement s'il correspond encore à l'une de ces valeurs connues, afin de ne
+    pas écraser une personnalisation réalisée dans l'administration.
+
+    Args:
+        cur (sqlite3.Cursor): Curseur de la base cible.
+
+    Returns:
+        None
+    """
+
+    guide = SOCIAL_GUIDES["youtube"]
+    legacy_summaries = {
+        _normalize_editorial_value(
+            "Découvrez plusieurs youtubeurs réunionnais et créateurs de contenu "
+            "qui participent au rayonnement de La Réunion sur les réseaux sociaux."
+        ),
+        _normalize_editorial_value(
+            "Découvrez les youtubeurs et chaînes de La Réunion qui partagent vidéos, "
+            "divertissement, musique, documentaires et culture locale."
+        ),
+    }
+    legacy_bodies = {
+        _normalize_editorial_value(
+            """
+            <p>
+            La Réunion compte de nombreux créateurs de contenu actifs sur YouTube,
+            TikTok et Instagram. Ils partagent leur quotidien, leur humour,
+            leurs voyages et leur vision de l'île.
+            </p>
+
+            <h2>Pourquoi suivre les créateurs réunionnais ?</h2>
+
+            <p>
+            Ils permettent de découvrir La Réunion sous un angle local et authentique.
+            </p>
+            """
+        ),
+        _normalize_editorial_value(
+            "<h2>Découvrir la création vidéo réunionnaise</h2>"
+            "<p>La Réunion compte des chaînes YouTube aux univers variés : humour, musique, "
+            "voyage, cuisine, pêche, médias et documentaires. Cette sélection permet de "
+            "retrouver leurs fiches et leurs liens officiels.</p>"
+            "<h2>Une sélection locale mise à jour</h2>"
+            "<p>La liste évolue automatiquement lorsque de nouveaux talents publiés ajoutent "
+            "leur chaîne YouTube sur Réunion Wiki.</p>"
+        ),
+    }
+
+    cur.execute(
+        "SELECT summary, body FROM content WHERE slug = ?",
+        (guide["slug"],),
+    )
+    row = cur.fetchone()
+    if not row:
+        return
+
+    current_summary, current_body = row
+    new_summary = current_summary
+    new_body = current_body
+    if _normalize_editorial_value(current_summary) in legacy_summaries:
+        new_summary = guide["summary"]
+    if _normalize_editorial_value(current_body) in legacy_bodies:
+        new_body = guide["body"]
+
+    if new_summary == current_summary and new_body == current_body:
+        return
+
+    cur.execute(
+        """
+        UPDATE content
+        SET summary = ?, body = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE slug = ?
+        """,
+        (new_summary, new_body, guide["slug"]),
+    )
+    print("✍️ Texte par défaut du guide YouTube actualisé")
 
 
 def _next_available_talent_slug(cur, base_slug: str, talent_id: int) -> str:
@@ -927,6 +1045,8 @@ def main():
 
         # Plateforme de contenu SEO (table plate réutilisable).
         _ensure_content_table(cur)
+        _ensure_social_content_pages(cur)
+        _upgrade_youtube_default_copy(cur)
 
         # Talents locaux: évolution du prototype Instagram vers un modèle wiki.
         _ensure_talents_table(cur)

@@ -2,8 +2,8 @@
 
 """Point d'entrée compatible pour lancer l'application depuis la racine."""
 
-from reunion_wiki.app import *  # noqa: F401,F403
 from reunion_wiki.app import app
+from reunion_wiki.legacy_exports import *  # noqa: F401,F403
 
 
 if __name__ == "__main__":

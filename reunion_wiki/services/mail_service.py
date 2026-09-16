@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+"""Service d'envoi des notifications par e-mail."""
 
 import smtplib
 import ssl
@@ -8,17 +9,23 @@ from flask import current_app, render_template
 
 
 def send_submission_notification(payload):
-    """Envoie un email de notification lorsqu'un site est proposé."""
+    """Envoie un e-mail lorsqu'un site est proposé."""
     if not current_app.config.get("MAIL_ENABLED"):
         return
 
     server = current_app.config.get("MAIL_SERVER")
     recipients = current_app.config.get("MAIL_RECIPIENTS", [])
     if not server or not recipients:
-        current_app.logger.warning("Notification email non envoyée : serveur ou destinataires non configurés.")
+        current_app.logger.warning(
+            "Notification e-mail non envoyée : serveur ou destinataires non configurés."
+        )
         return
 
-    sender = current_app.config.get("MAIL_DEFAULT_SENDER") or current_app.config.get("MAIL_USERNAME") or recipients[0]
+    sender = (
+        current_app.config.get("MAIL_DEFAULT_SENDER")
+        or current_app.config.get("MAIL_USERNAME")
+        or recipients[0]
+    )
     message = EmailMessage()
     message["Subject"] = f"Nouvelle proposition Réunion Wiki : {payload.get('nom')}"
     message["From"] = sender
@@ -28,7 +35,11 @@ def send_submission_notification(payload):
     context = ssl.create_default_context()
     try:
         if current_app.config.get("MAIL_USE_SSL"):
-            with smtplib.SMTP_SSL(server, current_app.config.get("MAIL_PORT"), context=context) as smtp:
+            with smtplib.SMTP_SSL(
+                server,
+                current_app.config.get("MAIL_PORT"),
+                context=context,
+            ) as smtp:
                 username = current_app.config.get("MAIL_USERNAME")
                 password = current_app.config.get("MAIL_PASSWORD")
                 if username and password:
@@ -44,5 +55,7 @@ def send_submission_notification(payload):
                 if username and password:
                     smtp.login(username, password)
                 smtp.send_message(message)
-    except Exception as e:
-        current_app.logger.error(f"Erreur lors de l'envoi de l'email de notification: {e}")
+    except Exception as error:
+        current_app.logger.error(
+            f"Erreur lors de l'envoi de l'e-mail de notification: {error}"
+        )

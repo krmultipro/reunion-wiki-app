@@ -6,23 +6,30 @@ from ..services import sitemap_service
 seo_bp = Blueprint("seo", __name__)
 
 
-@seo_bp.route('/service-worker.js')
+@seo_bp.route("/service-worker.js")
 def service_worker():
-    response = make_response(send_from_directory(current_app.static_folder, 'service-worker.js'))
-    response.headers['Content-Type'] = 'application/javascript'
-    return response    
+    response = make_response(send_from_directory(current_app.static_folder, "service-worker.js"))
+    response.headers["Content-Type"] = "application/javascript"
+    return response
 
 
-@seo_bp.route('/google87e16279463c4021.html')
+@seo_bp.route("/google87e16279463c4021.html")
 def google_verification():
-    return current_app.send_static_file('google87e16279463c4021.html')
+    return current_app.send_static_file("google87e16279463c4021.html")
 
 
-@seo_bp.route('/robots.txt')
+@seo_bp.route("/robots.txt")
 def robots_txt():
-    return send_from_directory(current_app.static_folder, 'robots.txt')
+    return send_from_directory(current_app.static_folder, "robots.txt")
 
-@seo_bp.route('/sitemap.xml')
+
+@seo_bp.route("/static/uploads/<path:filename>")
+def uploaded_file(filename):
+    """Sert les fichiers uploadés depuis le dossier persistant configuré."""
+    return send_from_directory(current_app.config["UPLOAD_FOLDER"], filename)
+
+
+@seo_bp.route("/sitemap.xml")
 def sitemap():
     """Sitemap généré dynamiquement : chaque contenu publié y apparaît."""
     xml = sitemap_service.build_sitemap_xml()

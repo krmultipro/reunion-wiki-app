@@ -4,8 +4,9 @@ import re
 from datetime import datetime
 
 from ..repositories import content_repository
+from ..social_guides import SOCIAL_GUIDES_BY_SLUG
 from ..utils import slugify
-from . import image_storage
+from . import image_storage, talent_service
 
 
 # Liste fixe des types de contenu pour la V1 (extensible sans migration).
@@ -161,7 +162,8 @@ def save_content(data, image_file=None, content_id=None):
 
     Args:
         data (dict): Valeurs du formulaire (content_type, title, slug, summary,
-            body, meta_title, meta_description, status).
+            body, meta_title, meta_description, status,
+            remove_featured_image).
         image_file: FileStorage optionnel pour l'image à la une.
         content_id (int | None): Identifiant si mise à jour, None si création.
 
@@ -191,24 +193,34 @@ def save_content(data, image_file=None, content_id=None):
     if content_id and not existing:
         return None, ["Contenu introuvable."]
 
-    slug = generate_unique_slug(title, data.get("slug"), exclude_id=content_id)
+    if existing and existing["slug"] in SOCIAL_GUIDES_BY_SLUG:
+        slug = existing["slug"]
+    else:
+        slug = generate_unique_slug(title, data.get("slug"), exclude_id=content_id)
     summary = (data.get("summary") or "").strip() or None
     body = sanitize_html(data.get("body") or "") or None
     meta_title = (data.get("meta_title") or "").strip() or None
     meta_description = (data.get("meta_description") or "").strip() or None
 
-    # Image : nouvelle image valide, sinon on conserve l'existante.
-    featured_image = existing["featured_image"] if existing else None
+    # Image : un nouvel upload remplace l'ancienne image ; sans nouvel upload,
+    # la case de retrait permet de vider explicitement le champ.
+    previous_featured_image = existing["featured_image"] if existing else None
+    featured_image = previous_featured_image
+    uploaded_image = None
     if image_file is not None and getattr(image_file, "filename", ""):
         try:
-            featured_image = image_storage.save_upload(image_file, namespace="content")
+            uploaded_image = image_storage.save_upload(image_file, namespace="content")
+            featured_image = uploaded_image
         except image_storage.ImageStorageError as exc:
             return None, [str(exc)]
+    elif data.get("remove_featured_image"):
+        featured_image = None
 
     # Exigences SEO uniquement à la publication ; les brouillons restent libres.
     if status == "published":
         publish_errors = _publish_errors(title, slug, meta_title, meta_description)
         if publish_errors:
+            image_storage.delete_upload(uploaded_image)
             return None, publish_errors
 
     # published_at posé à la première publication, conservé ensuite.
@@ -217,16 +229,27 @@ def save_content(data, image_file=None, content_id=None):
         published_at = _now_sql()
 
     if content_id:
-        content_repository.update(
-            content_id, content_type, title, slug, summary, body, status,
-            meta_title, meta_description, featured_image, published_at,
-        )
+        try:
+            content_repository.update(
+                content_id, content_type, title, slug, summary, body, status,
+                meta_title, meta_description, featured_image, published_at,
+            )
+        except Exception:
+            image_storage.delete_upload(uploaded_image)
+            raise
+
+        if previous_featured_image and previous_featured_image != featured_image:
+            image_storage.delete_upload(previous_featured_image)
         return content_id, []
 
-    new_id = content_repository.insert(
-        content_type, title, slug, summary, body, status,
-        meta_title, meta_description, featured_image, published_at,
-    )
+    try:
+        new_id = content_repository.insert(
+            content_type, title, slug, summary, body, status,
+            meta_title, meta_description, featured_image, published_at,
+        )
+    except Exception:
+        image_storage.delete_upload(uploaded_image)
+        raise
     return new_id, []
 
 
@@ -313,6 +336,61 @@ def get_public_page(slug):
     """
 
     return content_repository.get_published_by_slug(slug)
+
+
+def is_social_guide_slug(slug):
+    """Indique si un slug appartient à une sélection sociale système.
+
+    Args:
+        slug (str | None): Slug de contenu à vérifier.
+
+    Returns:
+        bool:
+            True pour une page sociale dont l'URL doit rester stable.
+    """
+
+    return slug in SOCIAL_GUIDES_BY_SLUG
+
+
+def get_public_page_context(slug):
+    """Prépare une page SEO publiée et ses éventuels contenus dynamiques.
+
+    Les sélections sociales sont enrichies automatiquement avec les talents
+    publiés qui possèdent le réseau correspondant. Les autres pages conservent
+    le rendu éditorial générique.
+
+    Args:
+        slug (str): Slug public demandé.
+
+    Returns:
+        dict | None:
+            Contexte métier de la page, ou None si elle n'est pas publiée.
+    """
+
+    row = get_public_page(slug)
+    if not row:
+        return None
+
+    social_guide = SOCIAL_GUIDES_BY_SLUG.get(row["slug"])
+    dynamic_creators = None
+    related_social_guides = []
+    if social_guide:
+        dynamic_creators = talent_service.get_public_social_creator_cards(
+            social_guide["key"]
+        )
+        related_social_guides = [
+            guide
+            for guide in talent_service.get_public_social_guides()
+            if guide["key"] != social_guide["key"]
+        ]
+
+    return {
+        "content": row,
+        "seo": build_seo_context(row),
+        "social_guide": social_guide,
+        "dynamic_creators": dynamic_creators,
+        "related_social_guides": related_social_guides,
+    }
 
 
 def build_seo_context(row):
