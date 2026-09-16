@@ -2,9 +2,9 @@
 
 | Métadonnée | Valeur |
 | --- | --- |
-| Version | 1.1 |
+| Version | 1.2 |
 | Statut | Référence versionnée |
-| Date du relevé | 15 septembre 2026 |
+| Date du relevé | 16 septembre 2026 |
 | Origine | Base Notion « Règles métiers Réunion Wiki » et audit statique du dépôt |
 
 ## Objet du document
@@ -30,44 +30,44 @@ automatisés correspondant à ce catalogue n'a été trouvée dans le dépôt.
 | ID | Périmètre | Implémentation | Règle | Critère d'acceptation |
 | --- | --- | --- | --- | --- |
 | RM-01 | MVP | Implémentée | Un site ne peut être publié que s'il possède un nom, une URL valide, une description et au moins une catégorie. | La publication est refusée si l'un de ces quatre éléments manque ou est invalide. |
-| RM-02 | MVP | À faire | Un site référencé doit avoir un lien réel avec La Réunion : activité locale, contenu local, entreprise locale ou public principalement réunionnais. | Un site sans rattachement renseigné et vérifiable avec La Réunion ne peut pas être publié. |
-| RM-03 | MVP | À faire | Une même URL normalisée ne peut être enregistrée qu'une seule fois. | Une URL déjà publiée ou en attente est refusée avec un message explicite. |
-| RM-04 | V2 | À faire | Un site possède une catégorie principale et peut recevoir des catégories secondaires. | Une catégorie principale est obligatoire et aucune catégorie secondaire ne peut être ajoutée deux fois. |
-| RM-05 | V2 | À faire | Seules les catégories actives peuvent être attribuées à un site. | Une catégorie inactive n'apparaît pas dans les formulaires et ne peut pas être enregistrée sur un site. |
-| RM-06 | MVP | Implémentée | La commune d'un site est facultative et, lorsqu'elle est renseignée, doit appartenir au référentiel des communes de La Réunion. | Le formulaire accepte une commune vide ou une commune du référentiel et refuse toute autre valeur. |
+| RM-02 | MVP | En cours | Un site référencé satisfait au moins un critère de lien réel avec La Réunion : organisme réunionnais, contenu local régulier, offre nationale spécifique ou ressource particulièrement utile au public réunionnais. | L'administrateur confirme le lien avant publication. La justification et son éventuelle URL de preuve sont facultatives, conservées en privé et jamais affichées au public. |
+| RM-03 | MVP | À faire | Une même URL normalisée ne peut être enregistrée qu'une seule fois. La comparaison ignore la casse du domaine, le `/` final, les ports standards, les paramètres publicitaires et la différence HTTP/HTTPS lorsque le domaine et le chemin sont identiques. | Un doublon exact est bloqué lors d'une proposition, d'une création admin ou d'une modification ; un même domaine avec un chemin distinct produit seulement un avertissement. |
+| RM-04 | MVP | Implémentée | En MVP, un site possède exactement une catégorie principale ; ses autres activités sont décrites dans sa présentation. Les catégories secondaires sont reportées en V2. | Une catégorie principale est obligatoire et aucune catégorie secondaire n'est proposée dans le MVP. |
+| RM-05 | V2 | À faire | Seules les catégories actives peuvent être attribuées à un nouveau site ; une catégorie désactivée conserve ses sites existants. | Une catégorie inactive n'apparaît plus dans les formulaires. Une catégorie utilisée ne peut être supprimée sans réaffectation et peut être archivée. |
+| RM-06 | MVP | En cours | La localisation d'un site est facultative et distingue une commune du référentiel, `Toute La Réunion`, `En ligne` et `Non précisée`. | Une commune vide signifie `Non précisée`. Les portées `Toute La Réunion` et `En ligne` sont des choix explicites et ne sont jamais déduites d'une valeur vide. |
 | RM-07 | MVP | Implémentée | Seuls les sites publiés sont visibles publiquement. | Un site dont le statut n'est pas publié est absent des listes, recherches et classements publics. |
-| RM-08 | V1 | En cours | Un site peut être brouillon, en attente, publié, refusé ou archivé. | Les cinq statuts sont disponibles et seules les transitions autorisées peuvent être appliquées. |
-| RM-09 | V1 | À faire | Un site indisponible, obsolète ou non conforme peut être archivé. | L'archivage retire le site du public sans supprimer son historique ni ses statistiques. |
+| RM-08 | MVP | En cours | Un site peut être brouillon, en attente, publié, refusé ou archivé. | Les cinq statuts sont disponibles et seules les transitions autorisées peuvent être appliquées. |
+| RM-09 | MVP | À faire | Un site fermé, durablement inaccessible, obsolète ou non conforme peut être archivé. | L'archivage retire le site du public sans supprimer son historique ni ses statistiques, et le conserve dans l'administration. |
 
 ## Recherche, clics et tendances
 
 | ID | Périmètre | Implémentation | Règle | Critère d'acceptation |
 | --- | --- | --- | --- | --- |
-| RM-10 | MVP | Implémentée | Un visiteur peut rechercher un site par nom, commune, description, URL ou catégorie. | Une recherche renvoie les sites publiés correspondant à au moins un de ces champs. |
+| RM-10 | MVP | En cours | Un visiteur peut rechercher un site par nom, description, catégorie, commune, domaine ou URL et éventuels mots-clés. | Une recherche renvoie uniquement les sites publiés correspondant à au moins un de ces champs. |
 | RM-11 | MVP | Implémentée | La recherche publique ne retourne que les sites publiés. | Aucun site en attente, refusé, brouillon ou archivé n'apparaît dans les résultats. |
-| RM-12 | MVP | En cours | Les résultats peuvent être filtrés par catégorie. | Le choix d'une catégorie limite les résultats aux sites publiés de cette catégorie. |
+| RM-12 | MVP | En cours | Les résultats peuvent être filtrés par catégorie principale, commune et portée géographique. | Les filtres se combinent avec la recherche et limitent les résultats aux sites publiés respectant simultanément les critères. |
 | RM-13 | V1 | En cours | Les résultats peuvent être triés par pertinence, popularité, ordre alphabétique ou date de publication. | Le visiteur peut sélectionner chaque tri et l'ordre affiché correspond au choix. |
 | RM-14 | V1 | À faire | Une recherche sans résultat propose des catégories proches ou la proposition d'un nouveau site. | Lorsque la recherche ne retourne rien, au moins une suggestion utile et le lien de proposition sont affichés. |
-| RM-15 | MVP | Implémentée | Un clic est comptabilisé lorsqu'un visiteur utilise le lien sortant d'un site publié. | Un clic admissible crée un événement et incrémente une seule fois le compteur du site. |
-| RM-16 | MVP | En cours | Les clics effectués par un administrateur ne sont pas comptabilisés. | Un administrateur authentifié utilisant un lien public ne modifie ni le compteur ni l'historique des clics. |
+| RM-15 | MVP | Implémentée | Un clic est comptabilisé uniquement lorsqu'un visiteur utilise le lien sortant géré par Réunion Wiki vers un site publié. | Un clic admissible crée un événement et incrémente une seule fois le compteur du site. |
+| RM-16 | MVP | En cours | Les clics des administrateurs authentifiés et des robots identifiés ne sont pas comptabilisés. | Ces accès ne modifient ni le compteur ni l'historique des clics. |
 | RM-17 | MVP | Implémentée | Les clics répétés d'un même visiteur vers un même site pendant une courte période ne comptent qu'une fois. | Une même adresse IP ne produit qu'un clic par site pendant une fenêtre de 30 minutes. |
-| RM-18 | MVP | Implémentée | Les tendances sont calculées à partir des clics enregistrés sur une période définie. | Les tendances utilisent les 7 derniers jours et les sites stables les 30 derniers jours. |
+| RM-18 | MVP | En cours | Les tendances sont calculées à partir des clics admissibles : tendance sur 7 jours, progression par comparaison avec les 7 jours précédents et popularité stable sur 30 jours. | Chaque indicateur utilise sa période définie ; un site sans clic reste absent des classements principaux, mais demeure visible dans les nouveautés et sa catégorie. |
 | RM-19 | MVP | Implémentée | Seuls les sites publiés peuvent apparaître dans les tendances. | Aucun site non publié n'est présent dans les classements calculés. |
-| RM-20 | MVP | En cours | La date utilisée pour les nouveautés correspond à la publication et non à la proposition. | Lors de la première publication, la date des nouveautés prend la date de publication dans tous les parcours admin. |
-| RM-21 | MVP | Implémentée | Les derniers sites ajoutés sont classés du plus récemment publié au plus ancien. | La liste publique est ordonnée par date de publication décroissante. |
+| RM-20 | MVP | À faire | Une proposition, une première publication et une modification possèdent des dates distinctes : `submitted_at`, `published_at` et `updated_at`. | Une modification ne change pas `published_at`. Une republication ne lui attribue une nouvelle valeur que sur décision explicite de l'administrateur. |
+| RM-21 | MVP | En cours | Les derniers sites ajoutés sont classés du plus récemment publié au plus ancien. | La liste publique est ordonnée par `published_at` décroissant et non par la date de proposition ou de modification. |
 
 ## Proposition et modération des sites
 
 | ID | Périmètre | Implémentation | Règle | Critère d'acceptation |
 | --- | --- | --- | --- | --- |
 | RM-22 | MVP | Implémentée | Un visiteur peut proposer un site sans compte administrateur. | Le formulaire public peut être envoyé sans authentification. |
-| RM-23 | MVP | En cours | Une proposition contient au minimum le nom, l'URL, la description, la catégorie et la justification du lien avec La Réunion ; la commune reste facultative. | L'envoi est refusé si un champ obligatoire manque et accepte une commune vide. |
+| RM-23 | MVP | En cours | Une proposition exige le nom, l'URL, la description et la catégorie principale. La commune ou portée, la justification du lien réunionnais, son éventuelle URL de preuve et l'email restent facultatifs. | L'envoi est refusé lorsqu'un des quatre champs obligatoires manque et accepte les autres champs vides. La justification privée n'est pas rendue publique. |
 | RM-24 | MVP | Implémentée | Les coordonnées éventuelles du proposant ne sont jamais publiques. | Aucune coordonnée du proposant n'est rendue dans les pages publiques. |
 | RM-25 | MVP | Implémentée | Toute proposition publique reçoit le statut en attente. | Après un envoi valide, le site est enregistré en attente de modération. |
 | RM-26 | MVP | Implémentée | Une proposition n'est jamais publiée automatiquement. | Le site reste invisible jusqu'à une action volontaire d'un administrateur. |
 | RM-27 | MVP | Implémentée | Un administrateur peut modifier, accepter ou refuser une proposition. | Chaque action est accessible dans l'administration et modifie le statut ou les données attendus. |
-| RM-28 | MVP | À faire | Une URL déjà publiée ou déjà proposée est signalée avant l'enregistrement. | Une tentative de doublon est refusée avec un message indiquant que l'URL existe déjà. |
-| RM-29 | V1 | À faire | Le proposant peut être informé de la décision de modération lorsqu'il fournit un email. | Après acceptation ou refus, un message est envoyé à l'adresse fournie et l'envoi est traçable. |
+| RM-28 | MVP | À faire | Une URL normalisée déjà enregistrée est bloquée avant l'enregistrement, quel que soit son statut. Un domaine déjà connu avec un chemin différent produit un avertissement admin. | Le contrôle est exécuté lors de la proposition publique, de la création admin et de la modification de l'URL. |
+| RM-29 | V1 | À faire | Le proposant peut être informé manuellement ou automatiquement de la décision lorsqu'il a fourni un email. | L'email n'est jamais public. Le MVP peut fonctionner sans notification automatique et permettre une réponse manuelle. |
 
 ## Talents réunionnais
 
@@ -135,10 +135,10 @@ de ses réponses, de ses permissions et de sa politique de conservation.
 | --- | --- | --- | --- | --- |
 | RM-53 | MVP | Implémentée | L'administration nécessite une authentification. | Toute route admin redirige un visiteur non authentifié vers la connexion. |
 | RM-54 | MVP | En cours | Seuls les administrateurs autorisés peuvent gérer les sites, talents, contenus et référentiels. | Chaque opération de création, lecture privée, modification, publication, archivage ou suppression est protégée. |
-| RM-55 | MVP | Implémentée | Une catégorie utilisée ne peut pas être supprimée avant réaffectation. | La suppression est refusée tant qu'au moins un site ou talent utilise la catégorie. |
+| RM-55 | MVP | Implémentée | Une catégorie utilisée ne peut pas être supprimée avant réaffectation ; son archivage reste possible. | La suppression est refusée tant qu'au moins un site ou talent utilise la catégorie. |
 | RM-56 | V1 | À faire | Une commune ou une plateforme utilisée ne peut pas être supprimée sans traitement explicite de ses relations. | L'administration exige une réaffectation, une suppression des relations ou une confirmation adaptée avant la suppression. |
 | RM-57 | MVP | Implémentée | Toute suppression définitive demande une confirmation explicite. | L'utilisateur doit confirmer l'action avant l'envoi de la suppression. |
-| RM-58 | MVP | En cours | L'archivage est préféré lorsque la suppression ferait perdre un historique ou des statistiques. | L'archivage retire l'élément du public tout en conservant ses données ; la suppression reste une action distincte. |
+| RM-58 | MVP | En cours | L'archivage est préféré lorsque la suppression ferait perdre un historique ou des statistiques. Pour un site, la suppression définitive est réservée aux doublons, erreurs de saisie, contenus illégaux ou demandes légitimes l'exigeant. | L'archivage retire l'élément du public tout en conservant ses données ; la suppression reste une action exceptionnelle et distincte. |
 | RM-59 | V2 | À faire | Les actions administratives sensibles sont journalisées. | Une entrée durable conserve l'administrateur, l'action, la cible et la date. |
 | RM-60 | V1 | En cours | Le tableau de bord affiche au minimum les propositions en attente, les messages non traités, les sites publiés et les clics. | Les quatre indicateurs sont visibles et correspondent aux données enregistrées. |
 
@@ -153,23 +153,25 @@ de ses réponses, de ses permissions et de sa politique de conservation.
 | RM-65 | MVP | En cours | Les formulaires ne collectent que les données nécessaires à leur finalité. | Chaque champ collecté possède une finalité documentée et aucun champ superflu n'est obligatoire. |
 | RM-66 | MVP | Implémentée | Un visiteur peut signaler un lien mort, inapproprié ou obsolète. | La FAQ ou la fiche fournit un canal de signalement permettant d'identifier l'URL et le problème. |
 | RM-67 | MVP | Implémentée | Réunion Wiki précise que les éditeurs externes restent responsables de leurs sites. | Une clause visible indique que Réunion Wiki ne contrôle pas le contenu des sites externes. |
-| RM-68 | V1 | À faire | Un site uniquement numérique peut recevoir la localisation fonctionnelle « En ligne » au lieu d'une commune. | L'option « En ligne » peut être choisie et est distinguée d'une commune non renseignée. |
-| RM-69 | MVP | Implémentée | Les administrateurs peuvent consulter le nombre de clics par site. | La liste ou la fiche admin affiche le compteur associé à chaque site. |
+| RM-68 | MVP | À faire | Un site peut utiliser les portées fonctionnelles `En ligne` ou `Toute La Réunion`, distinctes d'une commune et de `Non précisée`. | Chaque portée peut être choisie explicitement, filtrée publiquement et distinguée d'une commune vide. |
+| RM-69 | MVP | Implémentée | Les administrateurs peuvent consulter le nombre de clics par site et supprimer un événement incorrect. | La liste ou la fiche admin affiche le compteur ; la suppression d'un événement ajuste également ce compteur. |
 
 ## Résumé du relevé d'implémentation
 
 | État | Nombre de règles |
 | --- | ---: |
-| Implémentée | 31 |
-| En cours | 22 |
-| À faire | 16 |
+| Implémentée | 28 |
+| En cours | 26 |
+| À faire | 15 |
 | Testée | 0 |
 
 ## Règles détaillées complémentaires
 
 Les règles `RM-TAL-001` à `RM-TAL-011` du document parent précisent les choix
-éditoriaux applicables aux talents. Elles ne remplacent pas les identifiants
-Notion : elles les détaillent et sont reliées comme suit.
+éditoriaux applicables aux talents. Les règles `RM-SITE-001` à `RM-SITE-012` du
+document [`SITE_RULES.md`](SITE_RULES.md) précisent les choix applicables aux
+sites. Elles ne remplacent pas les identifiants Notion : elles les détaillent
+et sont reliées comme suit.
 
 | Catalogue | Détail éditorial |
 | --- | --- |
@@ -182,10 +184,23 @@ Notion : elles les détaillent et sont reliées comme suit.
 | RM-40 | RM-TAL-009 |
 | RM-30, RM-31, RM-33 et RM-37 | RM-TAL-010 |
 | Parcours pilote talents | RM-TAL-011 |
+| RM-02 | RM-SITE-001 |
+| RM-01 | RM-SITE-002 |
+| RM-03 et RM-28 | RM-SITE-003 |
+| RM-04, RM-05 et RM-55 | RM-SITE-004 |
+| RM-06 et RM-68 | RM-SITE-005 |
+| RM-07 à RM-09 et RM-58 | RM-SITE-006 |
+| RM-10 à RM-14 | RM-SITE-007 |
+| RM-15 à RM-19 et RM-69 | RM-SITE-008 |
+| RM-20 et RM-21 | RM-SITE-009 |
+| RM-22 à RM-29 | RM-SITE-010 |
+| RM-01 à RM-03, RM-05 et RM-06 | RM-SITE-011 |
+| Parcours pilote sites | RM-SITE-012 |
 
 ## Historique
 
 | Version | Date | Modification |
 | --- | --- | --- |
+| 1.2 | 16 septembre 2026 | Intégration des décisions validées pour l'annuaire des sites et alignement des périmètres, critères d'acceptation et états d'implémentation sur les règles détaillées `RM-SITE`. |
 | 1.1 | 15 septembre 2026 | Intégration des réponses validées pour RM-31, RM-32, RM-38, RM-39 et RM-40, et report de la gestion structurée des images. |
 | 1.0 | 14 septembre 2026 | Première transcription complète des 69 règles, ajout des périmètres, critères d'acceptation et états issus de l'audit du code. |

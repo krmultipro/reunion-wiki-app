@@ -17,6 +17,8 @@ Ce dossier constitue la documentation versionnée du projet selon une approche
   d'acceptation.
 - [`business-rules/RULES_CATALOG.md`](business-rules/RULES_CATALOG.md) :
   catalogue complet des 69 règles, périmètres et états d'implémentation.
+- [`business-rules/SITE_RULES.md`](business-rules/SITE_RULES.md) : règles
+  détaillées du référencement, de la modération et du classement des sites.
 - [`EDITORIAL_GUIDE.md`](EDITORIAL_GUIDE.md) : point d'entrée du guide
   éditorial.
 - [`ARCHITECTURE.md`](ARCHITECTURE.md) : point d'entrée de la documentation

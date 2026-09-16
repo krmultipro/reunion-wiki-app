@@ -2,9 +2,9 @@
 
 | Métadonnée | Valeur |
 | --- | --- |
-| Version du document | 1.2 |
+| Version du document | 1.3 |
 | Statut | Validé |
-| Dernière mise à jour | 15 septembre 2026 |
+| Dernière mise à jour | 16 septembre 2026 |
 
 ## Convention
 
@@ -36,9 +36,10 @@ Les 69 règles suivies dans Notion, avec leur périmètre projet, leur critère
 d'acceptation et l'état d'implémentation observé, sont conservées dans
 [`business-rules/RULES_CATALOG.md`](business-rules/RULES_CATALOG.md).
 
-Les règles `RM-TAL` ci-dessous apportent des précisions éditoriales à ce
-catalogue. La table de correspondance entre les deux systèmes d'identifiants est
-conservée à la fin du catalogue.
+Les règles `RM-TAL` ci-dessous et les règles `RM-SITE` du document
+[`business-rules/SITE_RULES.md`](business-rules/SITE_RULES.md) apportent des
+précisions éditoriales à ce catalogue. La table de correspondance entre les
+systèmes d'identifiants est conservée à la fin du catalogue.
 
 ## Talents péi
 
@@ -247,6 +248,7 @@ conservée à la fin du catalogue.
 
 | Version | Date | Modification |
 | --- | --- | --- |
+| 1.3 | 16 septembre 2026 | Validation des décisions relatives aux sites : admissibilité, données minimales, normalisation et doublons, catégorie unique, portée géographique, statuts, recherche, clics, dates, modération, contrôles de publication et parcours pilote. |
 | 1.2 | 15 septembre 2026 | Validation des décisions talents : rattachements multiples, sources publiques, Twitch, recherche et filtres, demandes de correction, brouillon obligatoire, contrôles de publication et fiche pilote. Report de la gestion structurée des droits d'image. |
 | 1.1 | 14 septembre 2026 | Ajout du catalogue complet des 69 règles et clarification juridique de RM-TAL-004 pour le lancement. |
 | 1.0 | 2 septembre 2026 | Validation des premières règles d'admissibilité, de sourcing, d'image, de rédaction et de publication des talents. |
