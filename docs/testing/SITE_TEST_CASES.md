@@ -2,8 +2,8 @@
 
 | Métadonnée | Valeur |
 | --- | --- |
-| Version | 1.0 |
-| Statut | À automatiser |
+| Version | 1.1 |
+| Statut | Automatisation en cours |
 | Dernière mise à jour | 16 septembre 2026 |
 | Périmètre | MVP — annuaire des sites |
 
@@ -75,7 +75,7 @@ publié.
 | Règles couvertes | RM-01, RM-02, RM-23 et RM-SITE-001, RM-SITE-002, RM-SITE-011 |
 | Priorité | Critique |
 | Type recommandé | Formulaire, service et intégration |
-| État | À automatiser |
+| État | Partiellement automatisée : 7 réussis, 1 ignoré |
 
 ### Objectif
 
@@ -97,6 +97,16 @@ Réunion et l'impossibilité de publier un site invalide.
 
 Les huit cas doivent passer. Une erreur de publication ne doit supprimer aucune
 donnée déjà enregistrée dans le brouillon ou la proposition.
+
+### Exécution automatisée du 16 septembre 2026
+
+- **Commande :** `.venv/bin/python -m unittest -v tests.test_site_publication`
+- **Résultat :** sept cas réussis et un cas ignoré.
+- **Cas ignoré :** `TC-SITE-PUB-06`, car le lien réel avec La Réunion relève
+  encore d'un jugement éditorial sans mécanisme de confirmation représenté
+  dans l'application.
+- **Conséquence :** la fiche 2 reste partiellement automatisée et les règles
+  correspondantes ne passent pas encore au statut **Testée**.
 
 ## Fiche de test 3 — Normalisation des URL et doublons
 
@@ -295,7 +305,7 @@ anomalies.
 | Fiche | Nombre de cas | État initial |
 | --- | ---: | --- |
 | 1 — Proposition, statuts et visibilité | 7 | À automatiser |
-| 2 — Admissibilité et publication | 8 | À automatiser |
+| 2 — Admissibilité et publication | 8 | 7 réussis, 1 ignoré |
 | 3 — URL et doublons | 10 | À automatiser |
 | 4 — Accessibilité HTTP | 7 | À automatiser |
 | 5 — Recherche et filtres | 8 | À automatiser |
@@ -308,4 +318,5 @@ anomalies.
 
 | Version | Date | Modification |
 | --- | --- | --- |
+| 1.1 | 16 septembre 2026 | Automatisation de la fiche 2 : sept cas réussis et `TC-SITE-PUB-06` ignoré en attente d'un mécanisme de confirmation éditoriale. |
 | 1.0 | 16 septembre 2026 | Création des 57 cas prioritaires à partir des règles validées `RM-SITE-001` à `RM-SITE-012`. |
