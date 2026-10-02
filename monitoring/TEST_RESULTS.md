@@ -1,8 +1,10 @@
 # Tests de résistance du monitoring — 2 octobre 2026
 
 Version initialement en production : `a4cff08df7d64c9f92edcace7b38be2b229dc510`.
-Les tests étendus et leurs corrections sont préparés séparément ; les services
-réels et le chat Telegram n'ont pas été utilisés comme cibles de panne.
+Les tests étendus ont été exécutés séparément ; les services réels et le chat
+Telegram n'ont pas été utilisés comme cibles de panne. Leurs corrections sont
+incluses dans la version qui ajoute les commandes privées et la façade Docker.
+Voir aussi [COMMANDS_SECURITY.md](COMMANDS_SECURITY.md).
 
 ## Défauts reproduits et corrigés dans le candidat
 
@@ -61,3 +63,19 @@ retour arrière effectué sur la vraie production.
 - Une réponse d'acceptation perdue peut toujours entraîner un doublon au réessai.
 - Pas de test de panne totale du VPS, de disque plein ni de mesure de mémoire sous charge.
 - Pas de messages de cette campagne dans le chat privé et pas de redémarrage du site.
+
+## Extension : commandes privées et façade Docker
+
+28 tests Python passent après l'ajout des commandes et du filtrage Docker.
+Les tests de socket Unix couvrent les routes et méthodes interdites, les dates,
+le conteneur cible fixe, les utilisateurs/chats/groupes refusés et la limitation
+de fréquence persistante. L'intégration Docker et les tests de rotation,
+redémarrages et rollback isolé ont été refaits via la façade.
+
+Une paire Docker réelle confirme : bot UID 10002 sans client/socket Docker,
+système de fichiers en lecture seule, capacités supprimées ; façade UID 10001
+sans réseau, accès à un seul conteneur via ses routes fixes.
+
+La première intégration a détecté que le daemon du VPS attend des timestamps
+Unix dans ses paramètres de logs. La façade convertit maintenant les dates
+validées en timestamps Unix ; l'intégration passe après cette correction.

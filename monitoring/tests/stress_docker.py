@@ -12,10 +12,16 @@ import tarfile
 import tempfile
 import time
 import uuid
+import threading
+import os
+sys.path.insert(0,str(Path(__file__).parents[1]/"logbot"))
 
 spec = importlib.util.spec_from_file_location('monitor', Path(__file__).parents[1] / 'logbot/monitor.py')
 m = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(m)
+gateway_spec=importlib.util.spec_from_file_location('gateway',Path(__file__).parents[1]/'gateway/gateway.py')
+gateway_module=importlib.util.module_from_spec(gateway_spec); gateway_spec.loader.exec_module(gateway_module)
+servers=[]
 image = sys.argv[1]
 previous_image = sys.argv[2] if len(sys.argv) > 2 else image
 prefix = 'monitor-stress-' + uuid.uuid4().hex[:10]
@@ -44,6 +50,13 @@ def wait_for(check, seconds=30):
 
 baseline = {i['Name']: (i['Id'], i['State']['StartedAt']) for i in json.loads(docker('inspect', *docker('ps', '-q').split()))}
 try:
+    def reader(target):
+        path=str(root/(target+'.sock'))
+        server=gateway_module.Gateway(path,target)
+        os.chmod(path,0o666)  # Disposable fixtures only; production uses 660.
+        thread=threading.Thread(target=server.serve_forever,daemon=True);thread.start()
+        servers.append((server,thread))
+        return m.DockerReader(path)
     # Rotation before polling is intentionally destructive: compare against the
     # exact retained Docker logs instead of claiming deleted lines can be read.
     rotated = prefix + '-rotation'
@@ -52,7 +65,7 @@ try:
     retained = docker('logs', '--timestamps', rotated).splitlines()
     assert 0 < len(retained) < 12000
     store = m.Store(str(root / 'rotation.db'))
-    monitor = m.Monitor(store, m.Telegram('fake-token', 'fake-chat'), rotated, 'https://example.invalid/')
+    monitor = m.Monitor(store, m.Telegram('fake-token', 'fake-chat'), rotated, 'https://example.invalid/', reader=reader(rotated))
     store.set('cursor', m.utc(time.time()-60))
     store.db.commit()
     assert monitor.poll_logs(time.time())
@@ -67,14 +80,16 @@ try:
     fixture = prefix + '-source'
     create(fixture, 'import time; print("ERROR restart test"); time.sleep(300)')
     state = root / 'state'
-    state.mkdir()
+    state.mkdir(); state.chmod(0o777)
     store = m.Store(str(state / 'monitor.db'))
     store.set('cursor', m.utc(time.time()-60))
     store.db.commit()
     store.db.close()
+    (state/'monitor.db').chmod(0o666)
+    fixture_reader=reader(fixture)
     bot = prefix + '-bot'
     containers.append(bot)
-    docker('run', '-d', '--name', bot, '--network', 'none', '-e', 'BOT_TOKEN=fake-token', '-e', 'CHAT_ID=fake-chat', '-e', 'TARGET_CONTAINER='+fixture, '-e', 'SITE_URL=https://example.invalid/', '-v', str(state)+':/state', '-v', '/var/run/docker.sock:/var/run/docker.sock:ro', image)
+    docker('run', '-d', '--name', bot, '--network', 'none', '-e', 'BOT_TOKEN=fake-token', '-e', 'CHAT_ID=fake-chat', '-e', 'TARGET_CONTAINER='+fixture, '-e', 'SITE_URL=https://example.invalid/', '-v', str(state)+':/state', '-v', fixture_reader.path+':/ipc/docker-read.sock:ro', image)
     def info():
         out=docker('exec', bot, 'python', '-c', 'import sqlite3,json; d=sqlite3.connect("/state/monitor.db"); print(json.dumps({"cursor":d.execute("SELECT value FROM meta WHERE key=\'cursor\'").fetchone()[0],"count":d.execute("SELECT count(*) FROM outbox").fetchone()[0],"heartbeat":d.execute("SELECT value FROM meta WHERE key=\'heartbeat\'").fetchone()}))')
         return json.loads(out)
@@ -132,13 +147,15 @@ try:
     wait_for(lambda: 'old' in docker('logs',name))
     print('ROLLBACK : ancienne configuration et image réactivées, fichier privé restauré, état persistant conservé, installation isolée', flush=True)
 finally:
+    for server,thread in servers:
+        server.shutdown();server.server_close();thread.join(timeout=2)
     for name in reversed(containers):
         subprocess.run(['docker','rm','-f',name],capture_output=True,timeout=30)
     for tag in images:
         subprocess.run(['docker','image','rm',tag],capture_output=True,timeout=30)
     # The state bind mount may contain root-owned files; a disposable cleanup
     # container removes only the explicitly mounted temporary directory.
-    subprocess.run(['docker','run','--rm','--network','none','-v',str(root)+':/cleanup',image,'python','-c','import shutil; shutil.rmtree("/cleanup",ignore_errors=True)'],capture_output=True,timeout=30)
+    subprocess.run(['docker','run','--rm','--user','0:0','--network','none','-v',str(root)+':/cleanup',image,'python','-c','import shutil; shutil.rmtree("/cleanup",ignore_errors=True)'],capture_output=True,timeout=30)
     root.rmdir()
     after = {i['Name']: (i['Id'], i['State']['StartedAt']) for i in json.loads(docker('inspect', *docker('ps', '-q').split()))}
     assert all(after.get(k) == v for k,v in baseline.items()), 'Un service existant a été modifié ou redémarré'

@@ -3,6 +3,8 @@ import io
 import json
 from pathlib import Path
 import tempfile
+import sys
+sys.path.insert(0, str(Path(__file__).parents[1] / "logbot"))
 import unittest
 from unittest.mock import patch
 from urllib.error import HTTPError, URLError
@@ -79,10 +81,10 @@ class MonitoringTests(unittest.TestCase):
 
     def test_docker_failure_keeps_cursor_and_reconnects(self):
         cursor = self.store.get('cursor')
-        with patch.object(m.subprocess, 'run', return_value=m.subprocess.CompletedProcess([], 1, '', 'missing')):
+        with patch.object(self.monitor.reader, 'logs', side_effect=OSError('missing')):
             self.assertFalse(self.monitor.poll_logs(100))
         self.assertEqual(self.store.get('cursor'), cursor)
-        with patch.object(m.subprocess, 'run', return_value=m.subprocess.CompletedProcess([], 0, '2026-10-02T00:00:00.000000001Z ERROR after recreation', '')):
+        with patch.object(self.monitor.reader, 'logs', return_value='2026-10-02T00:00:00.000000001Z ERROR after recreation'):
             self.assertTrue(self.monitor.poll_logs(110))
         self.assertIn('after recreation', self.messages()[0][0])
 

@@ -6,10 +6,17 @@ import sys
 import tempfile
 import time
 import uuid
+import threading
+import os
+sys.path.insert(0,str(Path(__file__).parents[1]/"logbot"))
 
 spec = importlib.util.spec_from_file_location('monitor', Path(__file__).parents[1] / 'logbot/monitor.py')
 m = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(m)
+gateway_spec = importlib.util.spec_from_file_location('gateway', Path(__file__).parents[1]/'gateway/gateway.py')
+gateway_module = importlib.util.module_from_spec(gateway_spec)
+gateway_spec.loader.exec_module(gateway_module)
+server = None
 name = 'monitoring-probe-' + uuid.uuid4().hex[:12]
 image = sys.argv[1]
 
@@ -20,9 +27,13 @@ def docker(*args):
 
 try:
     with tempfile.TemporaryDirectory() as directory:
+        socket_path = str(Path(directory)/'reader.sock')
+        server = gateway_module.Gateway(socket_path,name)
+        thread = threading.Thread(target=server.serve_forever,daemon=True)
+        thread.start()
         store = m.Store(str(Path(directory) / 'test.db'))
         bot = m.Telegram('fake-token', 'fake-chat')
-        monitor = m.Monitor(store, bot, name, 'https://example.invalid/')
+        monitor = m.Monitor(store, bot, name, 'https://example.invalid/', reader=m.DockerReader(socket_path))
         store.set('cursor', m.utc(time.time() - 60))
         store.db.commit()
         code = 'print("INFO before"); print("ERROR middle"); print("INFO after"); print("Traceback (most recent call last):"); print("  File test.py"); print("ValueError: isolated test")'
@@ -44,4 +55,6 @@ try:
         store.db.close()
     print('Docker réel : erreur intermédiaire, traceback et recréation validés; aucun envoi Telegram')
 finally:
+    if server:
+        server.shutdown(); server.server_close(); thread.join(timeout=2)
     subprocess.run(['docker', 'rm', '-f', name], capture_output=True, timeout=30)

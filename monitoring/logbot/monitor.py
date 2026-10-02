@@ -7,9 +7,9 @@ from pathlib import Path
 import re
 import signal
 import sqlite3
-import subprocess
 import time
 from datetime import datetime, timezone
+from docker_reader import DockerReader
 from urllib import error, parse, request
 
 ERROR = re.compile(r'\b(?:ERROR|CRITICAL|FATAL|EXCEPTION)\b|Traceback \(most recent call last\):|"\s+5\d\d\s', re.I)
@@ -87,11 +87,40 @@ class Telegram:
         return False, retry, f"Telegram code {data.get('error_code', 'inconnu')}"
 
 
+    def api(self, method, payload):
+        # Method names come only from this source, never from incoming messages.
+        if method not in {'getUpdates', 'setMyCommands', 'getMe', 'getWebhookInfo'}:
+            raise ValueError('Unsupported Telegram method')
+        req = request.Request(f'https://api.telegram.org/bot{self.token}/{method}', data=parse.urlencode(payload).encode())
+        try:
+            with request.urlopen(req, timeout=10) as response:
+                data = json.load(response)
+            if isinstance(data, dict) and data.get('ok') is True:
+                return data.get('result')
+        except (error.URLError, TimeoutError, OSError, ValueError):
+            pass
+        raise OSError('Telegram command API unavailable')
+
+    def updates(self, offset):
+        return self.api('getUpdates', {'offset': offset, 'timeout': 0, 'limit': 20, 'allowed_updates': json.dumps(['message'])})
+
+    def register_commands(self):
+        commands = [
+            {'command': 'status', 'description': 'État du site et du monitoring'},
+            {'command': 'queue', 'description': 'Nombre d’alertes en attente'},
+            {'command': 'test', 'description': 'Vérifier la réponse du bot'},
+            {'command': 'help', 'description': 'Afficher les commandes'},
+        ]
+        return self.api('setMyCommands', {'commands': json.dumps(commands), 'scope': json.dumps({'type': 'chat', 'chat_id': int(self.chat)})})
+
+
 class Monitor:
-    def __init__(self, store, telegram, container, url, window=300, threshold=3):
+    def __init__(self, store, telegram, container, url, window=300, threshold=3, reader=None, owner=None):
         self.store, self.telegram = store, telegram
         self.container, self.url = container, url
         self.window, self.threshold = window, threshold
+        self.reader = reader or DockerReader()
+        self.owner = owner
         self.running = True
         if self.store.get('cursor') is None:
             self.store.set('cursor', utc())
@@ -156,13 +185,12 @@ class Monitor:
             self.store.set(name + '_down', '0')
 
     def poll_logs(self, now):
-        cutoff = utc(now)
+        since = self.store.get('cursor')
+        cutoff = utc(min(now, datetime.fromisoformat(since.replace('Z', '+00:00')).timestamp() + 3600))
         try:
-            result = subprocess.run(['docker', 'logs', '--timestamps', '--since', self.store.get('cursor'), '--until', cutoff, self.container], capture_output=True, text=True, timeout=20)
-            healthy = result.returncode == 0
-            if healthy:
-                self.ingest(result.stdout + '\n' + result.stderr, cutoff, now)
-        except (OSError, subprocess.TimeoutExpired):
+            self.ingest(self.reader.logs(since, cutoff), cutoff, now)
+            healthy = True
+        except (OSError, KeyError):
             healthy = False
         self.transition('Lecture des logs Docker', healthy, 'Accès aux logs du conteneur surveillé.', now)
         self.store.db.commit()
@@ -204,6 +232,76 @@ class Monitor:
                 print(f'Telegram : {reason}; nouvelle tentative dans {delay}s', flush=True)
             self.store.db.commit()
 
+    def handle_command(self, message, now):
+        """Only the pinned owner in the pinned private chat may request fixed reads."""
+        if not self.owner or not isinstance(message, dict):
+            return
+        chat, sender = message.get('chat', {}), message.get('from', {})
+        if not isinstance(chat, dict) or not isinstance(sender, dict):
+            return
+        if (chat.get('type') != 'private' or type(chat.get('id')) is not int
+                or type(sender.get('id')) is not int or sender.get('is_bot') is not False
+                or str(chat['id']) != self.telegram.chat or str(sender['id']) != self.owner
+                or message.get('forward_origin') or message.get('sender_chat')):
+            return
+        text = message.get('text', '')
+        if not isinstance(text, str) or len(text) > 80:
+            return
+        match = re.fullmatch(r'/(help|start|status|queue|test)(?:@([A-Za-z0-9_]+))?', text.strip())
+        if not match:
+            return
+        if match[2] and match[2].lower() != os.getenv('BOT_USERNAME', '').lower():
+            return
+        if now < float(self.store.get('command_not_before', '0')):
+            return
+        self.store.set('command_not_before', now + 10)
+        command = match[1]
+        if command in ('help', 'start'):
+            reply = 'Commandes privées :\n/status — état du site et du monitoring\n/queue — alertes en attente\n/test — vérifier la réponse\n/help — cette aide\nAucune commande d’administration du VPS.'
+        elif command == 'queue':
+            count = self.store.db.execute('SELECT count(*) FROM outbox').fetchone()[0]
+            reply = f'Alertes et réponses en attente : {count}.'
+        elif command == 'test':
+            reply = '✅ Commande reçue et réponse du bot validée. Aucun incident provoqué sur le site.'
+        else:
+            try:
+                state = self.reader.status()
+                web = 'actif' if state['running'] else 'arrêté'
+            except (OSError, KeyError):
+                web = 'état indisponible'
+            checked = float(self.store.get('https_last_check', '0'))
+            https = 'répond correctement' if self.store.get('https_ok') == '1' else 'échec du dernier contrôle'
+            if not checked or now - checked > 180:
+                https = 'contrôle récent indisponible'
+            reply = f'Réunion Wiki : {https}.\nConteneur web : {web}.\nMonitoring : actif.\nHeure : {utc(now)} (UTC).'
+        self.store.enqueue(reply, now)
+        self.store.set('command_last_success', now)
+
+    def poll_commands(self, now):
+        if not self.owner:
+            return
+        if now < float(self.store.get('commands_retry_at', '0')):
+            return
+        offset = self.store.get('telegram_offset')
+        try:
+            updates = self.telegram.updates(int(offset) if offset else -1)
+            if not isinstance(updates, list):
+                raise OSError('Invalid Telegram updates')
+            for update in updates:
+                if not isinstance(update, dict) or type(update.get('update_id')) is not int:
+                    continue
+                if offset is not None:
+                    self.handle_command(update.get('message'), now)
+                # Offset and queued replies commit together, including denied updates.
+                self.store.set('telegram_offset', update['update_id'] + 1)
+            if offset is None and not updates:
+                self.store.set('telegram_offset', 0)
+            self.store.db.commit()
+        except OSError:
+            self.store.set('commands_retry_at', now + 30)
+            self.store.db.commit()
+            print('Réception commandes indisponible ; nouvelle tentative dans 30s', flush=True)
+
     def run(self):
         next_probe = 0
         print(f'Monitoring démarré : {self.container}', flush=True)
@@ -213,6 +311,7 @@ class Monitor:
             if now >= next_probe:
                 self.probe(time.time())
                 next_probe = time.time() + 60
+            self.poll_commands(time.time())
             self.deliver(time.time())
             self.store.set('heartbeat', time.time())
             self.store.db.commit()
@@ -226,6 +325,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--healthcheck', action='store_true')
     parser.add_argument('--test-message', action='store_true')
+    parser.add_argument('--register-commands', action='store_true')
     args = parser.parse_args()
     path = os.getenv('STATE_PATH', '/state/monitor.db')
     if args.healthcheck:
@@ -236,7 +336,13 @@ def main():
         except sqlite3.Error:
             raise SystemExit(1)
     telegram = Telegram(os.environ['BOT_TOKEN'], os.environ['CHAT_ID'])
-    monitor = Monitor(Store(path), telegram, os.getenv('TARGET_CONTAINER', 'reunionwiki_prod_web_1'), os.getenv('SITE_URL', 'https://reunionwiki.re/'))
+    monitor = Monitor(Store(path), telegram, os.getenv('TARGET_CONTAINER', 'reunionwiki_prod_web_1'), os.getenv('SITE_URL', 'https://reunionwiki.re/'), owner=os.getenv('ALLOWED_USER_ID'))
+    if args.register_commands:
+        if not monitor.owner or not monitor.owner.isdigit() or int(telegram.chat) <= 0:
+            raise SystemExit('Propriétaire privé requis')
+        telegram.register_commands()
+        print('Menu des commandes enregistré pour le chat privé')
+        raise SystemExit(0)
     if args.test_message:
         ok, _, reason = telegram.send(monitor.message('🧪 Test du monitoring', 'Connexion Telegram validée. Aucun incident sur le site.', time.time()))
         print('Message test accepté' if ok else reason)

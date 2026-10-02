@@ -1,6 +1,6 @@
 FROM python:3.12-alpine
-RUN apk add --no-cache docker-cli ca-certificates
 WORKDIR /app
-COPY monitor.py /app/monitor.py
-ENV PYTHONUNBUFFERED=1 DOCKER_API_VERSION=1.41
+COPY monitor.py docker_reader.py /app/
+ENV PYTHONUNBUFFERED=1
+USER 10002:10001
 CMD ["python", "/app/monitor.py"]
