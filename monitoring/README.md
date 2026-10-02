@@ -17,7 +17,8 @@ ni dans l'image. Le socket Docker donne un accès sensible au daemon même mont�
 - Première occurrence immédiate, répétitions **identiques** résumées après
   5 minutes. Des messages variables peuvent donc produire des alertes distinctes.
 - File persistante dans `state/monitor.db`, réessais de 5 secondes à 1 heure,
-  respect du `retry_after` Telegram. La file n'a pas de limite automatique :
+  respect global du `retry_after` Telegram, avec pause persistante de tous les
+  envois après un échec. La file n'a pas de limite automatique :
   surveiller l'espace disque en cas de longue coupure et de nombreuses erreurs.
 - Contrôle HTTPS toutes les 60 secondes (HTTP 200 attendu, redirections suivies).
   Alerte après 3 échecs consécutifs, puis message de rétablissement.
@@ -38,6 +39,11 @@ extérieure pour cette couverture. Aucun suivi séparé des logs Nginx ici.
 ```bash
 python3 -m unittest discover -s monitoring/tests -v
 ```
+
+Résultats détaillés et limites de la campagne de résistance :
+[TEST_RESULTS.md](TEST_RESULTS.md). Les tests Docker de résistance se lancent
+séparément avec `python3 monitoring/tests/stress_docker.py IMAGE_CANDIDAT IMAGE_PRECEDENTE`
+et créent uniquement des fixtures jetables.
 
 ## Déploiement depuis Git
 

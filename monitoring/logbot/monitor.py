@@ -80,7 +80,11 @@ class Telegram:
             return False, 0, 'Réponse invalide'
         if data.get('ok') is True:
             return True, 0, ''
-        return False, int(data.get('parameters', {}).get('retry_after', 0)), f"Telegram code {data.get('error_code', 'inconnu')}"
+        try:
+            retry = max(0, int(data.get('parameters', {}).get('retry_after', 0)))
+        except (AttributeError, TypeError, ValueError):
+            return False, 0, 'Réponse invalide'
+        return False, retry, f"Telegram code {data.get('error_code', 'inconnu')}"
 
 
 class Monitor:
@@ -181,6 +185,9 @@ class Monitor:
 
     def deliver(self, now):
         self.store.summaries(now)
+        if now < float(self.store.get('telegram_not_before', '0')):
+            self.store.db.commit()
+            return
         row = self.store.db.execute('SELECT id,text,attempts FROM outbox WHERE due<=? ORDER BY id LIMIT 1', (now,)).fetchone()
         self.store.db.commit()
         if row:
@@ -193,6 +200,7 @@ class Monitor:
             else:
                 delay = max(retry, min(3600, 5 * 2 ** min(attempts, 10)))
                 self.store.db.execute('UPDATE outbox SET due=?,attempts=attempts+1 WHERE id=?', (now + delay, ident))
+                self.store.set('telegram_not_before', now + delay)
                 print(f'Telegram : {reason}; nouvelle tentative dans {delay}s', flush=True)
             self.store.db.commit()
 
