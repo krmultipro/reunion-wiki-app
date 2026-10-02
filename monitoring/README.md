@@ -75,3 +75,61 @@ sur le serveur, appliquer `chmod 600 .env`, puis `docker-compose -p monitoring u
 -d --build`. La façade utilise l'API Docker 1.41 du VPS ; vérifier sa compatibilité si le
 serveur est mis à niveau. Les volumes IPC et SQLite doivent appartenir respectivement
 aux UID 10001 et 10002 avec groupe 10001 ; le script de déploiement prépare ces droits.
+
+## Serveurs : ne pas confondre
+
+L’alias SSH `reunionwiki` désigne le VPS Réunion Wiki de production.
+L’alias `vps-devops` est réservé aux cours de l’utilisateur : ne jamais y
+installer, déployer ou planifier le monitoring Réunion Wiki.
+La surveillance extérieure du VPS reste à configurer sur un service dédié ;
+aucun autre serveur personnel n’est autorisé pour cet usage.
+
+## Alertes complémentaires
+
+Le bot contrôle le disque et la file chaque minute. Une alerte apparaît après
+3 contrôles en échec : moins de 10 % libres **ou** moins de 1 Gio ; retour sain
+à partir de 15 % **et** 2 Gio. Le contrôle utilise le volume `/state` ; le
+02/10/2026, sa partition et celle de `/var/www/reunion-wiki-app/data_prod`
+ont été vérifiées identiques. Si les données sont déplacées sur un autre disque,
+ce contrôle doit être adapté. Aucun nouveau accès Docker ou volume de données
+applicatives n’a été accordé au bot.
+
+La file est considérée anormale à 100 messages ou si son plus ancien message
+attend depuis 15 minutes. Une notification puis une notification de retour sain
+évitent la répétition à chaque minute ; si Telegram est coupé, elles restent en
+attente et ne peuvent pas être livrées immédiatement.
+
+Le certificat TLS est vérifié au démarrage puis toutes les 6 heures, avec
+validation TLS normale. Alertes aux seuils 30, 14, 7 et 3 jours, puis confirmation
+après renouvellement. Une impossibilité de lire le certificat est signalée après
+3 contrôles TLS en échec ; le contrôle HTTPS reste effectué chaque minute.
+
+Anti-flood : maximum 50 nouvelles signatures d’erreurs sur 5 minutes. Les
+suivantes sont comptées dans un résumé persistant, sans conserver leur détail.
+La file globale est limitée à 1 000 notifications ; les dépassements sont
+comptés également. Un résumé est ajouté après 5 minutes, dès que la file passe
+sous 900 messages. Les répétitions des signatures déjà retenues gardent leur
+résumé habituel. Consulter les logs du service pour retrouver les détails,
+sous réserve de leur rotation Docker. Ce mécanisme borne les messages, pas
+la croissance des logs ou de la table temporaire de déduplication sur 24 heures.
+
+Si SQLite est plein ou indisponible, le bot annule la transaction et réessaie,
+sans renouveler son heartbeat. Il ne peut pas garantir une alerte Telegram
+quand son propre stockage est déjà épuisé. Une surveillance extérieure reste
+nécessaire pour les pannes complètes du VPS ou du monitoring.
+
+Une réponse Telegram perdue après acceptation entraîne une nouvelle tentative :
+un doublon est possible. La livraison garantit une nouvelle tentative, pas
+l’unicité parfaite des messages côté Telegram.
+
+## Observation après déploiement
+
+`python3 monitoring/observe.py --record` réalise un contrôle HTTPS depuis la
+machine locale et lit un instantané limité du bot via SSH **reunionwiki**.
+Aucun secret, détail de logs ou texte Telegram n’est lu. Les résultats sont
+conservés localement dans `monitoring/state/observation.jsonl` (ignoré par Git).
+`--snapshot` dans le bot lit SQLite en lecture seule sans initialiser Telegram.
+Un suivi horaire de 48 heures est prévu depuis ce chat ; il dépend de la
+machine locale et de l’application ouverte, et ne remplace pas un service
+extérieur disponible en permanence. Les intervalles non observés doivent être
+mentionnés dans le bilan, sans extrapoler une disponibilité continue.

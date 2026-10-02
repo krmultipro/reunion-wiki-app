@@ -79,3 +79,47 @@ sans réseau, accès à un seul conteneur via ses routes fixes.
 La première intégration a détecté que le daemon du VPS attend des timestamps
 Unix dans ses paramètres de logs. La façade convertit maintenant les dates
 validées en timestamps Unix ; l'intégration passe après cette correction.
+
+## Compléments du 2 octobre 2026
+
+38 tests distincts réussis localement (28 précédents + 10 nouveaux), sans
+requête à Telegram ni modification de production. Les sockets de test Unix et
+localhost nécessitent une exécution hors du sandbox local.
+
+- 5 000 erreurs différentes : 50 notifications détaillées, puis un résumé
+  de 4 950 notifications, compteur conservé après réouverture de SQLite.
+- 1 200 notifications : file bornée à 1 000, 200 regroupées ; résumé récupéré
+  quand de la place revient.
+- Disque à 5 % libres : une alerte après 3 contrôles, aucune répétition ;
+  pas de faux retour sain à 11 %, confirmation à 20 %.
+- File bloquée : une alerte et une confirmation de retour sain.
+- Certificat : seuils 30/14/7/3 jours et renouvellement ; aucune répétition
+  au deuxième contrôle du même seuil. Réseau TLS simulé pour ce scénario.
+- Passerelle indisponible pendant 60 contrôles : curseur conservé, une alerte,
+  puis reprise, récupération de l’erreur et une confirmation de retour sain.
+- SQLite : limite réelle `PRAGMA max_page_count` atteinte ; exception
+  « database or disk full », curseur et alertes non validés, replay réussi
+  après restauration de capacité. Aucun disque de production rempli.
+- Accusé de réception perdu : nouvelle tentative démontrée et doublon possible,
+  limite assumée du protocole de livraison.
+- Les 3 nouvelles commandes répondent au propriétaire privé sans exposer
+  les détails de logs ni les secrets.
+
+L’observation continue de 24–48 heures réelles reste distincte des scénarios
+accélérés. Ne pas présenter ces tests comme une observation déjà accomplie.
+Le contrôle depuis un service extérieur n’est pas encore configuré.
+
+Deux tests supplémentaires valident l’instantané sans Telegram ni secrets et la
+migration SQLite, y compris une insertion par l’ancienne version après rollback.
+
+Validation Docker candidate sur le VPS Réunion Wiki, le 02/10/2026 :
+38 tests distincts réussis dans l’image `reunionwiki-telegram-monitor:improvements-test`.
+Lecture réelle de l’erreur intermédiaire, traceback et recréation validée.
+Rotation : 525/525 lignes encore présentes détectées, 50 détails retenus et
+475 erreurs regroupées ; 11 475 lignes déjà supprimées par rotation ne sont
+pas récupérables. Trois redémarrages réels ont conservé curseur et alertes.
+Rollback isolé entre l’image candidate et l’image de production 7101794 :
+ancienne image/configuration et fichier privé restaurés, état conservé.
+Paire non-root testée sans socket/client Docker dans le bot, autres routes
+refusées et passerelle sans réseau. Aucun message Telegram ; identifiants
+fictifs. Identifiants et dates de démarrage des services existants inchangés.

@@ -4,6 +4,7 @@ Run on the VPS with a candidate image; all credentials are synthetic, networking
 is disabled, and every created resource has a random dedicated project name.
 """
 import importlib.util
+import hashlib
 import json
 from pathlib import Path
 import subprocess
@@ -69,10 +70,13 @@ try:
     store.set('cursor', m.utc(time.time()-60))
     store.db.commit()
     assert monitor.poll_logs(time.time())
-    found = [r[0].split('ERROR rotation-', 1)[1] for r in store.db.execute('SELECT text FROM outbox')]
-    expected = [s.split('ERROR rotation-', 1)[1] for s in retained]
-    assert set(found) == set(expected) and len(found) == len(expected)
-    print(f'ROTATION : {len(found)}/{len(expected)} lignes conservées détectées ; {12000-len(expected)} lignes déjà effacées non récupérables', flush=True)
+    found = {row[0] for row in store.db.execute('SELECT id FROM seen')}
+    expected = {hashlib.sha256(line.encode()).hexdigest() for line in retained}
+    assert found == expected
+    detailed = store.db.execute('SELECT count(*) FROM outbox').fetchone()[0]
+    grouped = int(store.get('overflow_count','0'))
+    assert detailed == min(50,len(expected)) and detailed + grouped == len(expected)
+    print(f'ROTATION : {len(found)}/{len(expected)} lignes conservées détectées ; {detailed} détails et {grouped} regroupées ; {12000-len(expected)} lignes déjà effacées non récupérables', flush=True)
     store.db.close()
 
     # Run the actual bot repeatedly with --network none and fake credentials.
