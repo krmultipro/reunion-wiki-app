@@ -1,0 +1,27 @@
+version: "3.8"
+services:
+  telegram-logbot:
+    image: reunionwiki-telegram-monitor:${MONITORING_RELEASE:-latest}
+    build: ./logbot
+    container_name: telegram-logbot
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      TARGET_CONTAINER: reunionwiki_prod_web_1
+      SITE_URL: https://reunionwiki.re/
+      STATE_PATH: /state/monitor.db
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./state:/state
+    healthcheck:
+      test: ["CMD", "python", "/app/monitor.py", "--healthcheck"]
+      interval: 30s
+      timeout: 5s
+      start_period: 60s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "3"

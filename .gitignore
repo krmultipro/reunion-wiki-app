@@ -171,3 +171,6 @@ report/
 
 # Backups base
 backups/
+
+# Exemple sans secrets du monitoring
+!monitoring/.env.example
