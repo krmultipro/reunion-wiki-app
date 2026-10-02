@@ -111,3 +111,15 @@ Le contrôle depuis un service extérieur n’est pas encore configuré.
 
 Deux tests supplémentaires valident l’instantané sans Telegram ni secrets et la
 migration SQLite, y compris une insertion par l’ancienne version après rollback.
+
+Validation Docker candidate sur le VPS Réunion Wiki, le 02/10/2026 :
+38 tests distincts réussis dans l’image `reunionwiki-telegram-monitor:improvements-test`.
+Lecture réelle de l’erreur intermédiaire, traceback et recréation validée.
+Rotation : 525/525 lignes encore présentes détectées, 50 détails retenus et
+475 erreurs regroupées ; 11 475 lignes déjà supprimées par rotation ne sont
+pas récupérables. Trois redémarrages réels ont conservé curseur et alertes.
+Rollback isolé entre l’image candidate et l’image de production 7101794 :
+ancienne image/configuration et fichier privé restaurés, état conservé.
+Paire non-root testée sans socket/client Docker dans le bot, autres routes
+refusées et passerelle sans réseau. Aucun message Telegram ; identifiants
+fictifs. Identifiants et dates de démarrage des services existants inchangés.
