@@ -5,6 +5,9 @@
 - `/status` : dernier contrôle HTTPS, état du conteneur web, activité du bot.
 - `/queue` : nombre de notifications et réponses en attente.
 - `/test` : réponse de confirmation, sans provoquer d'erreur sur le site.
+- `/lastcheck` : dates UTC des contrôles HTTPS, logs, disque/file et TLS, avec les derniers succès logs/TLS.
+- `/version` : identifiant court du commit de monitoring déployé.
+- `/lastalert` : date et catégorie de la dernière alerte détectée, sans logs ; elle peut encore être en attente d’envoi.
 - `/help` (ou `/start`) : liste des commandes.
 
 Les commandes n'acceptent aucun argument et ne permettent ni shell, ni

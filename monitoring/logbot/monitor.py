@@ -6,6 +6,9 @@ import os
 from pathlib import Path
 import re
 import signal
+import shutil
+import socket
+import ssl
 import sqlite3
 import time
 from datetime import datetime, timezone
@@ -23,6 +26,7 @@ def utc(epoch=None):
 class Store:
     def __init__(self, path):
         Path(path).parent.mkdir(parents=True, exist_ok=True)
+        self.path = path
         self.db = sqlite3.connect(path)
         self.db.executescript('''
           CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT);
@@ -30,6 +34,10 @@ class Store:
           CREATE TABLE IF NOT EXISTS outbox (id INTEGER PRIMARY KEY, text TEXT, due REAL, attempts INTEGER DEFAULT 0);
           CREATE TABLE IF NOT EXISTS groups (key TEXT PRIMARY KEY, text TEXT, due REAL, repeats INTEGER);
         ''')
+        columns = {row[1] for row in self.db.execute('PRAGMA table_info(outbox)')}
+        if 'created' not in columns:
+            self.db.execute('ALTER TABLE outbox ADD COLUMN created REAL')
+        self.db.execute('UPDATE outbox SET created=due WHERE created IS NULL')
         self.db.commit()
 
     def get(self, key, default=None):
@@ -40,7 +48,15 @@ class Store:
         self.db.execute('INSERT OR REPLACE INTO meta VALUES (?,?)', (key, str(value)))
 
     def enqueue(self, text, now):
-        self.db.execute('INSERT INTO outbox(text,due) VALUES (?,?)', (text[:3500], now))
+        if self.db.execute('SELECT count(*) FROM outbox').fetchone()[0] >= 1000:
+            self.overflow(now)
+            return
+        self.db.execute('INSERT INTO outbox(text,due,created) VALUES (?,?,?)', (text[:3500], now, now))
+
+    def overflow(self, now):
+        self.set('overflow_count', int(self.get('overflow_count', '0')) + 1)
+        if self.get('overflow_since') is None:
+            self.set('overflow_since', now)
 
     def alert(self, key, text, now, window):
         row = self.db.execute('SELECT due FROM groups WHERE key=?', (key,)).fetchone()
@@ -48,10 +64,26 @@ class Store:
             self.db.execute('UPDATE groups SET repeats=repeats+1 WHERE key=?', (key,))
         else:
             self.summaries(now)
+            start = float(self.get('burst_start', '0'))
+            count = int(self.get('burst_count', '0'))
+            if now - start >= window:
+                start, count = now, 0
+            if count >= 50:
+                self.overflow(now)
+                return
+            self.set('burst_start', start)
+            self.set('burst_count', count + 1)
             self.enqueue(text, now)
             self.db.execute('INSERT OR REPLACE INTO groups VALUES (?,?,?,0)', (key, text, now + window))
 
     def summaries(self, now):
+        overflow = int(self.get('overflow_count', '0'))
+        since = float(self.get('overflow_since', str(now)))
+        if (overflow and now - since >= 300
+                and self.db.execute('SELECT count(*) FROM outbox').fetchone()[0] < 900):
+            self.enqueue(f'⚠️ Anti-flood : {overflow} notification(s) regroupée(s) depuis {utc(since)}. Détails non conservés dans la file ; consulter les logs du service.', now)
+            self.set('overflow_count', 0)
+            self.db.execute("DELETE FROM meta WHERE key='overflow_since'")
         for key, text, repeats in self.db.execute('SELECT key,text,repeats FROM groups WHERE due<=?', (now,)).fetchall():
             if repeats:
                 self.enqueue(f'🔁 {repeats} répétition(s) supplémentaire(s)\n{text}', now)
@@ -109,6 +141,9 @@ class Telegram:
             {'command': 'status', 'description': 'État du site et du monitoring'},
             {'command': 'queue', 'description': 'Nombre d’alertes en attente'},
             {'command': 'test', 'description': 'Vérifier la réponse du bot'},
+            {'command': 'lastcheck', 'description': 'Dates des derniers contrôles'},
+            {'command': 'version', 'description': 'Version du monitoring déployée'},
+            {'command': 'lastalert', 'description': 'Date et catégorie de la dernière alerte'},
             {'command': 'help', 'description': 'Afficher les commandes'},
         ]
         return self.api('setMyCommands', {'commands': json.dumps(commands), 'scope': json.dumps({'type': 'chat', 'chat_id': int(self.chat)})})
@@ -137,6 +172,7 @@ class Monitor:
 
     def emit(self, body, now):
         key = hashlib.sha256(body.encode()).hexdigest()
+        self.record_alert('Erreur applicative', now)
         self.store.alert(key, self.message('🚨 Erreur Réunion Wiki', body, now), now, self.window)
 
     def ingest(self, output, cutoff, now):
@@ -173,11 +209,16 @@ class Monitor:
         self.store.set('cursor', cutoff)
         self.store.db.execute('DELETE FROM seen WHERE created<?', (now - 86400,))
 
+    def record_alert(self, category, now):
+        self.store.set('last_alert_category', category)
+        self.store.set('last_alert_at', now)
+
     def transition(self, name, healthy, detail, now):
         failures = 0 if healthy else int(self.store.get(name + '_failures', '0')) + 1
         self.store.set(name + '_failures', failures)
         down = self.store.get(name + '_down', '0') == '1'
         if failures >= self.threshold and not down:
+            self.record_alert(name, now)
             self.store.enqueue(self.message('🚨 ' + name + ' indisponible', detail, now), now)
             self.store.set(name + '_down', '1')
         elif healthy and down:
@@ -190,8 +231,11 @@ class Monitor:
         try:
             self.ingest(self.reader.logs(since, cutoff), cutoff, now)
             healthy = True
+            self.store.set('logs_last_success', now)
         except (OSError, KeyError):
             healthy = False
+        self.store.set('logs_last_check', now)
+        self.store.set('logs_ok', int(healthy))
         self.transition('Lecture des logs Docker', healthy, 'Accès aux logs du conteneur surveillé.', now)
         self.store.db.commit()
         return healthy
@@ -209,6 +253,45 @@ class Monitor:
         self.transition('Site HTTPS', healthy, detail, now)
         self.store.set('https_last_check', now)
         self.store.set('https_ok', int(healthy))
+        self.store.db.commit()
+
+    def maintenance(self, now):
+        # This bind mount and the production data directory share the VPS filesystem.
+        disk = shutil.disk_usage(Path(self.store.path).parent)
+        free_percent = 100 * disk.free / disk.total
+        low = free_percent < 10 or disk.free < 1024 ** 3
+        was_low = self.store.get('Disque VPS_down') == '1'
+        healthy = not low and (not was_low or (free_percent >= 15 and disk.free >= 2 * 1024 ** 3))
+        self.transition('Disque VPS', healthy, f'Espace libre : {free_percent:.1f}% ({disk.free // (1024 ** 2)} Mio).', now)
+        count, oldest = self.store.db.execute('SELECT count(*),min(created) FROM outbox').fetchone()
+        stuck = count >= 100 or (oldest is not None and now - oldest >= 900)
+        self.transition('File Telegram', not stuck, f'{count} message(s) en attente ; délai maximal supérieur à 15 minutes ou file volumineuse.', now)
+        self.store.set('resources_last_check', now)
+        self.store.db.commit()
+
+    def probe_certificate(self, now):
+        host = parse.urlsplit(self.url)
+        if host.scheme != 'https' or not host.hostname:
+            return
+        try:
+            with socket.create_connection((host.hostname, host.port or 443), timeout=10) as raw:
+                with ssl.create_default_context().wrap_socket(raw, server_hostname=host.hostname) as secure:
+                    expires = ssl.cert_time_to_seconds(secure.getpeercert()['notAfter'])
+            days = (expires - now) / 86400
+            level = next((limit for limit in (3, 7, 14, 30) if days <= limit), 0)
+            previous = int(self.store.get('tls_level', '0'))
+            if level and (not previous or level < previous):
+                self.record_alert('Expiration certificat TLS', now)
+                self.store.enqueue(self.message('⚠️ Certificat TLS', f'Expiration dans {max(0, int(days))} jour(s), le {utc(expires)}.', now), now)
+            elif not level and previous:
+                self.store.enqueue(self.message('✅ Certificat TLS renouvelé', f'Expiration le {utc(expires)}.', now), now)
+            self.store.set('tls_level', level)
+            self.store.set('tls_expires', expires)
+            self.store.set('tls_last_success', now)
+            self.transition('Contrôle certificat TLS', True, 'Lecture validée.', now)
+        except (OSError, ValueError, KeyError):
+            self.transition('Contrôle certificat TLS', False, 'Lecture du certificat indisponible.', now)
+        self.store.set('tls_last_check', now)
         self.store.db.commit()
 
     def deliver(self, now):
@@ -247,7 +330,7 @@ class Monitor:
         text = message.get('text', '')
         if not isinstance(text, str) or len(text) > 80:
             return
-        match = re.fullmatch(r'/(help|start|status|queue|test)(?:@([A-Za-z0-9_]+))?', text.strip())
+        match = re.fullmatch(r'/(help|start|status|queue|test|lastcheck|version|lastalert)(?:@([A-Za-z0-9_]+))?', text.strip())
         if not match:
             return
         if match[2] and match[2].lower() != os.getenv('BOT_USERNAME', '').lower():
@@ -257,10 +340,21 @@ class Monitor:
         self.store.set('command_not_before', now + 10)
         command = match[1]
         if command in ('help', 'start'):
-            reply = 'Commandes privées :\n/status — état du site et du monitoring\n/queue — alertes en attente\n/test — vérifier la réponse\n/help — cette aide\nAucune commande d’administration du VPS.'
+            reply = 'Commandes privées :\n/status — état du site et du monitoring\n/queue — alertes en attente\n/test — vérifier la réponse\n/lastcheck — derniers contrôles\n/version — version déployée\n/lastalert — dernière alerte sans détails sensibles\n/help — cette aide\nAucune commande d’administration du VPS.'
         elif command == 'queue':
             count = self.store.db.execute('SELECT count(*) FROM outbox').fetchone()[0]
             reply = f'Alertes et réponses en attente : {count}.'
+        elif command == 'version':
+            release = os.getenv('MONITORING_RELEASE', '')
+            reply = 'Version monitoring : ' + (release[:12] if re.fullmatch(r'[a-f0-9]{40}', release) else 'inconnue')
+        elif command == 'lastalert':
+            stamp = self.store.get('last_alert_at')
+            reply = (f"Dernière alerte détectée : {self.store.get('last_alert_category')} — {utc(float(stamp))} (UTC). Son envoi peut encore être en attente." if stamp else 'Aucune alerte enregistrée depuis l’activation de cette fonction.')
+        elif command == 'lastcheck':
+            def checked(key):
+                value = self.store.get(key)
+                return utc(float(value)) if value else 'jamais'
+            reply = f"Derniers contrôles (UTC) :\nHTTPS : {checked('https_last_check')}\nLogs, tentative : {checked('logs_last_check')}\nLogs, succès : {checked('logs_last_success')}\nDisque et file : {checked('resources_last_check')}\nTLS, tentative : {checked('tls_last_check')}\nTLS, succès : {checked('tls_last_success')}"
         elif command == 'test':
             reply = '✅ Commande reçue et réponse du bot validée. Aucun incident provoqué sur le site.'
         else:
@@ -303,18 +397,26 @@ class Monitor:
             print('Réception commandes indisponible ; nouvelle tentative dans 30s', flush=True)
 
     def run(self):
-        next_probe = 0
+        next_probe = next_certificate = 0
         print(f'Monitoring démarré : {self.container}', flush=True)
         while self.running:
             now = time.time()
-            self.poll_logs(now)
-            if now >= next_probe:
-                self.probe(time.time())
-                next_probe = time.time() + 60
-            self.poll_commands(time.time())
-            self.deliver(time.time())
-            self.store.set('heartbeat', time.time())
-            self.store.db.commit()
+            try:
+                self.poll_logs(now)
+                if now >= next_probe:
+                    self.probe(time.time())
+                    self.maintenance(time.time())
+                    next_probe = time.time() + 60
+                if now >= next_certificate:
+                    self.probe_certificate(time.time())
+                    next_certificate = time.time() + 6 * 3600
+                self.poll_commands(time.time())
+                self.deliver(time.time())
+                self.store.set('heartbeat', time.time())
+                self.store.db.commit()
+            except (sqlite3.Error, OSError):
+                self.store.db.rollback()
+                print('Stockage ou contrôle local indisponible ; nouvelle tentative, heartbeat non renouvelé.', flush=True)
             for _ in range(5):
                 if not self.running:
                     break
@@ -326,8 +428,18 @@ def main():
     parser.add_argument('--healthcheck', action='store_true')
     parser.add_argument('--test-message', action='store_true')
     parser.add_argument('--register-commands', action='store_true')
+    parser.add_argument('--snapshot', action='store_true')
     args = parser.parse_args()
     path = os.getenv('STATE_PATH', '/state/monitor.db')
+    if args.snapshot:
+        keys = ('heartbeat', 'cursor', 'https_last_check', 'https_ok', 'logs_last_check', 'logs_last_success', 'logs_ok', 'resources_last_check', 'tls_last_check', 'tls_last_success', 'tls_expires', 'tls_level', 'telegram_last_success', 'overflow_count', 'Disque VPS_down', 'File Telegram_down')
+        with sqlite3.connect(f'file:{path}?mode=ro', uri=True) as db:
+            data = {key: db.execute('SELECT value FROM meta WHERE key=?', (key,)).fetchone() for key in keys}
+            data = {key: row[0] if row else None for key, row in data.items()}
+            data['queue_count'], data['queue_oldest'] = db.execute('SELECT count(*),min(created) FROM outbox').fetchone()
+        data['release'] = os.getenv('MONITORING_RELEASE', '')
+        print(json.dumps(data))
+        return
     if args.healthcheck:
         try:
             with sqlite3.connect(f'file:{path}?mode=ro', uri=True) as db:
