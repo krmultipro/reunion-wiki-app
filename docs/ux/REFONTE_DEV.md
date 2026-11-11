@@ -1,11 +1,11 @@
 # Refonte DEV — périmètre validé le 11 novembre 2026
 
-Version 1.2 — décisions utilisateur validées, implémentation et recette locale réalisées.
+Version 1.3 — décisions utilisateur validées, correction de la référence ordinateur.
 Publication DEV attestée séparément par le journal de release et les labels d’image.
 
 ## Sources et choix applicables
 
-L’utilisateur autorise l’intégration de la maquette comme nouvelle version de Réunion Wiki, puis sa livraison sur dev.reunionwiki.re. Source visuelle : `maquettes/mobile-final/` et son repli ordinateur existant, avec les compléments documentés dans FINAL_MOBILE_MOCKUP.md. La variante PC isolée et l’aperçu éditorial privé ne sont pas fusionnés implicitement dans cette référence. Les données viennent de SQLite ; le catalogue statique et sessionStorage ne deviennent pas le backend.
+L’utilisateur autorise l’intégration de la maquette comme nouvelle version de Réunion Wiki, puis sa livraison sur dev.reunionwiki.re. Source visuelle : `maquettes/mobile-final/` sur mobile et `maquettes/pc-v1/` en résolution ordinateur, avec les compléments documentés dans FINAL_MOBILE_MOCKUP.md et DESKTOP_MOCKUP_V1.md. Correction explicite du 11 novembre : la référence PC remplace le repli mobile précédemment retenu à tort pour les grands écrans ; voir [intégration ordinateur](DESKTOP_INTEGRATION.md). L’aperçu éditorial privé reste distinct. Les données viennent de SQLite ; le catalogue statique et sessionStorage ne deviennent pas le backend.
 
 Le 11 novembre, l’utilisateur accepte le report après cette intégration DEV de la recherche avancée (commune/domaine/URL, filtres géographiques, tris), du filtre plateforme/Twitch, des fonctions admin avancées (photos/réseaux, communes, contenus éditoriaux, correction clics), de la nouvelle présentation du projet et des articles. La confidentialité détaillée et le traitement complet des demandes sont à terminer avant ouverture publique et collecte réelle. Ces fonctionnalités restent dans le cahier des charges ; elles ne conditionnent pas cette première refonte DEV.
 
