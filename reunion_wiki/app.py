@@ -9,12 +9,14 @@ from .config import config
 from .blueprints import register_blueprints
 from .extensions import csrf, limiter
 from .http_handlers import register_http_handlers
+from .session_interface import StaticAssetSessionInterface
 from .template_helpers import register_template_helpers
 
 
 # Point d'entrée Flask : ce fichier doit rester centré sur la création de l'app,
 # les hooks globaux, les filtres Jinja et l'enregistrement des blueprints.
 app = Flask(__name__, static_folder="../static", template_folder="../templates")
+app.session_interface = StaticAssetSessionInterface()
 
 # Configuration chargée selon FLASK_ENV. Les setdefault gardent des valeurs sûres
 # même si une classe de config oublie une option de session ou de CSRF.
