@@ -13,13 +13,13 @@
     if (image.complete && !image.naturalWidth) failed();
   });
   const listPage = ['sites','personnalites','recherche','home'].includes(document.body.dataset.finalPage);
-  const positionKey = 'rw-public-position:' + location.pathname + location.search;
+  const positionKey = () => 'rw-public-position:' + location.pathname + location.search;
   if (listPage) {
-    const remember = () => { try { sessionStorage.setItem(positionKey,String(scrollY)); } catch {} };
+    const remember = () => { try { sessionStorage.setItem(positionKey(),String(scrollY)); } catch {} };
     document.addEventListener('click', event => { if (event.target.closest('a')) remember(); });
     addEventListener('pagehide', remember);
     try {
-      const saved = Number(sessionStorage.getItem(positionKey));
+      const saved = Number(sessionStorage.getItem(positionKey()));
       if (saved > 0) requestAnimationFrame(() => requestAnimationFrame(() => scrollTo(0,saved)));
     } catch {}
   }
