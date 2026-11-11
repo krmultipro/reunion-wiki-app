@@ -27,6 +27,10 @@ Ce dossier constitue la documentation versionnée du projet selon une approche
 
 ## Documentation spécialisée
 
+- [`ux/ADMIN_SITES_LAYOUT.md`](ux/ADMIN_SITES_LAYOUT.md) : choix A validé pour
+  corriger la liste admin écrasée ; tableau PC, défilement local et filtres souples.
+  [Recette avant/après](testing/ADMIN_SITES_LAYOUT_2026-11-11.md).
+
 - [`development/CACHE_DEV_2026-11-11.md`](development/CACHE_DEV_2026-11-11.md) :
   correctif du cache des fichiers publics et logo léger, critères, schéma,
   régressions de confidentialité et preuves de livraison DEV.
