@@ -1,6 +1,7 @@
 # Partage avec icône dans la ligne des réseaux — DEV
 
-Version 1.0 — 11 novembre 2026. Contrat et critères écrits avant tests et code.
+Version 1.1 — 11 novembre 2026. Contrat et critères écrits avant tests et code,
+puis preuves de la recette et de la livraison ajoutées après exécution.
 
 ## Décision et périmètre
 
@@ -85,4 +86,50 @@ contenus correspondent. Aucun nouveau transfert privé vers le PC n'a été tent
 La sauvegarde fraîche VPS protège aussi les compteurs récents ; la copie PC
 n'est pas annoncée comme un snapshot frais identique de toutes les tables.
 
-Publication et recette du conteneur actif à compléter après exécution.
+### Publication et recette du conteneur DEV actif
+
+- [PR #54](https://github.com/krmultipro/reunion-wiki-app/pull/54) fusionnée dans
+  `dev`. Arbre publié identique à l'arbre testé :
+  `fde72a0b6307af37201645f7d9722ee4f45f7f0b`. Publication par le connecteur
+  GitHub, sans récupération ni exposition de credentials du client Git.
+- Commit applicatif livré : `7d44fa8635aff8f18ef59b03feb04218b60daec7`.
+  Release : `20261111T101241Z-7d44fa8635af`. Labels branche/commit/release relus.
+- `deploy-dev.sh` depuis le dev officiel propre : contrôles locaux puis
+  142 cas dans l'image candidate (141 réussis et un manuel ignoré), migration
+  sur copie sans changement, snapshot final DB+uploads, smoke Gunicorn et
+  contrôle/rechargement Nginx partagé réussis. Aucune purge implicite.
+- CSS livré en GET et HEAD à une nouvelle URL versionnée
+  `/static/refonte/components.css?v=1794391932`. SHA-256 :
+  `089dbb6d0db1230eb3ece26deb1e7da391c13605c06605ac27194ea0dbead407`.
+- Fiche publiée du DEV réellement actif inspectée par un tunnel SSH temporaire
+  limité au loopback. À 1280 px : trois liens et partage sur la même ligne,
+  bouton 44 px centré face aux liens 52 px, icône 18 px masquée aux lecteurs
+  d'écran. À 320 px : TikTok et partage sur la seconde ligne, sans débordement ;
+  à 390 px : repli du partage, focus visible 3 px et fermeture Échap vérifiés.
+  Une capture conserve le rendu réel de la ligne PC.
+- HTML : un seul `data-share-open`, icône décorative non focalisable et texte
+  du bouton inchangé. La fiche sans liens et les fiches privées sont couvertes
+  par les tests d'intégration et la fixture navigateur locale.
+- Empreinte logique SQLite identique au snapshot final, 34 uploads inchangés,
+  zéro violation de clé étrangère. Les métadonnées protégées du snapshot final
+  ont été relues via un conteneur isolé sans réseau et un montage en lecture
+  seule, sans élargir les permissions des sauvegardes.
+- Protection Basic conservée (401 anonymement pour DEV et CSS), non-indexation
+  vérifiée, pas de port applicatif public sur l'hôte. Production HTTP 200,
+  image et date de démarrage applicatives identiques au relevé préalable.
+  `main` n'a pas été modifié.
+- Rollback code/image et bundle final conservés dans le dossier privé de release.
+  Journaux et recette : `/tmp/reunion-share-inline-qa-20261111/`, hors Git.
+
+Limites : aucun téléphone physique ou session HTTPS Basic authentifiée inspecté ;
+le navigateur contrôle directement le conteneur livré via SSH. Aucun lien
+social ouvert, texte copié ou message transmis pour ces vérifications.
+La preuve documentaire ajoutée ensuite ne change pas les sources applicatives
+et n'exige pas une nouvelle construction de l'image.
+
+## Historique
+
+| Version | Date | Modification |
+| --- | --- | --- |
+| 1.0 | 11 novembre 2026 | Choix A documenté, régressions rouges puis correction et recette locale. |
+| 1.1 | 11 novembre 2026 | Preuves de publication DEV, récupération, affichage et limites. |
