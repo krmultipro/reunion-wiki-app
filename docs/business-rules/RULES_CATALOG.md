@@ -2,10 +2,62 @@
 
 | Métadonnée | Valeur |
 | --- | --- |
-| Version | 1.3 |
+| Version | 1.8 |
 | Statut | Référence versionnée |
 | Date du relevé | 16 septembre 2026 |
 | Origine | Base Notion « Règles métiers Réunion Wiki » et audit statique du dépôt |
+
+## Jalon refonte DEV — 11 novembre 2026
+
+Complément validé par l’utilisateur : intégration fidèle de la maquette, recherche
+simple et administration essentielle. Les compléments d’interface RM-10/12/13,
+RM-32/40 (plateforme/Twitch), les outils admin avancés, la nouvelle présentation
+RM-41 à 47 et la finalisation RM-62/63 sont reportés après ce jalon DEV.
+Le texte et l’historique de ces exigences restent conservés. La confidentialité
+effective, les droits d’accès, les contrôles de publication et la visibilité
+publiée seule ne sont pas reportés. La finalisation de confidentialité précède
+l’ouverture publique et la collecte réelle. Voir [REFONTE_DEV](../ux/REFONTE_DEV.md).
+
+Historique 1.8 — 11 novembre : périmètre de livraison DEV simplifié et reports
+explicitement validés ; les états historiques ci-dessous ne constituent pas
+une validation de la refonte en cours.
+
+## Complément du 17 octobre 2026 — affichage public
+
+Les tendances ne font plus partie de l’expérience publique cible, conformément
+à RM-SITE-008 amendement 1.3 et UX-GEN-009 v2.0. RM-18/19 conservent les calculs,
+statuts et règles privées, sans imposer une page publique. L’obligation d’accès
+public antérieure est remplacée ; le retrait effectif de la route et du SEO est
+à réaliser dans #18, pas déclaré implémenté ou testé par la maquette. Les états
+historiques ci-dessous ne prouvent pas cette révision. Les blocs globaux Plus
+consultés/Nouveautés sont retirés de l’accueil ; dates de publication, catalogue,
+catégories et comptabilisation restent inchangés. Voir [HOME_PAGE.md](../ux/HOME_PAGE.md).
+
+## Décision applicable — créateurs de contenu, 17 octobre 2026
+
+Le [périmètre de lancement](../ux/CONTENT_CREATORS_SCOPE.md) remplace l’ouverture générale aux
+Talents péi du 16 octobre : **créateurs de contenu**, rubrique **Créateurs** et
+**Proposer un créateur**. Les autres talents restent une piste reportée.
+Les compléments du 16 octobre ci-dessous sont historiques sur le nom et
+l’élargissement ; ils ne doivent pas guider une adaptation artiste/artisan.
+RM-TAL-012 v2.0 et UX-CONT-001 à 006 font référence.
+
+Nom et lien officiel restent obligatoires à la proposition (UX-PROP-002), sans
+compte au lancement ; aucune proposition sans lien ajoutée. Contact/email pour
+les corrections et retraits, tableau de bord différé. Les choix de présentation
+et de navigation existants sont conservés. Documentation seule : aucun code,
+maquette ni test fonctionnel modifié ou exécuté.
+
+## Historique — complément du 16 octobre 2026, remplacé sur le périmètre
+
+RM-TAL-012 précise le périmètre éditorial **Talents péi** : personnes et
+collectifs, création de contenu, arts et artisanat notamment ; fiches
+entreprises et fonctions de prestataires hors rubrique au lancement.
+Voir [le cadrage](../ux/TALENTS_PEI_SCOPE.md). RM-30 à 40 restent applicables,
+notamment RM-39 pour Contact/email. Les états historiques du catalogue ne
+prouvent pas l’application de ce complément ; aucun nouvel audit du code ni
+contrôle fonctionnel réalisé. Tableau de bord avec compte reporté ; modalités
+sans lien officiel et cas frontières des structures encore ouverts.
 
 ## Objet du document
 
@@ -22,8 +74,11 @@ Les états d'implémentation proviennent d'une lecture statique du code :
 - **Implémentée** : le comportement correspondant a été trouvé dans le code ;
 - **Testée** : le comportement a été vérifié par des tests reproductibles.
 
-Aucune règle n'est marquée **Testée** dans ce relevé, car aucune suite de tests
-automatisés correspondant à ce catalogue n'a été trouvée dans le dépôt.
+Les règles `RM-03` et `RM-28` sont désormais marquées **Testée** : les dix cas
+de la fiche 3 couvrent la normalisation, les doublons et les avertissements.
+`RM-06` est également **Testée** depuis le 22 septembre 2026 : les choix
+géographiques explicites, l'absence de déduction depuis une commune vide et le
+filtre public sont vérifiés dans la fiche 5.
 
 ## Sites et classement
 
@@ -31,10 +86,10 @@ automatisés correspondant à ce catalogue n'a été trouvée dans le dépôt.
 | --- | --- | --- | --- | --- |
 | RM-01 | MVP | En cours | Un site ne peut être publié que s'il possède un nom, une URL valide et accessible, une description neutre et une catégorie principale. | La publication est refusée si l'un des quatre éléments manque ou si l'accessibilité HTTP ne peut pas être confirmée automatiquement ou manuellement. |
 | RM-02 | MVP | En cours | Un site référencé satisfait au moins un critère de lien réel avec La Réunion : organisme réunionnais, contenu local régulier, offre nationale spécifique ou ressource particulièrement utile au public réunionnais. | L'administrateur confirme le lien avant publication. La justification et son éventuelle URL de preuve sont facultatives, conservées en privé et jamais affichées au public. |
-| RM-03 | MVP | À faire | Une même URL normalisée ne peut être enregistrée qu'une seule fois. La normalisation retire le fragment et les paramètres publicitaires, ignore la casse du domaine, mais conserve la casse du chemin et les paramètres fonctionnels. | Un doublon exact est bloqué lors d'une proposition, d'une création admin ou d'une modification. Les variantes avec et sans `www` ne sont fusionnées automatiquement que si une redirection les relie. |
+| RM-03 | MVP | Testée | Une même URL normalisée ne peut être enregistrée qu'une seule fois. La normalisation retire le fragment et les paramètres publicitaires, ignore la casse du domaine, mais conserve la casse du chemin et les paramètres fonctionnels. | Un doublon exact est bloqué lors d'une proposition, d'une création admin ou d'une modification. Les variantes avec et sans `www` ne sont fusionnées automatiquement que si une redirection les relie. |
 | RM-04 | MVP | Implémentée | En MVP, un site possède exactement une catégorie principale ; ses autres activités sont décrites dans sa présentation. Les catégories secondaires sont reportées en V2. | Une catégorie principale est obligatoire et aucune catégorie secondaire n'est proposée dans le MVP. |
 | RM-05 | V2 | À faire | Seules les catégories actives peuvent être attribuées à un nouveau site ; une catégorie désactivée conserve ses sites existants. | Une catégorie inactive n'apparaît plus dans les formulaires. Une catégorie utilisée ne peut être supprimée sans réaffectation et peut être archivée. |
-| RM-06 | MVP | En cours | La localisation d'un site est facultative et distingue une commune du référentiel, `Toute La Réunion`, `En ligne` et `Non précisée`. | Une commune vide signifie `Non précisée`. Les portées `Toute La Réunion` et `En ligne` sont des choix explicites et ne sont jamais déduites d'une valeur vide. |
+| RM-06 | MVP | Testée | La localisation d'un site est facultative et distingue une commune du référentiel, `Toute La Réunion`, `En ligne` et `Non précisée`. | Une commune vide signifie `Non précisée`. Les portées `Toute La Réunion` et `En ligne` sont des choix explicites et ne sont jamais déduites d'une valeur vide. |
 | RM-07 | MVP | Implémentée | Seuls les sites publiés sont visibles publiquement. | Un site dont le statut n'est pas publié est absent des listes, recherches et classements publics. |
 | RM-08 | MVP | En cours | Un site peut être brouillon, en attente, publié, refusé ou archivé. Les transitions autorisées sont `draft` vers `published` ou `archived`, `pending` vers `published` ou `refused`, `published` vers `archived`, `refused` vers `pending` et `archived` vers `published`. | Toute autre transition est refusée. Une correction de proposition peut conserver le statut `pending` et ne déclenche aucune transition implicite. |
 | RM-09 | MVP | À faire | Un site fermé, durablement inaccessible, obsolète ou non conforme peut être archivé. | L'archivage retire le site du public sans supprimer son historique ni ses statistiques, et le conserve dans l'administration. |
@@ -53,8 +108,8 @@ automatisés correspondant à ce catalogue n'a été trouvée dans le dépôt.
 | RM-17 | MVP | En cours | Les clics répétés d'un même visiteur vers un même site pendant 30 minutes ne comptent qu'une fois. | La déduplication côté serveur utilise un identifiant dérivé de l'adresse IP, du `User-Agent` et du site, sans cookie publicitaire ni conservation inutile de l'adresse IP brute. |
 | RM-18 | MVP | En cours | Les tendances sont calculées à partir des clics admissibles : tendance sur 7 jours, progression par comparaison avec les 7 jours précédents et popularité stable sur 30 jours. | Chaque indicateur utilise sa période définie ; un site sans clic reste absent des classements principaux, mais demeure visible dans les nouveautés et sa catégorie. |
 | RM-19 | MVP | Implémentée | Seuls les sites publiés peuvent apparaître dans les tendances. | Aucun site non publié n'est présent dans les classements calculés. |
-| RM-20 | MVP | À faire | Une proposition, une première publication, une publication utilisée pour les nouveautés et une modification possèdent des dates distinctes : `submitted_at`, `first_published_at`, `published_at` et `updated_at`. | `first_published_at` ne change jamais. `published_at` n'est renouvelée que par l'action explicite « Traiter comme une nouvelle publication », jamais sélectionnée par défaut. |
-| RM-21 | MVP | En cours | Les derniers sites ajoutés sont classés du plus récemment publié au plus ancien à partir de `published_at`. | Une republication normale ne replace pas le site dans les nouveautés. Une nouvelle publication explicite actualise `published_at`, sans effacer les clics ni l'historique. |
+| RM-20 | MVP | Testée | Une proposition, une première publication, une publication utilisée pour les nouveautés et une modification possèdent des dates distinctes : `submitted_at`, `first_published_at`, `published_at` et `updated_at`. | `first_published_at` ne change jamais. `published_at` n'est renouvelée que par l'action explicite « Traiter comme une nouvelle publication », jamais sélectionnée par défaut. |
+| RM-21 | MVP | Testée | Les derniers sites ajoutés sont classés du plus récemment publié au plus ancien à partir de `published_at`. | Une republication normale ne replace pas le site dans les nouveautés. Une nouvelle publication explicite actualise `published_at`, sans effacer les clics ni l'historique. |
 
 ## Proposition et modération des sites
 
@@ -66,7 +121,7 @@ automatisés correspondant à ce catalogue n'a été trouvée dans le dépôt.
 | RM-25 | MVP | Implémentée | Toute proposition publique reçoit le statut en attente. | Après un envoi valide, le site est enregistré en attente de modération. |
 | RM-26 | MVP | Implémentée | Une proposition n'est jamais publiée automatiquement. | Le site reste invisible jusqu'à une action volontaire d'un administrateur. |
 | RM-27 | MVP | Implémentée | Un administrateur peut modifier, accepter ou refuser une proposition. | Chaque action est accessible dans l'administration et modifie le statut ou les données attendus. |
-| RM-28 | MVP | À faire | Une URL normalisée déjà enregistrée est bloquée avant l'enregistrement, quel que soit son statut. Un domaine déjà connu avec un chemin différent produit un avertissement admin. | Le contrôle est exécuté lors de la proposition publique, de la création admin et de la modification de l'URL. |
+| RM-28 | MVP | Testée | Une URL normalisée déjà enregistrée est bloquée avant l'enregistrement, quel que soit son statut. Un domaine déjà connu avec un chemin différent produit un avertissement admin. | Le contrôle est exécuté lors de la proposition publique, de la création admin et de la modification de l'URL. |
 | RM-29 | V1 | À faire | Le proposant peut être informé manuellement ou automatiquement de la décision lorsqu'il a fourni un email. | L'email n'est jamais public. Le MVP peut fonctionner sans notification automatique et permettre une réponse manuelle. |
 
 ## Talents réunionnais
@@ -74,7 +129,7 @@ automatisés correspondant à ce catalogue n'a été trouvée dans le dépôt.
 | ID | Périmètre | Implémentation | Règle | Critère d'acceptation |
 | --- | --- | --- | --- | --- |
 | RM-30 | MVP | Implémentée | Un talent possède un nom ou pseudonyme, une présentation et une catégorie principale. | L'enregistrement est refusé si l'un de ces éléments manque. |
-| RM-31 | MVP | À faire | Un talent publié possède au moins un rattachement réel avec La Réunion et une source publique permettant de le vérifier. Plusieurs rattachements et sources sont autorisés ; un brouillon peut rester incomplet. | La publication est refusée sans rattachement et sans source. Chaque source conserve son type, son titre ou sa description, son URL et son organisme ou compte ; au moins une source est affichée publiquement. |
+| RM-31 | MVP | À faire | Selon RM-TAL-003 v2.0, un talent publié possède un rattachement réel vérifié avec une source simple conservée en privé. Plusieurs rattachements/sources restent possibles ; brouillon incomplet admis. | Publication refusée sans rattachement ni source enregistrée. Référence identifiable et lien conservés en privé avec une courte note ; aucun affichage public de source obligatoire au lancement. Décision validée, backend non vérifié. |
 | RM-32 | MVP | En cours | Un talent peut être associé facultativement à Instagram, YouTube, TikTok, Facebook, Twitch ou un site officiel. Une page SEO Twitch n'est pas exigée dans le MVP. | Chaque plateforme accepte une URL HTTP ou HTTPS valide. Une fiche publiée avec une URL Twitch affiche ce lien et apparaît dans le filtre Twitch. |
 | RM-33 | MVP | Implémentée | Toute URL de plateforme renseignée doit être valide. | Une URL sans protocole HTTP ou HTTPS ou sans domaine est refusée. |
 | RM-34 | MVP | Implémentée | Une plateforme ne peut apparaître qu'une seule fois sur une même fiche. | Une fiche ne conserve qu'une URL par plateforme. |
@@ -160,10 +215,11 @@ de ses réponses, de ses permissions et de sa politique de conservation.
 
 | État | Nombre de règles |
 | --- | ---: |
-| Implémentée | 26 |
+| Implémentée | 25 |
+| Implémentée sous réserve | 1 |
 | En cours | 28 |
-| À faire | 15 |
-| Testée | 0 |
+| À faire | 13 |
+| Testée | 2 |
 
 ## Règles détaillées complémentaires
 
@@ -197,10 +253,23 @@ et sont reliées comme suit.
 | RM-01 à RM-03, RM-05 et RM-06 | RM-SITE-011 |
 | Parcours pilote sites | RM-SITE-012 |
 
+## Remplacement de RM-31 — 7 octobre 2026
+
+La définition antérieure (versions du catalogue jusqu'à 1.3) exigeait une source
+publique affichée avec type, titre/description, URL et organisme. Elle est
+remplacée par RM-TAL-003 v2.0 : vérification légère et référence conservée en
+privé au lancement. Le texte ancien de la règle et son amendement sont conservés
+avec statut Remplacée dans BUSINESS_RULES.md. Aucune exigence de rattachement
+réel ou de contrôle avant publication n'est supprimée.
+
 ## Historique
 
 | Version | Date | Modification |
 | --- | --- | --- |
+| 1.7 | 17 octobre 2026 | Révision après essai utilisateur : carrousel accueil mobile, retrait des deux blocs de sites et des tendances publiques ; choix et limites tracés. |
+| 1.6 | 17 octobre 2026 | Retour aux créateurs de contenu pour le lancement ; ouverture Talents péi reportée, lien officiel conservé, documentation seule. |
+| 1.5 | 16 octobre 2026 | Lien RM-TAL-012 et périmètre Talents péi ; états de réalisation historiques conservés, aucun test métier exécuté. |
+| 1.4 | 7 octobre 2026 | RM-31 alignée sur RM-TAL-003 v2.0 après décision 2A : source privée, affichage public non obligatoire ; implémentation non déclarée. |
 | 1.3 | 16 septembre 2026 | Précision des transitions, contrôles HTTP, règles de normalisation et de recherche, identification des clics répétés et dates de republication. Les états d'implémentation sont réévalués selon ces critères plus stricts. |
 | 1.2 | 16 septembre 2026 | Intégration des décisions validées pour l'annuaire des sites et alignement des périmètres, critères d'acceptation et états d'implémentation sur les règles détaillées `RM-SITE`. |
 | 1.1 | 15 septembre 2026 | Intégration des réponses validées pour RM-31, RM-32, RM-38, RM-39 et RM-40, et report de la gestion structurée des images. |

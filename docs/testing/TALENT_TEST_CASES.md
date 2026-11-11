@@ -2,10 +2,59 @@
 
 | Métadonnée | Valeur |
 | --- | --- |
-| Version | 1.1 |
+| Version | 1.4 |
 | Statut | À automatiser |
-| Dernière mise à jour | 15 septembre 2026 |
+| Dernière mise à jour | 11 novembre 2026 |
 | Périmètre | MVP talents |
+
+## Décision applicable — créateurs de contenu, 17 octobre 2026
+
+Le [périmètre de lancement](../ux/CONTENT_CREATORS_SCOPE.md) remplace l’ouverture générale aux
+Talents péi du 16 octobre : **créateurs de contenu**, rubrique **Créateurs** et
+**Proposer un créateur**. Les autres talents restent une piste reportée.
+Les compléments du 16 octobre ci-dessous sont historiques sur le nom et
+l’élargissement ; ils ne doivent pas guider une adaptation artiste/artisan.
+RM-TAL-012 v2.0 et UX-CONT-001 à 006 font référence.
+
+Nom et lien officiel restent obligatoires à la proposition (UX-PROP-002), sans
+compte au lancement ; aucune proposition sans lien ajoutée. Contact/email pour
+les corrections et retraits, tableau de bord différé. Les choix de présentation
+et de navigation existants sont conservés. Documentation seule : aucun code,
+maquette ni test fonctionnel modifié ou exécuté.
+
+## Critères actuels — créateurs de contenu, 17 octobre 2026
+
+Les cas ci-dessous vérifient RM-TAL-012 v2.0 et UX-CONT-001 à 006. Ils sont
+préparés et **non exécutés** ; aucun test automatisé ajouté ou modifié.
+
+| Cas | Attendu | État |
+| --- | --- | --- |
+| TC-CONT-012-01 | Rubrique Créateurs et Proposer un créateur ; aides précisant création de contenu, sans promesse d’ouverture à tous les métiers. Présentation/retours existants conservés sur mobile/ordinateur. | À vérifier lors de la reprise des maquettes. |
+| TC-CONT-012-02 | Proposition de soi ou d’un tiers sans compte ; nom et lien officiel obligatoires, lien vide signalé ; réception en attente sans publication. | À exécuter selon UX-PROP-002 et les cas existants. |
+| TC-CONT-012-03 | L’activité de contenu est identifiable ; un métier artisanal/artistique seul ne suffit pas. Lien réunionnais et source vérifiés séparément, pas de seuil d’audience, brouillon et publication distincte. | À vérifier avec RM-TAL-001 à 010. |
+| TC-CONT-012-04 | Correction/archivage/retrait par Contact/email, contrôle raisonnable d’identité, décision/action admin ; aucun compte ou tableau de bord exigé au lancement. | À vérifier selon RM-TAL-007 et RM-39. |
+
+Les TC-TAL-012-01 à 04 ci-dessous restent historiques et ne sont plus les
+critères d’acceptation de l’ouverture au lancement. Les parties compatibles
+avec les règles existantes restent couvertes par celles-ci ; l’exercice des
+trois métiers et le renommage Talents péi ne sont pas à exécuter maintenant.
+
+## Critères historiques du 16 octobre 2026 — ouverture reportée
+
+Référence : [Talents péi](../ux/TALENTS_PEI_SCOPE.md), RM-TAL-012 et UX-TAL-001
+à 006. Les cas suivants sont **préparés, non exécutés**, sans fixtures, code ni
+maquette ajoutés. Les résultats historiques ne couvrent pas cette évolution.
+
+| Cas | Attendu | État |
+| --- | --- | --- |
+| TC-TAL-012-01 | Préparer trois exemples éditoriaux (créateur de contenu, artiste, artisan) ; une même structure permet de comprendre personne/collectif, activité et lien réunionnais sans page commerciale d’entreprise. | À préparer et faire relire ; compréhension non vérifiée. |
+| TC-TAL-012-02 | Menu, accueil, liste, recherche, fiche, proposition et FAQ emploient Talents péi / Proposer un talent ; libellés lisibles sur mobile/ordinateur et critères/retours existants conservés. | À exécuter après adaptation autorisée. |
+| TC-TAL-012-03 | Proposition de soi ou d’un tiers sans compte → réception en attente → vérification → brouillon → publication distincte ; non-public absent de l’espace public. Une entreprise ne devient pas une fiche talent. | À exécuter ; cas sans lien officiel bloqué par décision ouverte UX-PROP-002. |
+| TC-TAL-012-04 | Demande Contact/email de correction, archivage ou retrait → vérification raisonnable de l’identité → décision/action admin et trace privée selon RM-TAL-007 ; aucun accès d’édition directe. | À exécuter avec les cas RM-39 existants. |
+
+Le tableau de bord relève des critères futurs de CONTRIBUTOR_WORKFLOW.md et
+ne conditionne pas la validation du lancement. Ne pas interpréter les exemples
+de métiers comme une liste de catégories déjà créée ou validée.
 
 ## Signification des identifiants
 
@@ -145,7 +194,7 @@ au moins un rattachement réel à La Réunion et une source publique pertinente.
 | TC-TAL-031-02 | Un brouillon possède une source, mais aucun rattachement. | L'administrateur demande la publication. | La publication est refusée, une erreur sur le rattachement est affichée et la fiche reste `draft`. |
 | TC-TAL-031-03 | Un brouillon possède un rattachement, mais aucune source. | L'administrateur demande la publication. | La publication est refusée, une erreur sur la source est affichée et la fiche reste `draft`. |
 | TC-TAL-031-04 | Un brouillon possède un rattachement et une source publique valide. | L'administrateur demande la publication. | Les contrôles RM-31 réussissent et la publication peut continuer. |
-| TC-TAL-031-05 | Un brouillon possède plusieurs rattachements et plusieurs sources valides. | L'administrateur enregistre puis publie la fiche. | Toutes les valeurs sont conservées et au moins une source est affichée publiquement. |
+| TC-TAL-031-05 | Un brouillon possède plusieurs rattachements et plusieurs sources valides. | L'administrateur enregistre puis publie la fiche. | Toutes les valeurs sont conservées en privé ; aucune référence justificative privée n’est affichée publiquement. |
 
 ### Condition de validation de la fiche 2
 
@@ -332,5 +381,16 @@ dans le périmètre de développement.
 
 | Version | Date | Modification |
 | --- | --- | --- |
+| 1.3 | 17 octobre 2026 | Retour aux créateurs de contenu pour le lancement ; ouverture Talents péi reportée, lien officiel conservé, documentation seule. |
+| 1.2 | 16 octobre 2026 | Critères Talents péi préparés et explicitement non exécutés ; trois exemples éditoriaux à vérifier avant généralisation. |
 | 1.1 | 15 septembre 2026 | Ajout des fiches prioritaires sur les rattachements, les sources, les données obligatoires, la publication, les plateformes, Twitch, l'administration, la recherche et l'image générique. Ajout du glossaire RM, RM-TAL et TC. |
 | 1.0 | 15 septembre 2026 | Création de la première fiche couvrant le brouillon, la publication, la visibilité publique et l'archivage. |
+
+
+## Correction de traçabilité — 11 novembre 2026
+
+Le résultat historique de TC-TAL-031-05 demandait « au moins une source affichée
+publiquement ». Cette phrase était obsolète depuis RM-TAL-003 v2.0 du 7 octobre :
+le cas est corrigé pour conserver la référence en privé. Une source publiquement
+vérifiable ne signifie pas une preuve affichée. Les cas automatisés du jalon
+DEV et leurs limites sont consignés dans REFONTE_DEV_2026-11-11.md.

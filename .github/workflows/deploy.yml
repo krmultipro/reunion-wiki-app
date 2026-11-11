@@ -1,26 +1,17 @@
-name: Deploy to VPS
+name: Production deployment unavailable
 
+# The historical push-triggered deployment is retired. No server credentials
+# are read and no server action is possible through this diagnostic workflow.
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch:
+
+permissions: {}
 
 jobs:
-  deploy:
+  explain:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: 51.68.71.69
-          username: debian
-          key: ${{ secrets.VPS_SSH_KEY }}
-          script: |
-            cd /var/www/reunion-wiki-app
-            git pull origin main
-            docker-compose -p reunionwiki_prod -f docker-compose.prod.yml down
-            docker-compose -p reunionwiki_prod -f docker-compose.prod.yml up -d --build
+      - name: Refuse deployment until the production procedure is validated
+        run: |
+          echo "::error::Production deployment disabled: use a separately validated production procedure after dev acceptance. See docs/development/VPS_DEV_ROUTING.md."
+          exit 1

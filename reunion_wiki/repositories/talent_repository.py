@@ -180,7 +180,8 @@ def get_by_id(talent_id):
 
     return _fetchone(
         f"""
-        SELECT {TALENT_SELECT_FIELDS}
+        SELECT {TALENT_SELECT_FIELDS}, t.reunion_attachment, t.private_source_reference,
+               t.private_source_url, t.private_source_note
         {TALENT_JOIN_SQL}
         WHERE t.id = ?
         """,
@@ -487,7 +488,8 @@ def count_for_admin(status=None, category=None, q=None):
 
 def insert(name, slug, entity_type, category_id, city_id, description, bio, image, instagram_url,
            youtube_url, tiktok_url, facebook_url, website_url, status,
-           display_order, published_at):
+           display_order, published_at, reunion_attachment='', private_source_reference='',
+           private_source_url='', private_source_note=''):
     """Insère un talent dans la base.
 
     Args:
@@ -518,20 +520,23 @@ def insert(name, slug, entity_type, category_id, city_id, description, bio, imag
         INSERT INTO talents (
             name, slug, entity_type, category_id, city_id, description, bio, image,
             instagram_url, youtube_url, tiktok_url, facebook_url, website_url,
-            status, display_order, published_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            status, display_order, published_at, reunion_attachment,
+            private_source_reference, private_source_url, private_source_note
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             name, slug, entity_type, category_id, city_id, description, bio, image,
             instagram_url, youtube_url, tiktok_url, facebook_url, website_url,
-            status, display_order, published_at,
+            status, display_order, published_at, reunion_attachment,
+            private_source_reference, private_source_url, private_source_note,
         ),
     )
 
 
 def update(talent_id, name, slug, entity_type, category_id, city_id, description, bio, image,
            instagram_url, youtube_url, tiktok_url, facebook_url, website_url,
-           status, display_order, published_at):
+           status, display_order, published_at, reunion_attachment='', private_source_reference='',
+           private_source_url='', private_source_note=''):
     """Met à jour un talent existant.
 
     Args:
@@ -564,13 +569,15 @@ def update(talent_id, name, slug, entity_type, category_id, city_id, description
             name = ?, slug = ?, entity_type = ?, category_id = ?, city_id = ?,
             description = ?, bio = ?, image = ?, instagram_url = ?,
             youtube_url = ?, tiktok_url = ?, facebook_url = ?, website_url = ?,
-            status = ?, display_order = ?, published_at = ?
+            status = ?, display_order = ?, published_at = ?, reunion_attachment = ?,
+            private_source_reference = ?, private_source_url = ?, private_source_note = ?
         WHERE id = ?
         """,
         (
             name, slug, entity_type, category_id, city_id, description, bio, image,
             instagram_url, youtube_url, tiktok_url, facebook_url, website_url,
-            status, display_order, published_at, talent_id,
+            status, display_order, published_at, reunion_attachment,
+            private_source_reference, private_source_url, private_source_note, talent_id,
         ),
     )
 

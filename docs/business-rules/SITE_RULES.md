@@ -2,10 +2,23 @@
 
 | Métadonnée | Valeur |
 | --- | --- |
-| Version | 1.1 |
+| Version | 1.5 |
 | Statut | Validé |
-| Dernière mise à jour | 16 septembre 2026 |
+| Dernière mise à jour | 17 octobre 2026 |
 | Domaine | Annuaire des sites réunionnais |
+
+## Amendement applicable — visibilité des tendances, 17 octobre 2026
+
+RM-SITE-008, amendement 1.3 : l’utilisateur ne souhaite plus exposer les tendances
+au public. Retrait des liens publics dans la maquette et de l’expérience publique
+cible selon UX-GEN-009 v2.0 ; retrait de l’accès direct /tendances et de ses
+références publiques à réaliser lors de l’intégration #18. Les périodes de
+calcul, comptabilisation, protection et consultation privée dans l’admin restent
+inchangées. Le retrait des blocs Plus consultés/Derniers sites ajoutés de l’accueil
+ne supprime ni les fiches/catégories ni leurs aperçus de sites récents. Les
+règles antérieures d’affichage public restent historiques sur ces seuls points.
+Aucune route, comptabilisation, donnée active ou statistique réelle modifiée
+par cette révision de conception/maquette.
 
 ## Objet
 
@@ -223,6 +236,35 @@ Réunion Wiki. Il complète le
   exclus, qu'ils proviennent de l'administration, d'une prévisualisation ou de
   la page publique.
 
+### Amendement 1.2 — Statistiques géographiques respectueuses de la vie privée
+
+- **Statut :** Actif.
+- **Zones autorisées :** `Nord`, `Sud`, `Est`, `Ouest`, `Hors Réunion` et
+  `Inconnu`. Aucune commune ni position précise n'est affichée.
+- **Source :** la zone est déterminée localement sur le serveur à partir de
+  l'adresse IP reçue. L'adresse IP n'est jamais transmise à un service tiers.
+- **Minimisation :** l'adresse IP brute est utilisée uniquement en mémoire. La
+  base conserve un identifiant HMAC dérivé de l'IP, du `User-Agent` et du site,
+  sans permettre de retrouver directement l'adresse.
+- **Déduplication :** l'identifiant dérivé est valable 30 minutes et supprimé
+  au plus tard sous 24 heures. Aucun cookie publicitaire n'est utilisé.
+- **Agrégation :** l'administration affiche uniquement des totaux par site,
+  jour et zone. Aucun événement ni identifiant individuel n'est consultable.
+- **Seuil :** une zone est affichée séparément à partir de 10 visiteurs
+  distincts sur la période consultée. Les valeurs inférieures sont regroupées
+  sous une mention non détaillée.
+- **Conservation :** les agrégats géographiques sont conservés 12 mois puis
+  supprimés. Les journées utilisent le fuseau `Indian/Reunion`.
+- **Correction :** un administrateur peut corriger ou réinitialiser un compteur
+  agrégé. L'action, sa date, son auteur et son motif sont journalisés, sans
+  exposer de visiteur.
+- **Migration :** avant le retrait des anciennes IP, une sauvegarde contrôlée
+  est créée. Les clics et compteurs existants sont retranscrits en agrégats,
+  avec la zone `Inconnu` si elle ne peut pas être déterminée. Les IP brutes sont
+  ensuite supprimées de la base active sans perdre les totaux.
+- **Critère d'acceptation :** aucune IP brute ni liste de visites individuelles
+  ne subsiste dans la base active ou l'administration après migration.
+
 ## RM-SITE-009 — Dates métier
 
 - **Version :** 1.0
@@ -263,6 +305,20 @@ Réunion Wiki. Il complète le
 - **Conservation :** `first_published_at`, les clics et l'historique restent
   inchangés. L'action de nouvelle publication, sa date et l'administrateur sont
   consignés dans l'historique privé.
+
+### Mise en œuvre et migration des dates historiques — 19 septembre 2026
+
+- Les nouvelles propositions publiques renseignent `submitted_at` sans date
+  de publication ; les créations administratives ne sont pas présentées comme
+  des propositions publiques.
+- Pour les sites publiés avant la migration, `date_ajout` peut avoir été
+  réinitialisée par une ancienne publication. Elle est reprise pour le tri
+  comme **estimation** de `published_at`, avec une trace explicite dans
+  `site_publication_date_inference`. `first_published_at` reste vide si la
+  première date réelle ne peut être prouvée.
+- Une republication normale conserve `published_at` ; la nouvelle publication
+  explicite est réservée aux sites archivés, repasse par le contrôle HTTP et
+  laisse une entrée dans `site_publication_history`.
 
 ## RM-SITE-010 — Proposition publique et modération
 
@@ -331,6 +387,20 @@ Réunion Wiki. Il complète le
   conserve le site en `draft` ou `pending` afin de permettre un nouveau contrôle.
 - **HTTPS :** un certificat invalide bloque la publication jusqu'à vérification.
 
+### Amendement 1.2 — Confirmation humaine après une réponse 401 ou 403
+
+- **Statut :** Actif
+- **Parcours :** la première tentative de publication conserve le site en
+  attente et ouvre une étape de vérification manuelle distincte.
+- **Confirmation :** l'administrateur confirme explicitement avoir ouvert le
+  site en navigation privée et fournit une note de 10 à 500 caractères.
+- **Traçabilité :** le contrôle conserve l'URL, le code HTTP, la date, la
+  décision, l'administrateur et la note de confirmation.
+- **Validité :** la confirmation ne vaut que pour l'URL exacte contrôlée, pour
+  le site encore en attente et pour une seule publication.
+- **Limite :** une erreur temporaire (`429`, `5xx` ou délai dépassé) ne peut pas
+  être contournée par cette confirmation.
+
 ## RM-SITE-012 — Parcours pilote grandeur nature
 
 - **Version :** 1.0
@@ -359,5 +429,8 @@ Réunion Wiki. Il complète le
 
 | Version | Date | Modification |
 | --- | --- | --- |
+| 1.5 | 17 octobre 2026 | Révision après essai utilisateur : carrousel accueil mobile, retrait des deux blocs de sites et des tendances publiques ; choix et limites tracés. |
+| 1.4 | 19 septembre 2026 | Mise en œuvre des quatre dates, de l'archivage et de la republication explicite ; provenance des dates historiques estimées. |
+| 1.2 | 16 septembre 2026 | Ajout des décisions de confidentialité pour les statistiques géographiques, la déduplication HMAC, le seuil d'affichage, la conservation et la migration des anciennes IP. |
 | 1.1 | 16 septembre 2026 | Ajout des transitions de statut, de la vérification HTTP, de la normalisation avancée des URL, du comportement de recherche, de la déduplication des clics et du traitement explicite des nouvelles publications. |
 | 1.0 | 16 septembre 2026 | Première validation détaillée de l'admissibilité, des doublons, catégories, localisations, statuts, recherches, clics, dates, propositions, contrôles de publication et du parcours pilote des sites. |

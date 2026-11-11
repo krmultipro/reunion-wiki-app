@@ -1,6 +1,74 @@
 # -*- coding: utf-8 -*-
 
+from contextlib import contextmanager
+
 from ..db import get_db_connection
+from ..site_urls import DuplicateSiteUrlError, comparison_key, normalize_site_url
+from . import site_editorial_repository, site_refusal_repository
+
+
+SEARCH_SORTS = ("relevance", "popularite", "date", "nom")
+
+
+def _lock_writes(connection):
+    """Sérialise lecture de contrainte et écriture sans imbriquer une transaction."""
+    if not connection.in_transaction:
+        connection.execute('BEGIN IMMEDIATE')
+
+
+@contextmanager
+def site_write_transaction():
+    """Fournit au service une unité de travail SQLite sérialisée et atomique."""
+    connection = get_db_connection()
+    try:
+        _lock_writes(connection)
+        yield connection
+        connection.commit()
+    except Exception:
+        connection.rollback()
+        raise
+    finally:
+        connection.close()
+
+
+def get_stored_site(connection, site_id):
+    """Relit la fiche dans la transaction déjà détenue par l'appelant."""
+    return connection.execute('SELECT * FROM sites WHERE id=?', (site_id,)).fetchone()
+
+
+def _duplicate_url_id(connection, url, exclude_site_id=None):
+    """Lit une identité URL déjà stockée, avec le comparateur commun des services."""
+    target = comparison_key(url)
+    for row in connection.execute('SELECT id, lien FROM sites'):
+        if row['id'] != exclude_site_id and comparison_key(row['lien']) == target:
+            return row['id']
+    return None
+
+
+def _assert_url_available(connection, url, exclude_site_id=None):
+    """Refuse un conflit dans la transaction qui protège aussi l'écriture."""
+    duplicate = _duplicate_url_id(connection, url, exclude_site_id)
+    if duplicate is not None:
+        raise DuplicateSiteUrlError(f'Cette URL correspond déjà au site #{duplicate}.')
+
+
+def _publication_issue(connection, site):
+    """Vérifie relation catégorie et unicité sur les données courantes."""
+    if not connection.execute('SELECT 1 FROM categories WHERE id=?', (site['category_id'],)).fetchone():
+        return 'Une catégorie principale existante est nécessaire avant publication.'
+    if _duplicate_url_id(connection, site['lien'], site['id']) is not None:
+        return 'Cette URL correspond déjà à un autre site ; corrigez le doublon avant publication.'
+    return None
+
+
+def get_publication_issue(site_id):
+    """Expose les contraintes SQL avant le contrôle HTTP du service."""
+    connection = get_db_connection()
+    try:
+        site = connection.execute('SELECT * FROM sites WHERE id=?', (site_id,)).fetchone()
+        return _publication_issue(connection, site) if site else 'Proposition introuvable.'
+    finally:
+        connection.close()
 
 
 def _fetchone(query, params=()):
@@ -37,6 +105,41 @@ def _execute(query, params=()):
         conn.close()
 
 
+def list_site_urls():
+    """Retourne les URL de tous les sites, quel que soit leur statut."""
+    return _fetchall("SELECT id, lien FROM sites ORDER BY id")
+
+
+def record_site_url_history(site_id, proposed_url, final_url, admin_username="system"):
+    """Conserve en privé une URL proposée et la destination finale choisie."""
+    conn = get_db_connection()
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            """CREATE TABLE IF NOT EXISTS site_url_history (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                site_id INTEGER NOT NULL,
+                proposed_url TEXT NOT NULL,
+                final_url TEXT NOT NULL,
+                admin_username TEXT NOT NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )"""
+        )
+        cur.execute(
+            """INSERT INTO site_url_history
+               (site_id, proposed_url, final_url, admin_username)
+               VALUES (?, ?, ?, ?)""",
+            (site_id, proposed_url, final_url, admin_username),
+        )
+        conn.commit()
+        return cur.rowcount
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
+
+
 def get_site_by_id(site_id):
     """
     Récupère un site à partir de son identifiant pour l'administration.
@@ -58,8 +161,13 @@ def get_site_by_id(site_id):
             v.nom AS ville,
             s.lien,
             s.description,
+            s.location_scope,
             s.status,
             s.en_vedette,
+            s.submitted_at,
+            s.first_published_at,
+            s.published_at,
+            s.updated_at,
             c.nom AS categorie
         FROM sites s
         LEFT JOIN categories c ON c.id = s.category_id
@@ -92,7 +200,7 @@ def get_valid_site_by_id(site_id):
 
 def get_latest_sites(limit=None):
     """
-    Retourne les derniers sites validés par date d'ajout décroissante.
+    Retourne les derniers sites validés par date de publication décroissante.
 
     Args:
         limit (int | None): Nombre maximum de sites à retourner.
@@ -109,11 +217,12 @@ def get_latest_sites(limit=None):
             s.lien,
             c.nom AS categorie,
             s.description,
-            s.date_ajout
+            s.date_ajout,
+            s.published_at
         FROM sites s
         LEFT JOIN categories c ON c.id = s.category_id
         WHERE s.status = 'valide'
-        ORDER BY s.date_ajout DESC
+        ORDER BY s.published_at DESC, s.id DESC
     """
     if limit is None:
         return _fetchall(query)
@@ -217,6 +326,7 @@ def get_pending_sites():
             s.nom,
             c.nom AS categorie,
             v.nom AS ville,
+            s.location_scope,
             s.lien,
             s.description,
             s.status,
@@ -291,6 +401,7 @@ def get_sites_for_admin(where_sql, sort_sql, params, limit, offset):
             c.nom AS categorie,
             v.nom AS ville_display,
             v.slug AS ville_slug,
+            s.location_scope,
             s.lien,
             s.description,
             s.status,
@@ -308,21 +419,89 @@ def get_sites_for_admin(where_sql, sort_sql, params, limit, offset):
     )
 
 
-def search_sites(like, like_city):
+def search_sites(terms, sort="relevance", category_id=None, city_id=None, scope=None):
     """
-    Recherche des sites validés par nom, catégorie, description, lien ou ville.
+    Recherche les sites validés contenant au moins un terme normalisé.
 
     Args:
-        like (str): Motif SQL LIKE principal.
-        like_city (str): Motif SQL LIKE pour la ville normalisée.
+        terms (list[str]): Termes sans accents, en minuscules et non vides.
+        sort (str): Tri public parmi pertinence, popularité, date et nom.
+        category_id (int | None): Catégorie principale à imposer.
+        city_id (int | None): Commune à imposer.
+        scope (str | None): Type de portée géographique à imposer.
 
     Returns:
         list[sqlite3.Row]:
             Liste des sites validés correspondant à la recherche.
     """
 
+    if not terms:
+        return []
+
+    searchable_text = """
+        NORMALIZE_SEARCH(
+            COALESCE(s.nom, '') || ' ' ||
+            COALESCE(c.nom, '') || ' ' ||
+            COALESCE(s.description, '') || ' ' ||
+            COALESCE(s.lien, '') || ' ' ||
+            COALESCE(v.nom, '')
+        )
+    """
+    where_sql = " OR ".join(
+        f"{searchable_text} LIKE ?"
+        for _ in terms
+    )
+    patterns = [f"%{term}%" for term in terms]
+    filters_sql = [f"({where_sql})"]
+    filter_params = list(patterns)
+    if category_id is not None:
+        filters_sql.append("s.category_id = ?")
+        filter_params.append(category_id)
+    if city_id is not None:
+        filters_sql.append("s.ville_id = ?")
+        filter_params.append(city_id)
+    if scope == "city":
+        filters_sql.append("s.ville_id IS NOT NULL")
+    elif scope in {"island", "online"}:
+        filters_sql.append("s.location_scope = ?")
+        filter_params.append(scope)
+    elif scope == "unspecified":
+        filters_sql.append("s.ville_id IS NULL AND s.location_scope IS NULL")
+    elif scope is not None:
+        filters_sql.append("1 = 0")
+
+    sort = sort if sort in SEARCH_SORTS else "relevance"
+    score_params = []
+    if sort == "relevance":
+        score_parts = []
+        weighted_fields = (
+            ("s.nom", 5),
+            ("c.nom", 4),
+            ("s.description", 3),
+            ("v.nom", 2),
+            ("s.lien", 1),
+        )
+        for pattern in patterns:
+            for field, weight in weighted_fields:
+                score_parts.append(
+                    f"CASE WHEN NORMALIZE_SEARCH(COALESCE({field}, '')) LIKE ? "
+                    f"THEN {weight} ELSE 0 END"
+                )
+                score_params.append(pattern)
+        score_sql = " + ".join(score_parts)
+        order_sql = (
+            f"({score_sql}) DESC, s.click_count DESC, "
+            "s.published_at DESC, NORMALIZE_SEARCH(s.nom) ASC"
+        )
+    elif sort == "popularite":
+        order_sql = "s.click_count DESC, s.published_at DESC, NORMALIZE_SEARCH(s.nom) ASC"
+    elif sort == "date":
+        order_sql = "s.published_at DESC, NORMALIZE_SEARCH(s.nom) ASC"
+    else:
+        order_sql = "NORMALIZE_SEARCH(s.nom) ASC, s.id ASC"
+
     return _fetchall(
-        """
+        f"""
         SELECT
             s.id,
             s.nom,
@@ -331,37 +510,23 @@ def search_sites(like, like_city):
             c.nom AS categorie,
             s.description,
             s.click_count,
-            s.date_ajout
+            s.date_ajout,
+            s.published_at,
+            s.location_scope
         FROM sites s
         LEFT JOIN categories c ON c.id = s.category_id
         LEFT JOIN villes v ON v.id = s.ville_id
         WHERE s.status = 'valide'
-          AND (
-            s.nom LIKE ?
-            OR COALESCE(c.nom, '') LIKE ?
-            OR s.description LIKE ?
-            OR s.lien LIKE ?
-            OR COALESCE(v.nom, '') LIKE ?
-            OR LOWER(REPLACE(COALESCE(v.nom, ''), '-', ' ')) LIKE ?
-          )
-        ORDER BY
-          CASE
-            WHEN s.nom LIKE ? THEN 0
-            WHEN COALESCE(c.nom, '') LIKE ? THEN 1
-            WHEN s.description LIKE ? THEN 2
-            WHEN COALESCE(v.nom, '') LIKE ? OR LOWER(REPLACE(COALESCE(v.nom, ''), '-', ' ')) LIKE ? THEN 3
-            WHEN s.lien LIKE ? THEN 4
-            ELSE 5
-          END,
-          s.click_count DESC,
-          s.date_ajout DESC
+          AND {' AND '.join(filters_sql)}
+        ORDER BY {order_sql}
         LIMIT 100
         """,
-        (like, like, like, like, like, like_city, like, like, like, like, like_city, like),
+        filter_params + score_params,
     )
 
 
-def create_site(nom, ville_id, lien, description, category_id, status="en_attente", en_vedette=None):
+def create_site(nom, ville_id, lien, description, category_id, status="en_attente", en_vedette=None,
+                submitted=False, location_scope=None):
     """
     Crée un nouveau site.
 
@@ -376,27 +541,39 @@ def create_site(nom, ville_id, lien, description, category_id, status="en_attent
 
     Returns:
         int:
-            Nombre de lignes insérées.
+            Identifiant du site inséré.
     """
-
-    if en_vedette is None:
-        return _execute(
-            """
-            INSERT INTO sites (nom, ville_id, lien, description, category_id, status, date_ajout)
-            VALUES (?, ?, ?, ?, ?, ?, DATETIME('now'))
-            """,
-            (nom, ville_id, lien, description, category_id, status),
+    if status == "valide":
+        raise ValueError("La publication doit passer par le service de publication.")
+    if status == 'refuse':
+        raise ValueError('Un refus doit porter sur une proposition existante avec un motif.')
+    connection = get_db_connection()
+    try:
+        _lock_writes(connection)
+        lien = normalize_site_url(lien)
+        _assert_url_available(connection, lien)
+        cursor = connection.execute(
+            """INSERT INTO sites
+               (nom, ville_id, lien, description, category_id, status,
+                date_ajout, submitted_at, updated_at, en_vedette, location_scope)
+               VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP,
+                       CASE WHEN ? THEN CURRENT_TIMESTAMP ELSE NULL END,
+                       CURRENT_TIMESTAMP, ?, ?)""",
+            (nom, ville_id, lien, description, category_id, status,
+             1 if submitted else 0, 0 if en_vedette is None else en_vedette,
+             location_scope),
         )
-    return _execute(
-        """
-        INSERT INTO sites (nom, ville_id, lien, description, category_id, status, date_ajout, en_vedette)
-        VALUES (?, ?, ?, ?, ?, ?, DATETIME('now'), ?)
-        """,
-        (nom, ville_id, lien, description, category_id, status, en_vedette),
-    )
+        connection.commit()
+        return cursor.lastrowid
+    except Exception:
+        connection.rollback()
+        raise
+    finally:
+        connection.close()
 
 
-def update_site(site_id, nom, ville_id, lien, description, category_id, status, en_vedette):
+def update_site(site_id, nom, ville_id, lien, description, category_id, status, en_vedette,
+                expected_status=None, location_scope=None, refusal_reason=None, admin_username='admin'):
     """
     Met à jour les données principales d'un site.
 
@@ -415,36 +592,184 @@ def update_site(site_id, nom, ville_id, lien, description, category_id, status, 
             Nombre de lignes mises à jour.
     """
 
-    return _execute(
-        """
-        UPDATE sites
-        SET nom = ?, ville_id = ?, lien = ?, description = ?, category_id = ?, status = ?, en_vedette = ?
-        WHERE id = ?
-        """,
-        (nom, ville_id, lien, description, category_id, status, en_vedette, site_id),
-    )
+    conn = get_db_connection()
+    try:
+        _lock_writes(conn)
+        cur = conn.cursor()
+        previous = cur.execute("SELECT lien, status FROM sites WHERE id = ?", (site_id,)).fetchone()
+        if not previous:
+            conn.rollback()
+            return 0
+        lien = normalize_site_url(lien)
+        if status == "valide" and (
+            not previous or previous["status"] != "valide" or previous["lien"] != lien
+        ):
+            raise ValueError("La publication doit passer par le service de publication.")
+        if expected_status is not None and (
+            not previous or previous["status"] != expected_status
+        ):
+            conn.rollback()
+            return 0
+        _assert_url_available(conn, lien, site_id)
+        new_refusal = status == 'refuse' and previous['status'] != 'refuse'
+        if new_refusal:
+            site_refusal_repository.validate_reason(refusal_reason)
+        cur.execute(
+            """UPDATE sites
+               SET nom = ?, ville_id = ?, lien = ?, description = ?,
+                   category_id = ?, status = ?, en_vedette = ?, location_scope = ?,
+                   updated_at = CURRENT_TIMESTAMP
+               WHERE id = ? AND (? IS NULL OR status = ?)""",
+            (nom, ville_id, lien, description, category_id, status, en_vedette,
+             location_scope,
+             site_id, expected_status, expected_status),
+        )
+        updated = cur.rowcount
+        if updated and new_refusal:
+            site_refusal_repository.record_refusal(conn, site_id, refusal_reason, admin_username)
+        if updated and previous and previous[0] != lien:
+            site_editorial_repository.ensure_table(conn)
+            cur.execute(
+                """INSERT INTO site_editorial_reviews
+                   (site_id, reviewed_url, criterion, reviewed_by)
+                   VALUES (?, ?, 'url_changed', 'system')""",
+                (site_id, lien),
+            )
+            cur.execute(
+                """CREATE TABLE IF NOT EXISTS site_url_history (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    site_id INTEGER NOT NULL,
+                    proposed_url TEXT NOT NULL,
+                    final_url TEXT NOT NULL,
+                    admin_username TEXT NOT NULL,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                )"""
+            )
+            cur.execute(
+                """INSERT INTO site_url_history
+                   (site_id, proposed_url, final_url, admin_username)
+                   VALUES (?, ?, ?, 'admin')""",
+                (site_id, previous[0], lien),
+            )
+        conn.commit()
+        return updated
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
 
 
-def update_site_status(site_id, status, refresh_date=False):
+def update_site_status(site_id, status, expected_status=None, refusal_reason=None, admin_username='admin'):
     """
     Met à jour le statut d'un site.
 
     Args:
         site_id (int): Identifiant du site.
         status (str): Nouveau statut.
-        refresh_date (bool): Indique si date_ajout doit être remise à maintenant.
 
     Returns:
         int:
             Nombre de lignes mises à jour.
     """
 
-    if refresh_date:
+    if status == "valide":
+        raise ValueError("La publication doit passer par le service de publication.")
+    if status == 'refuse':
+        connection = get_db_connection()
+        try:
+            _lock_writes(connection)
+            previous = connection.execute('SELECT status FROM sites WHERE id=?', (site_id,)).fetchone()
+            if not previous or (expected_status is not None and previous['status'] != expected_status):
+                connection.rollback()
+                return 0
+            if previous['status'] != 'refuse':
+                site_refusal_repository.validate_reason(refusal_reason)
+            cursor = connection.execute(
+                'UPDATE sites SET status=?, updated_at=CURRENT_TIMESTAMP WHERE id=? AND status=?',
+                (status, site_id, previous['status']))
+            if cursor.rowcount and previous['status'] != 'refuse':
+                site_refusal_repository.record_refusal(connection, site_id, refusal_reason, admin_username)
+            connection.commit()
+            return cursor.rowcount
+        except Exception:
+            connection.rollback()
+            raise
+        finally:
+            connection.close()
+    if expected_status is None:
         return _execute(
-            "UPDATE sites SET status = ?, date_ajout = DATETIME('now') WHERE id = ?",
+            "UPDATE sites SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
             (status, site_id),
         )
-    return _execute("UPDATE sites SET status = ? WHERE id = ?", (status, site_id))
+    return _execute(
+        """UPDATE sites SET status = ?, updated_at = CURRENT_TIMESTAMP
+           WHERE id = ? AND status = ?""",
+        (status, site_id, expected_status),
+    )
+
+
+def apply_publication(connection, site_id, admin_username, published_at, new_publication=False):
+    """Publie dans la transaction appelante et trace toute nouvelle publication."""
+    _lock_writes(connection)
+    row = connection.execute(
+        "SELECT * FROM sites WHERE id = ?",
+        (site_id,),
+    ).fetchone()
+    if not row or row["status"] not in {"draft", "en_attente", "archived"}:
+        return False
+    if new_publication and row["status"] != "archived":
+        return False
+    if _publication_issue(connection, row):
+        return False
+    if not site_editorial_repository.latest_approval_matches(connection, site_id, row["lien"]):
+        return False
+    first_date = (
+        published_at
+        if not row["published_at"] and not row["first_published_at"]
+        else row["first_published_at"]
+    )
+    current_date = published_at if new_publication or not row["published_at"] else row["published_at"]
+    cursor = connection.execute(
+        """UPDATE sites SET status = 'valide', first_published_at = ?,
+           published_at = ?, updated_at = ? WHERE id = ? AND status = ?""",
+        (first_date, current_date, published_at, site_id, row["status"]),
+    )
+    if cursor.rowcount != 1:
+        return False
+    if new_publication:
+        connection.execute(
+            """CREATE TABLE IF NOT EXISTS site_publication_history (
+                id INTEGER PRIMARY KEY AUTOINCREMENT, site_id INTEGER NOT NULL,
+                action TEXT NOT NULL, published_at DATETIME NOT NULL,
+                admin_username TEXT NOT NULL, created_at DATETIME NOT NULL)"""
+        )
+        connection.execute(
+            """INSERT INTO site_publication_history
+               (site_id, action, published_at, admin_username, created_at)
+               VALUES (?, 'new_publication', ?, ?, ?)""",
+            (site_id, published_at, admin_username, published_at),
+        )
+    return True
+
+
+def publish_site(site_id, admin_username, published_at, new_publication=False):
+    connection = get_db_connection()
+    try:
+        _lock_writes(connection)
+        published = apply_publication(
+            connection, site_id, admin_username, published_at, new_publication
+        )
+        if published:
+            connection.commit()
+        else:
+            connection.rollback()
+        return published
+    except Exception:
+        connection.rollback()
+        raise
+    finally:
+        connection.close()
 
 
 def delete_site(site_id):
@@ -529,14 +854,14 @@ def get_new_performers():
             s.id,
             s.nom,
             c.nom AS categorie,
-            COUNT(sc.id) AS clicks_7d
+            COALESCE(SUM(gs.click_count), 0) AS clicks_7d
         FROM sites s
         LEFT JOIN categories c ON c.id = s.category_id
-        LEFT JOIN site_clicks sc
-          ON sc.site_id = s.id
-         AND sc.clicked_at >= datetime('now', '-7 days')
+        LEFT JOIN site_geo_daily_stats gs
+          ON gs.site_id = s.id
+         AND gs.stat_date >= DATE('now', '-7 days')
         WHERE s.status = 'valide'
-          AND s.date_ajout >= datetime('now', '-30 days')
+          AND s.published_at >= datetime('now', '-30 days')
         GROUP BY s.id, s.nom, c.nom
         ORDER BY clicks_7d DESC
         LIMIT 10

@@ -1,39 +1,25 @@
-# -*- coding: utf-8 -*-
+"""Consultation publique des personnalités, URLs historiques conservées."""
 
-from flask import Blueprint, abort, render_template
-
-from ..services import talent_service
-
+from flask import Blueprint, abort, render_template, request, url_for
+from ..services import refonte_public_service as service
 
 creators_bp = Blueprint("creators", __name__)
 
 
 @creators_bp.route("/createurs-reunionnais")
 def creators_index():
-    """
-    Affiche l'index public des talents réunionnais publiés.
-
-    Returns:
-        str: Page HTML des créateurs réunionnais.
-    """
-
-    context = talent_service.get_public_index_context()
-    return render_template("creators/index.html", **context)
+    """Liste les personnalités publiées avec recherche et catégorie."""
+    context = service.list_context('profiles', request.args.get('q',''), request.args.get('categorie',''))
+    return render_template('refonte/list.html', **context, **service.page_context('personnalites'),
+                           page_title='Personnalités réunionnaises', list_action=url_for('creators_index'), category_page=False)
 
 
 @creators_bp.route("/createurs/<slug>")
 def creator_detail(slug):
-    """
-    Affiche la fiche publique d'un talent réunionnais publié.
-
-    Args:
-        slug (str): Slug public du talent.
-
-    Returns:
-        str: Page HTML de fiche créateur.
-    """
-
-    context = talent_service.get_public_talent_detail_context(slug)
+    """Affiche une fiche publiée ; brouillons et archives restent introuvables."""
+    context = service.profile_context(slug)
     if not context:
         abort(404)
-    return render_template("creators/detail.html", **context)
+    return render_template('refonte/detail.html', **context,
+                           **service.page_context('personnalites', url_for('creators_index')),
+                           page_title=context['profile']['name'], seo_description=context['profile']['description'])

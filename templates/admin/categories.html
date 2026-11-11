@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "admin/base.html" %}
 
 {% block seo_title %}Catégories - Réunion Wiki{% endblock %}
 {% block seo_description %}Gestion des catégories utilisées par les sites.{% endblock %}
@@ -12,14 +12,6 @@
     </div>
     <div class="admin-dashboard__actions">
       <a class="btn btn-primary" href="{{ url_for('admin_create_category') }}">+ Ajouter une catégorie</a>
-      <a class="btn btn-secondary" href="{{ url_for('admin_talent_categories.list_categories') }}">Catégories créateurs</a>
-      <a class="btn btn-secondary" href="{{ url_for('admin_clicks') }}">Clics</a>
-      <a class="btn btn-secondary" href="{{ url_for('admin_sites') }}">Sites</a>
-      <a class="btn btn-secondary" href="{{ url_for('admin_dashboard') }}">Tableau de bord</a>
-      <form method="post" action="{{ url_for('admin_logout') }}" class="admin-inline-form">
-        {{ admin_logout_form.hidden_tag() }}
-        <button type="submit" class="btn btn-secondary">Déconnexion</button>
-      </form>
     </div>
   </header>
 

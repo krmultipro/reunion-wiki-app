@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "admin/base.html" %}
 
 {% block seo_title %}{{ page_title }} - Réunion Wiki{% endblock %}
 {% block seo_description %}{{ subtitle or "Interface de modération Réunion Wiki." }}{% endblock %}
@@ -51,6 +51,14 @@
         <span class="admin-form__error">{{ error }}</span>
         {% endfor %}
       </div>
+      <div class="admin-form__field">
+        {{ form.portee.label(class_="admin-form__label") }}
+        {{ form.portee(class_="admin-form__input") }}
+        <p class="admin-form__hint">Choisissez une commune ou une portée explicite. Sans les deux, la localisation reste non précisée.</p>
+        {% for error in form.portee.errors %}
+        <span class="admin-form__error">{{ error }}</span>
+        {% endfor %}
+      </div>
     </div>
 
     <div class="admin-form__field">
@@ -62,6 +70,11 @@
     </div>
 
     {% if form.status %}
+    {% if last_refusal %}
+    <p class="admin-form__hint">Dernier refus : {{ last_refusal.label }} — {{ last_refusal.admin_username }}, {{ last_refusal.created_at|format_date("%d/%m/%Y %H:%M") }}. Information privée.</p>
+    {% elif site and site['status'] == 'refuse' %}
+    <p class="admin-form__hint">Motif historique non renseigné.</p>
+    {% endif %}
     <div class="admin-form__group">
       <div class="admin-form__field">
         {{ form.status.label(class_="admin-form__label") }}
@@ -77,6 +90,25 @@
         </label>
       </div>
     </div>
+    {% if site and site['status'] == 'en_attente' %}
+    <div class="admin-form__field">
+      {{ form.refusal_reason.label(class_="admin-form__label") }}
+      {{ form.refusal_reason(class_="admin-form__input") }}
+      <p class="admin-form__hint">Obligatoire si tu passes le statut à « Refusé ». Ce motif reste privé.</p>
+      {% for error in form.refusal_reason.errors %}
+      <span class="admin-form__error">{{ error }}</span>
+      {% endfor %}
+    </div>
+    {% endif %}
+    {% if site and site['status'] == 'archived' %}
+    <div class="admin-form__field admin-form__field--checkbox">
+      <label class="admin-form__checkbox">
+        {{ form.new_publication() }}
+        Traiter comme une nouvelle publication
+      </label>
+      <p class="admin-form__hint">Choisissez « Publié » puis cochez cette option pour remonter le site dans les nouveautés. Sinon, sa date de publication est conservée.</p>
+    </div>
+    {% endif %}
     {% endif %}
 
     <div class="admin-form__actions">

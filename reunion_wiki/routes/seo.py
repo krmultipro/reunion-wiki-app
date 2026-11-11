@@ -1,6 +1,7 @@
-from flask import Blueprint, Response, current_app, make_response, send_from_directory
+from flask import Blueprint, Response, abort, current_app, make_response, request, send_from_directory, session, url_for
 
 from ..services import sitemap_service
+from ..repositories import media_repository
 
 
 seo_bp = Blueprint("seo", __name__)
@@ -20,12 +21,17 @@ def google_verification():
 
 @seo_bp.route("/robots.txt")
 def robots_txt():
-    return send_from_directory(current_app.static_folder, "robots.txt")
+    if request.host.split(":")[0].lower() == "dev.reunionwiki.re":
+        return Response("User-agent: *\nDisallow: /\n", mimetype="text/plain")
+    return Response("User-agent: *\nDisallow: /admin\nDisallow: /proposition-confirmee/\n"
+                    + "Sitemap: " + url_for("sitemap", _external=True) + "\n", mimetype="text/plain")
 
 
 @seo_bp.route("/static/uploads/<path:filename>")
 def uploaded_file(filename):
     """Sert les fichiers uploadés depuis le dossier persistant configuré."""
+    if not session.get("admin_authenticated") and not media_repository.is_published_media("uploads/" + filename):
+        abort(404)
     return send_from_directory(current_app.config["UPLOAD_FOLDER"], filename)
 
 

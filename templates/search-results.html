@@ -4,6 +4,93 @@ Wiki{% endblock %} {% block seo_description %}Résultats de recherche pour "{{ q
 <div class="category_page">
   <h2>Résultats pour "{{ q }}"</h2>
 
+  <form
+    id="search-controls-form"
+    class="search-controls"
+    method="get"
+    action="{{ url_for('search') }}"
+    data-auto-submit="true"
+  >
+    <input type="hidden" name="q" value="{{ q }}" />
+    <div class="search-controls__sort">
+      <label for="search-sort">Trier par</label>
+      <select id="search-sort" class="js-search-control" name="sort">
+        <option value="relevance" {{ 'selected' if sort == 'relevance' else '' }}>Pertinence</option>
+        <option value="popularite" {{ 'selected' if sort == 'popularite' else '' }}>Popularité</option>
+        <option value="date" {{ 'selected' if sort == 'date' else '' }}>Plus récents</option>
+        <option value="nom" {{ 'selected' if sort == 'nom' else '' }}>Nom</option>
+      </select>
+    </div>
+
+    <details class="search-filters" open>
+      <summary>
+        Affiner{% if active_filter_count %} ({{ active_filter_count }}){% endif %}
+      </summary>
+      <div class="search-filters__body">
+        <div class="search-controls__field">
+          <label for="search-category">Catégorie</label>
+          <select id="search-category" class="js-search-control" name="categorie">
+            <option value="">Toutes les catégories</option>
+            {% for category in categories %}
+            <option value="{{ category['slug'] }}" {{ 'selected' if selected_category == category['slug'] else '' }}>{{ category['nom'] }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="search-controls__field">
+          <label for="search-city">Commune</label>
+          <select id="search-city" class="js-search-control" name="commune">
+            <option value="">Toutes les communes</option>
+            {% for city in cities %}
+            <option value="{{ city['slug'] }}" {{ 'selected' if selected_city == city['slug'] else '' }}>{{ city['nom'] }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="search-controls__field">
+          <label for="search-scope">Portée</label>
+          <select id="search-scope" class="js-search-control" name="portee">
+            <option value="">Toutes les portées</option>
+            <option value="city" {{ 'selected' if selected_scope == 'city' else '' }}>Avec une commune</option>
+            <option value="island" {{ 'selected' if selected_scope == 'island' else '' }}>Toute La Réunion</option>
+            <option value="online" {{ 'selected' if selected_scope == 'online' else '' }}>En ligne</option>
+            <option value="unspecified" {{ 'selected' if selected_scope == 'unspecified' else '' }}>Non précisée</option>
+          </select>
+        </div>
+      </div>
+    </details>
+
+    <noscript><button type="submit">Appliquer les filtres</button></noscript>
+    <p id="search-update-status" class="search-controls__status" aria-live="polite"></p>
+  </form>
+
+  {% if active_filter_count %}
+  <div class="search-active-filters" aria-label="Filtres actifs">
+    <span>Filtres actifs :</span>
+    {% if selected_category %}
+    <a class="search-active-filter__chip" href="{{ url_for('search', q=q, commune=selected_city or None, portee=selected_scope or None, sort=sort) }}">
+      {{ selected_category_name }} <span aria-hidden="true">×</span>
+      <span class="search-controls__status">Retirer la catégorie</span>
+    </a>
+    {% endif %}
+    {% if selected_city %}
+    <a class="search-active-filter__chip" href="{{ url_for('search', q=q, categorie=selected_category or None, portee=selected_scope or None, sort=sort) }}">
+      {{ selected_city_name }} <span aria-hidden="true">×</span>
+      <span class="search-controls__status">Retirer la commune</span>
+    </a>
+    {% endif %}
+    {% if selected_scope %}
+    <a class="search-active-filter__chip" href="{{ url_for('search', q=q, categorie=selected_category or None, commune=selected_city or None, sort=sort) }}">
+      {{ selected_scope_name }} <span aria-hidden="true">×</span>
+      <span class="search-controls__status">Retirer la portée</span>
+    </a>
+    {% endif %}
+    <a class="search-active-filters__clear" href="{{ url_for('search', q=q) }}">Effacer les filtres</a>
+  </div>
+  {% endif %}
+
+  <p class="search-new-query">
+    <a class="search-new-query__link" href="{{ url_for('accueil') }}">Nouvelle recherche</a>
+  </p>
+
   {% if sites %}
   <ul>
     {% for site in sites %}
@@ -14,7 +101,7 @@ Wiki{% endblock %} {% block seo_description %}Résultats de recherche pour "{{ q
         rel="noopener noreferrer"
       >
         <strong>{{ site['nom'] }}</strong>{% if site['ville'] %} - {{
-        site['ville'] }}{% endif %} ↗
+        site['ville'] }}{% elif site['location_scope'] == 'island' %} - Toute La Réunion{% elif site['location_scope'] == 'online' %} - En ligne{% else %} - Non précisée{% endif %} ↗
       </a>
       :
       <span>{{ site['description']|truncate(80, True, '...') }}</span>
@@ -24,10 +111,51 @@ Wiki{% endblock %} {% block seo_description %}Résultats de recherche pour "{{ q
   </ul>
   {% else %}
   <p>Aucun résultat trouvé.</p>
+  <p>Vous pouvez modifier votre recherche ou parcourir les catégories.</p>
+  <ul>
+    {% if active_filter_count %}
+    <li><a href="{{ url_for('search', q=q) }}">Effacer les filtres</a></li>
+    {% endif %}
+    <li><a href="{{ url_for('accueil') }}">Nouvelle recherche</a></li>
+    <li><a href="{{ url_for('accueil') }}#toutes-les-categories">Catégories</a></li>
+    <li><a href="{{ url_for('website_submission_form') }}">Proposer un site</a></li>
+  </ul>
   {% endif %}
 
   <div id="bouton_plus">
     <a href="{{ url_for('accueil') }}">← Retour à l'accueil</a>
   </div>
 </div>
+
+<script>
+  (() => {
+    const form = document.getElementById("search-controls-form");
+    const status = document.getElementById("search-update-status");
+    if (!form) return;
+
+    const filters = form.querySelector(".search-filters");
+    const desktop = window.matchMedia("(min-width: 641px)");
+    const syncFiltersDisclosure = (matches) => {
+      if (filters) filters.open = matches;
+    };
+    syncFiltersDisclosure(desktop.matches);
+    desktop.addEventListener("change", (event) => {
+      syncFiltersDisclosure(event.matches);
+    });
+
+    form.querySelectorAll(".js-search-control").forEach((control) => {
+      control.addEventListener("change", () => {
+        form.setAttribute("aria-busy", "true");
+        if (status) status.textContent = "Actualisation des résultats…";
+        form
+          .querySelectorAll('select[name="categorie"], select[name="commune"]')
+          .forEach((filter) => {
+            filter.disabled = filter.value === "";
+          });
+        if (typeof form.requestSubmit === "function") form.requestSubmit();
+        else form.submit();
+      });
+    });
+  })();
+</script>
 {% endblock %}

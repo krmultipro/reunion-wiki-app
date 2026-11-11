@@ -8,6 +8,7 @@ from ..repositories import talent_category_repository
 from ..services import city_service, talent_service
 from ..services.talent_service import ENTITY_TYPES, STATUSES
 from ..utils import parse_positive_int
+from ..utils import is_safe_next_url
 
 
 admin_talents_bp = Blueprint("admin_talents", __name__)
@@ -68,6 +69,7 @@ def _form_to_data(form):
         "city_id": form.city_id.data,
         "description": form.description.data,
         "bio": form.bio.data,
+        **{field: getattr(form, field).data for field in talent_service.EDITORIAL_FIELDS},
         "instagram_url": form.instagram_url.data,
         "youtube_url": form.youtube_url.data,
         "tiktok_url": form.tiktok_url.data,
@@ -96,6 +98,8 @@ def _populate_form(form, talent):
     form.city_id.data = talent["city_id"]
     form.description.data = talent["description"]
     form.bio.data = talent["bio"]
+    for field in talent_service.EDITORIAL_FIELDS:
+        getattr(form, field).data = talent[field]
     form.instagram_url.data = talent["instagram_url"]
     form.youtube_url.data = talent["youtube_url"]
     form.tiktok_url.data = talent["tiktok_url"]
@@ -200,6 +204,7 @@ def edit_talent(talent_id):
 
     form = TalentForm()
     _populate_choices(form)
+    form.status.choices = [(talent["status"], dict(STATUSES)[talent["status"]])]
     if request.method == "GET":
         _populate_form(form, talent)
     elif form.validate_on_submit():
@@ -237,7 +242,7 @@ def publish_talent(talent_id):
     else:
         for error in errors:
             flash(error, "error")
-    return redirect(request.referrer or url_for("admin_talents.list_talents"))
+    return redirect(request.referrer if is_safe_next_url(request.referrer) else url_for("admin_talents.list_talents"))
 
 
 @admin_talents_bp.route("/admin/talents/<int:talent_id>/archive", methods=["POST"])
@@ -250,7 +255,7 @@ def archive_talent(talent_id):
         flash("Talent archivé.", "success")
     else:
         flash("Talent introuvable.", "error")
-    return redirect(request.referrer or url_for("admin_talents.list_talents"))
+    return redirect(request.referrer if is_safe_next_url(request.referrer) else url_for("admin_talents.list_talents"))
 
 
 @admin_talents_bp.route("/admin/talents/<int:talent_id>/delete", methods=["POST"])

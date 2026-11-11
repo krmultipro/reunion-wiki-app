@@ -5,9 +5,10 @@ import re
 
 from flask_wtf import FlaskForm
 from wtforms import BooleanField, HiddenField, SelectField, StringField, TextAreaField
-from wtforms.validators import DataRequired, Length, URL, ValidationError
+from wtforms.validators import DataRequired, Length, Optional, URL, ValidationError
 
 from .filters import _normalize_url, _sanitize_basic, _sanitize_multiline, _strip_filter
+from ..repositories.site_refusal_repository import REASON_CHOICES
 
 
 class SiteForm(FlaskForm):
@@ -23,6 +24,16 @@ class SiteForm(FlaskForm):
     )
 
     ville = SelectField("Ville", choices=[], filters=[_strip_filter])
+    portee = SelectField(
+        "Portée géographique",
+        choices=[
+            ("", "Non précisée"),
+            ("island", "Toute La Réunion"),
+            ("online", "En ligne"),
+        ],
+        default="",
+        filters=[_strip_filter],
+    )
 
     lien = StringField(
         "Lien du site",
@@ -69,6 +80,10 @@ class SiteForm(FlaskForm):
         if not field.data.startswith(("http://", "https://")):
             raise ValidationError("URL invalide")
 
+    def validate_portee(self, field):
+        if field.data and self.ville.data:
+            raise ValidationError("Choisissez une commune ou une portée, pas les deux.")
+
     def validate_honeypot(self, field):
         """Rejette les robots qui remplissent le champ invisible."""
         if field.data:
@@ -80,6 +95,54 @@ class ModerationActionForm(FlaskForm):
 
     site_id = HiddenField(validators=[DataRequired()])
     return_to = HiddenField()
+    refusal_reason = SelectField("Motif de refus", choices=REASON_CHOICES, validators=[Optional()])
+
+
+class ManualHttpReviewForm(FlaskForm):
+    """Confirmation humaine après une réponse HTTP 401 ou 403."""
+
+    site_id = HiddenField(validators=[DataRequired()])
+    check_id = HiddenField(validators=[DataRequired()])
+    note = TextAreaField(
+        "Note de vérification",
+        validators=[
+            DataRequired(message="La note de vérification est obligatoire."),
+            Length(
+                min=10,
+                max=500,
+                message="La note doit faire entre 10 et 500 caractères.",
+            ),
+        ],
+        filters=[_sanitize_multiline],
+    )
+
+
+class EditorialReviewForm(FlaskForm):
+    """Explicit human decision on the site's connection with La Réunion."""
+
+    reviewed_url = HiddenField(validators=[DataRequired()])
+    criterion = SelectField(
+        "Lien avec La Réunion",
+        choices=[
+            ("", "Choisir une décision"),
+            ("local_organization", "Entreprise, association ou organisme réunionnais"),
+            ("reunion_content", "Contenu consacré à La Réunion"),
+            ("national_local_offer", "Service national avec page ou offre locale"),
+            ("useful_resource", "Ressource particulièrement utile au public réunionnais"),
+            ("no_link", "Aucun lien réel constaté — refuser la publication"),
+        ],
+        validators=[DataRequired(message="Choisissez une décision éditoriale.")],
+    )
+    note = TextAreaField("Justification facultative", validators=[Length(max=500)], filters=[_sanitize_multiline])
+    evidence_url = StringField(
+        "URL de preuve facultative",
+        validators=[Optional(), URL(message="Entrez une URL HTTP ou HTTPS valide.")],
+        filters=[_strip_filter],
+    )
+
+    def validate_evidence_url(self, field):
+        if field.data and not field.data.startswith(("http://", "https://")):
+            raise ValidationError("Entrez une URL HTTP ou HTTPS valide.")
 
 
 class AdminSiteForm(SiteForm):
@@ -88,10 +151,14 @@ class AdminSiteForm(SiteForm):
     status = SelectField(
         "Statut",
         choices=[
+            ("draft", "Brouillon"),
             ("valide", "Publié"),
             ("en_attente", "En attente"),
             ("refuse", "Refusé"),
+            ("archived", "Archivé"),
         ],
         default="valide",
     )
     en_vedette = BooleanField("Mettre en vedette", default=False)
+    new_publication = BooleanField("Traiter comme une nouvelle publication", default=False)
+    refusal_reason = SelectField("Motif de refus", choices=REASON_CHOICES, validators=[Optional()])

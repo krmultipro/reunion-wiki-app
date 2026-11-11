@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block intro_text %}{% endblock %}
+
+{% block main_navigation %}
+{% set current_endpoint = request.endpoint or '' %}
+{% set sites_active = current_endpoint in (
+  'admin_sites', 'admin_create_site', 'admin_edit_site', 'admin_update_site',
+  'admin_http_review', 'admin.admin_editorial_review'
+) %}
+{% set clicks_active = current_endpoint in (
+  'admin_clicks', 'admin.admin_correct_click_aggregate'
+) %}
+{% set categories_active = current_endpoint in (
+  'admin_categories', 'admin_create_category', 'admin_edit_category',
+  'admin_delete_category'
+) %}
+<nav class="admin-nav" aria-label="Administration">
+  <div class="admin-nav__scroll">
+    <div class="admin-nav__links">
+      <a
+        class="admin-nav__link{{ ' is-active' if current_endpoint == 'admin_dashboard' else '' }}"
+        href="{{ url_for('admin_dashboard') }}"
+        {% if current_endpoint == 'admin_dashboard' %}aria-current="page"{% endif %}
+      >Tableau de bord</a>
+      <a class="admin-nav__link{{ ' is-active' if current_endpoint.startswith('refonte_submission.admin_') else '' }}"
+         href="{{ url_for('refonte_submission.admin_index') }}"
+         {% if current_endpoint.startswith('refonte_submission.admin_') %}aria-current="page"{% endif %}>Propositions</a>
+      <a
+        class="admin-nav__link{{ ' is-active' if sites_active else '' }}"
+        href="{{ url_for('admin_sites') }}"
+        {% if sites_active %}aria-current="page"{% endif %}
+      >Sites</a>
+      <a
+        class="admin-nav__link{{ ' is-active' if clicks_active else '' }}"
+        href="{{ url_for('admin_clicks') }}"
+        {% if clicks_active %}aria-current="page"{% endif %}
+      >Clics</a>
+      <a
+        class="admin-nav__link{{ ' is-active' if categories_active else '' }}"
+        href="{{ url_for('admin_categories') }}"
+        {% if categories_active %}aria-current="page"{% endif %}
+      >Catégories de sites</a>
+      <a
+        class="admin-nav__link{{ ' is-active' if current_endpoint.startswith('admin_talents.') else '' }}"
+        href="{{ url_for('admin_talents.list_talents') }}"
+        {% if current_endpoint.startswith('admin_talents.') %}aria-current="page"{% endif %}
+      >Personnalités</a>
+      <a
+        class="admin-nav__link{{ ' is-active' if current_endpoint.startswith('admin_talent_categories.') else '' }}"
+        href="{{ url_for('admin_talent_categories.list_categories') }}"
+        {% if current_endpoint.startswith('admin_talent_categories.') %}aria-current="page"{% endif %}
+      >Catégories personnalités</a>
+      <a
+        class="admin-nav__link{{ ' is-active' if current_endpoint.startswith('admin_content.') else '' }}"
+        href="{{ url_for('admin_content.list_content') }}"
+        {% if current_endpoint.startswith('admin_content.') %}aria-current="page"{% endif %}
+      >Contenus SEO</a>
+    </div>
+  </div>
+  <form method="post" action="{{ url_for('admin_logout') }}" class="admin-nav__logout">
+    {{ admin_logout_form.hidden_tag() }}
+    <button type="submit" class="admin-nav__logout-button">Déconnexion</button>
+  </form>
+</nav>
+{% endblock %}

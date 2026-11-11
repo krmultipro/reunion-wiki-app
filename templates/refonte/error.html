@@ -1,0 +1,8 @@
+{% extends 'refonte/base.html' %}
+{% block content %}
+<section class="empty-state">
+  <h1>{{ page_title }}</h1>
+  <p>{{ message }}</p>
+  <div class="official-links"><a href="{{ url_for('accueil') }}">Retour à l’accueil</a><a href="{{ url_for('refonte_public.sites') }}">Explorer les sites</a></div>
+</section>
+{% endblock %}

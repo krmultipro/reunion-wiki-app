@@ -27,16 +27,27 @@ Ce dossier constitue la documentation versionnée du projet selon une approche
 
 ## Documentation spécialisée
 
+- `testing/README.md` résume l'environnement, l'état des tests et la procédure
+  de reprise dans une nouvelle conversation.
+- `testing/GLOBAL_TEST_STRATEGY.md` cartographie les familles couvertes et
+  manquantes, leurs risques, leurs priorités et leur ordre de réalisation.
 - `editorial/EDITORIAL_GUIDE.md` explique comment rédiger les fiches et les
   contenus avec un ton neutre.
 - `editorial/CONTENT_GUIDE.md` explique comment publier les contenus SEO.
 - `architecture/README.md` indexe les diagrammes techniques.
 - `development/AGENTS.md` décrit les pratiques de développement.
 - `development/SOCIAL_SEO_GUIDES.md` documente les guides SEO sociaux.
+- `development/VPS_DEV_ROUTING.md` documente le routage Docker/Nginx de
+  `dev.reunionwiki.re`, sa vérification et son retour arrière.
+- `ux/README.md` conserve les décisions UX transversales validées.
+- `ux/PUBLIC_SEARCH.md` décrit le comportement attendu de la recherche, des
+  filtres et des tris publics.
 - `testing/TALENT_TEST_CASES.md` conserve les cas de test fonctionnels du
   parcours des talents et leur suivi d'exécution.
 - `testing/SITE_TEST_CASES.md` conserve les cas de test prioritaires du parcours
   des sites, leur ordre d'automatisation et leur suivi d'exécution.
+
+- [`development/SITE_SUBMISSION_CORRECTIONS_2026-10-26.md`](development/SITE_SUBMISSION_CORRECTIONS_2026-10-26.md) : corrections locales du parcours de soumission, règles, schémas, tests et limites avant intégration.
 
 ## Règles de modification
 
@@ -54,3 +65,10 @@ Une décision validée ne doit jamais disparaître silencieusement.
 
 La convention complète est enregistrée dans
 [`ADR-001`](decisions/ADR-001-documentation-as-code-et-tracabilite.md).
+
+## Refonte DEV — 11 novembre 2026
+
+- [Périmètre validé, reports et parcours essentiels](ux/REFONTE_DEV.md).
+- [Vérifications de la refonte et limites](testing/REFONTE_DEV_2026-11-11.md).
+- [Maquette mobile finale de référence](ux/FINAL_MOBILE_MOCKUP.md).
+- [Routage, publication et restauration DEV](development/VPS_DEV_ROUTING.md).
