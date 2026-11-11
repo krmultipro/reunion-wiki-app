@@ -1,12 +1,55 @@
 """Parcours publics de la refonte : vraies lectures SQLite et confidentialité."""
 
 import sqlite3
+from html.parser import HTMLParser
 import tempfile
 import unittest
 from pathlib import Path
 
 from reunion_wiki.app import app
 from reunion_wiki.services import refonte_public_service as service
+
+
+class ProfileShareMarkup(HTMLParser):
+    """Inspecte le groupe d'actions et le nom accessible sans navigateur."""
+
+    def __init__(self):
+        super().__init__()
+        self.stack = []
+        self.buttons = []
+        self.current = None
+        self.official_actions = []
+
+    def handle_starttag(self, tag, attrs):
+        attrs = dict(attrs)
+        classes = attrs.get('class', '').split()
+        in_official = any('official-links' in value for _, value in self.stack)
+        if tag == 'a' and in_official:
+            self.official_actions.append('link')
+        if tag == 'button' and 'profile-share-trigger' in classes:
+            self.current = {'in_official': in_official, 'children': [], 'icons': [], 'text': []}
+            if in_official:
+                self.official_actions.append('share')
+        elif self.current is not None:
+            if tag in ('svg', 'span'):
+                self.current['children'].append(tag)
+            if tag == 'svg':
+                self.current['icons'].append(attrs)
+        if tag not in ('img', 'input', 'link', 'meta', 'br', 'hr', 'source'):
+            self.stack.append((tag, classes))
+
+    def handle_endtag(self, tag):
+        if tag == 'button' and self.current is not None:
+            self.buttons.append(self.current)
+            self.current = None
+        for index in range(len(self.stack) - 1, -1, -1):
+            if self.stack[index][0] == tag:
+                del self.stack[index:]
+                break
+
+    def handle_data(self, value):
+        if self.current is not None and value.strip():
+            self.current['text'].append(value.strip())
 
 
 class RefontePublicTestCase(unittest.TestCase):
@@ -118,6 +161,32 @@ class RefontePublicTestCase(unittest.TestCase):
         with app.test_request_context('/'):
             for value in ('https://evil.example','//evil.example','/admin','/\\evil.example','/sites\nLocation: evil'):
                 self.assertEqual(service.safe_return(value), '/')
+
+    def test_share_action_follows_official_links_with_decorative_icon(self):
+        """Le partage rejoint les réseaux, avec une icône sans nom vocal doublé."""
+        markup = ProfileShareMarkup()
+        markup.feed(self.html('/createurs/zoe'))
+        self.assertEqual(len(markup.buttons), 1)
+        button = markup.buttons[0]
+        self.assertTrue(button['in_official'])
+        self.assertEqual(markup.official_actions, ['link', 'share'])
+        self.assertEqual(button['children'], ['svg', 'span'])
+        self.assertEqual(button['text'], ['Partager cette fiche'])
+        self.assertEqual(len(button['icons']), 1)
+        self.assertEqual(button['icons'][0]['aria-hidden'], 'true')
+        self.assertEqual(button['icons'][0]['focusable'], 'false')
+
+    def test_share_action_without_links_stays_available_and_private_profiles_hide_it(self):
+        """Le repli conserve une action unique ; les fiches indisponibles n'en exposent pas."""
+        markup = ProfileShareMarkup()
+        markup.feed(self.html('/createurs/amelie'))
+        self.assertEqual(len(markup.buttons), 1)
+        self.assertFalse(markup.buttons[0]['in_official'])
+        self.assertEqual(markup.buttons[0]['children'], ['svg', 'span'])
+        for path in ('/createurs/secret-draft', '/createurs/secret-archive', '/createurs/inconnu'):
+            response = self.client.get(path)
+            self.assertEqual(response.status_code, 404)
+            self.assertNotIn('data-share-open', response.get_data(as_text=True))
 
     def test_support_routes_and_noscript_content(self):
         """Aides et contenu principal sont rendus sans dépendre de JavaScript."""

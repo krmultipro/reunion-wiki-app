@@ -2,13 +2,36 @@
 
 | Métadonnée | Valeur |
 | --- | --- |
-| Version | 1.2 |
+| Version | 1.3 |
 | Date | 11 novembre 2026 |
-| Statut | Référence visuelle validée ; simulation historique et correction ciblée du style DEV |
+| Statut | Référence visuelle validée ; partage avec icône dans la ligne des réseaux sur DEV |
 | Périmètre autorisé | Simulation historique mobile-final ; reprise du style sur DEV dans la refonte autorisée, sans extension du partage |
 | Suivi | Dashboard Réunion Wiki, ticket #44 ; notifications réelles distinctes au #47 |
 
-## Décisions applicables — UX-SHARE-001 v1.1
+## Décisions applicables — UX-SHARE-001 v1.2
+
+### Choix A validé le 11 novembre 2026 — icône et placement adaptatif
+
+Après la correction initiale du style, l'utilisateur valide « okay vas y » pour
+la proposition A : **icône de partage à gauche, texte « Partager cette fiche »
+à droite**, après les liens des réseaux dans leur ligne lorsque la largeur le
+permet. Sur petit écran, les actions passent naturellement à la ligne pour
+rester lisibles. Cette décision remplace le placement séparé après le bloc
+officiel de v1.1 ; elle ne change ni l'ordre logique réseaux → partage → correction,
+ni le style secondaire vert souligné, le fond transparent et la cible de 44 px.
+
+L'icône est décorative (aria-hidden), sans nom annoncé en double ; le nom
+accessible reste le texte complet. Le partage reste identifiable comme action
+du site par son style discret, distinct des liens de réseaux en boutons.
+Une fiche sans lien officiel conserve un seul partage après sa présentation.
+Une fiche introuvable ou non publiée n'affiche aucune action de partage.
+
+Portée : templates et styles de la refonte DEV, reprise de la copie de lien
+déjà livrée. Pas de partage natif, de nouvelle destination ou de mesure d'envoi.
+Schéma, tests et preuves :
+[partage dans la ligne des réseaux](../development/PROFILE_SHARE_INLINE_DEV_2026-11-11.md).
+
+## Historique — application de UX-SHARE-001 v1.1
 
 ### Application du style à DEV — 11 novembre 2026
 
@@ -154,6 +177,7 @@ Référence technique consultée le 26 octobre :
 
 | Version | Date | Évolution |
 | --- | --- | --- |
+| 1.3 | 11 novembre 2026 | UX-SHARE-001 v1.2 : choix A, icône à gauche du texte et action après les réseaux dans une ligne adaptative ; repli sans liens conservé. |
 | 1.2 | 11 novembre 2026 | Application du style déjà validé au déclencheur de la refonte DEV ; comportement de copie existant inchangé, historique de simulation conservé. |
 | 1.1 | 26 octobre 2026 | Après essai, emplacement après les liens officiels et bouton texte discret demandés ; remplace 1A et le bouton plein. 2A/3A conservés. |
 | 1.0 | 26 octobre 2026 | Réponses 1A/2A/3A puis réalisation demandée : simulation dans la dernière maquette ; critères définis avant code. |
