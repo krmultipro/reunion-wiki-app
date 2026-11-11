@@ -2,13 +2,26 @@
 
 | Métadonnée | Valeur |
 | --- | --- |
-| Version | 1.1 |
-| Date | 26 octobre 2026 |
-| Statut | Simulation validée ; emplacement corrigé après les liens officiels, action plus discrète |
-| Périmètre autorisé | Simulation interactive dans mobile-final ; aucun partage réel, intégration Flask ou déploiement |
+| Version | 1.2 |
+| Date | 11 novembre 2026 |
+| Statut | Référence visuelle validée ; simulation historique et correction ciblée du style DEV |
+| Périmètre autorisé | Simulation historique mobile-final ; reprise du style sur DEV dans la refonte autorisée, sans extension du partage |
 | Suivi | Dashboard Réunion Wiki, ticket #44 ; notifications réelles distinctes au #47 |
 
 ## Décisions applicables — UX-SHARE-001 v1.1
+
+### Application du style à DEV — 11 novembre 2026
+
+La refonte DEV autorisée dans [REFONTE_DEV.md](REFONTE_DEV.md) fournit déjà
+un dialogue de copie réelle du lien, distinct de la simulation du 26 octobre.
+L'utilisateur demande de corriger l'apparence native du déclencheur en suivant
+la procédure de modification DEV. Les choix visuels UX-SHARE-001 v1.1 ci-dessous
+restent inchangés : texte vert souligné, sans fond/bordure, 13 px et cible 44 px,
+après les liens officiels. La règle manquante est ajoutée à
+`static/refonte/components.css`. Aucun nouveau comportement de partage, parcours,
+API ou envoi n'est ajouté. Contrat et preuves :
+[correction du style DEV](../development/PROFILE_SHARE_STYLE_DEV_2026-11-11.md).
+Les descriptions de simulation ci-dessous restent historiques sur le comportement.
 
 Correction explicite de l’utilisateur le 26 octobre : « partager le profil ça
 vient après les liens officiels et plus discret aussi ». Ce choix remplace
@@ -141,6 +154,7 @@ Référence technique consultée le 26 octobre :
 
 | Version | Date | Évolution |
 | --- | --- | --- |
+| 1.2 | 11 novembre 2026 | Application du style déjà validé au déclencheur de la refonte DEV ; comportement de copie existant inchangé, historique de simulation conservé. |
 | 1.1 | 26 octobre 2026 | Après essai, emplacement après les liens officiels et bouton texte discret demandés ; remplace 1A et le bouton plein. 2A/3A conservés. |
 | 1.0 | 26 octobre 2026 | Réponses 1A/2A/3A puis réalisation demandée : simulation dans la dernière maquette ; critères définis avant code. |
 | 0.1 | 26 octobre 2026 | Besoin retenu pour discussion ; propositions explicites et autres pistes différées, aucun code modifié. |
