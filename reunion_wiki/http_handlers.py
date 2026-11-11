@@ -2,8 +2,9 @@
 
 """Gestion globale des erreurs et des en-têtes HTTP de l'application."""
 
-from flask import current_app, flash, g, redirect, render_template, request, url_for
+from flask import current_app, flash, g, redirect, render_template, request, session, url_for
 from flask_wtf.csrf import CSRFError
+from .session_interface import is_public_static_response
 from .utils import is_safe_next_url
 
 
@@ -32,15 +33,18 @@ def handle_csrf_error(error):
 
 def add_cache_headers(response):
     """Ajoute des headers de cache et de sécurité communs."""
-    # Le service worker ne doit jamais rester coincé en cache navigateur.
-    if request.path.startswith(("/admin", "/proposer", "/proposition-confirmee")) or request.cookies.get("session"):
+    if is_public_static_response(response, session):
+        response.headers["Cache-Control"] = "public, max-age=31536000"
+    elif request.endpoint == "static":
+        # Erreurs, réponses partielles ou session consultée/modifiée : aucun
+        # héritage du cache public posé par send_from_directory.
+        response.headers["Cache-Control"] = "private, no-store, max-age=0"
+    elif request.path.startswith(("/admin", "/proposer", "/proposition-confirmee")) or request.cookies.get("session"):
         response.headers["Cache-Control"] = "private, no-store, max-age=0"
     elif request.endpoint == "service_worker":
         response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
     elif request.endpoint == "uploaded_file":
         response.headers["Cache-Control"] = "private, no-store, max-age=0"
-    elif request.endpoint == "static":
-        response.headers["Cache-Control"] = "public, max-age=31536000"
     elif request.endpoint in {"accueil", "voir_categorie"}:
         # Les pages publiques peuvent être légèrement cachées sans figer les données.
         response.headers["Cache-Control"] = "no-cache, max-age=0, must-revalidate"

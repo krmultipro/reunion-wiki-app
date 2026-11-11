@@ -27,6 +27,10 @@ Ce dossier constitue la documentation versionnée du projet selon une approche
 
 ## Documentation spécialisée
 
+- [`development/CACHE_DEV_2026-11-11.md`](development/CACHE_DEV_2026-11-11.md) :
+  correctif du cache des fichiers publics et logo léger, critères, schéma,
+  régressions de confidentialité et preuves de livraison DEV.
+
 - `testing/README.md` résume l'environnement, l'état des tests et la procédure
   de reprise dans une nouvelle conversation.
 - `testing/GLOBAL_TEST_STRATEGY.md` cartographie les familles couvertes et
