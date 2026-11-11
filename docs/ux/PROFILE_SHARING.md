@@ -2,13 +2,26 @@
 
 | Métadonnée | Valeur |
 | --- | --- |
-| Version | 1.3 |
+| Version | 1.4 |
 | Date | 11 novembre 2026 |
 | Statut | Référence visuelle validée ; partage avec icône dans la ligne des réseaux sur DEV |
 | Périmètre autorisé | Simulation historique mobile-final ; reprise du style sur DEV dans la refonte autorisée, sans extension du partage |
 | Suivi | Dashboard Réunion Wiki, ticket #44 ; notifications réelles distinctes au #47 |
 
-## Décisions applicables — UX-SHARE-001 v1.2
+## Décisions applicables — UX-SHARE-001 v1.3
+
+### Bouton neutre validé le 11 novembre 2026
+
+Après la prévisualisation, l'utilisateur valide « oui trs bien vas y implemente » :
+fond gris chaud #e9e9e2, bordure #d5d8cc, texte et icône anthracite #30362e,
+sans soulignement. Survol #dedfd6, rayon 14 px et graisse 600. L'icône à gauche,
+le texte complet et le placement adaptatif après les réseaux sont conservés.
+Cible de 44 px sur mobile, alignement à la hauteur de 52 px des réseaux sur PC ;
+focus clavier visible conservé. Cela remplace le style vert souligné v1.2.
+Le partage existant et les parcours contributeur/admin ne changent pas.
+Contrat et preuves : [bouton neutre DEV](../development/PROFILE_SHARE_NEUTRAL_DEV_2026-11-11.md).
+
+## Historique — UX-SHARE-001 v1.2
 
 ### Choix A validé le 11 novembre 2026 — icône et placement adaptatif
 
@@ -177,6 +190,7 @@ Référence technique consultée le 26 octobre :
 
 | Version | Date | Évolution |
 | --- | --- | --- |
+| 1.4 | 11 novembre 2026 | UX-SHARE-001 v1.3 : bouton gris chaud validé après prévisualisation, anthracite sans soulignement ; placement adaptatif conservé. |
 | 1.3 | 11 novembre 2026 | UX-SHARE-001 v1.2 : choix A, icône à gauche du texte et action après les réseaux dans une ligne adaptative ; repli sans liens conservé. |
 | 1.2 | 11 novembre 2026 | Application du style déjà validé au déclencheur de la refonte DEV ; comportement de copie existant inchangé, historique de simulation conservé. |
 | 1.1 | 26 octobre 2026 | Après essai, emplacement après les liens officiels et bouton texte discret demandés ; remplace 1A et le bouton plein. 2A/3A conservés. |
