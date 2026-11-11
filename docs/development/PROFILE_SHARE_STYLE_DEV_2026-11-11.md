@@ -1,6 +1,7 @@
 # Style du bouton de partage sur DEV — 11 novembre 2026
 
-Version 1.0 — contrat rédigé avant vérification du défaut et correction.
+Version 1.1 — contrat rédigé avant vérification du défaut et correction ; preuves
+locales puis DEV ajoutées après exécution.
 
 ## Autorisation, sources et périmètre
 
@@ -95,5 +96,50 @@ compteurs récents dans le snapshot VPS frais ; les deux bases ne sont pas
 déclarées intégralement identiques. Aucune migration de données n'est autorisée
 par cette correction ; le script doit confirmer l'absence de changement.
 
-Publication et version active à compléter après exécution. Le fonctionnement
-réel de copie du lien ne doit pas être confondu avec la simulation historique.
+### Publication et recette du DEV actif
+
+- [PR #52](https://github.com/krmultipro/reunion-wiki-app/pull/52) fusionnée dans
+  `dev`. Les trois fichiers de la branche publiée ont les mêmes blobs et le
+  même arbre `5ccd65c6dc6d809899cf9e773f018d6f87cf4541` que la source testée.
+  Le connecteur GitHub a servi à publier après indisponibilité de l'écriture
+  authentifiée du client Git local ; aucun secret récupéré ou affiché.
+- Commit DEV livré : `b4ac45bf8c891bf8669eaeff55e59d479abf4191`.
+  Release : `20261111T093028Z-b4ac45bf8c89`. `release-info.txt`, labels d'image
+  `reunionwiki.branch=dev` et `reunionwiki.commit=b4ac45bf8c89` relus.
+- Publication par `deploy-dev.sh` depuis le `dev` officiel propre : contrôles
+  locaux puis 140 cas dans l'image candidate (139 réussis, un manuel ignoré),
+  migration sur copie sans modification de données, snapshot final DB+uploads,
+  smoke Gunicorn, test/rechargement Nginx partagé réussis. Pas de purge ni de
+  nettoyage des anciens conteneurs signalés par Compose.
+- CSS réellement servi via GET et HEAD, versionné
+  `/static/refonte/components.css?v=1794389397`, empreinte identique à la recette.
+  Le cache public des assets existant est conservé ; cette nouvelle URL permet
+  au navigateur de charger le style mis à jour.
+- Fiche publiée de DEV contrôlée dans le navigateur par un tunnel SSH temporaire
+  limité au loopback : style calculé identique au contrat sur PC ; à 390 px,
+  cible 44 px, absence de débordement, Entrée/Échap et focus 3 px vérifiés.
+  La capture représente le conteneur DEV actif, pas la maquette statique.
+- DEV et son CSS restent refusés sans Basic (401), robots/non-indexation
+  vérifiés. Le port applicatif n'est pas publié sur l'hôte. Session HTTPS
+  authentifiée et téléphone physique non inspectés.
+- Empreinte logique SQLite et inventaire complet des uploads identiques au
+  snapshot VPS pris avant publication ; 34 uploads et zéro violation de clé
+  étrangère. Les données actives n'ont pas été remplacées par la recette PC.
+- Image et date de démarrage du conteneur production identiques au relevé
+  préalable ; production HTTP 200. `main` inchangé par cette livraison.
+- Rollback de code/image et bundle final conservés dans le dossier de release
+  privé du VPS. Les journaux locaux de recette et livraison restent dans
+  `/tmp/reunion-share-style-qa-20261111/`, hors Git et hors artefact.
+
+Le fonctionnement réel de copie du lien ne doit pas être confondu avec la
+simulation historique. La recette n'a transmis aucun lien à un tiers et n'a
+pas testé la réception dans une messagerie. La mise à jour de cette preuve
+documentaire n'exige pas de reconstruire l'image : les documents ne font pas
+partie de l'artefact applicatif.
+
+## Historique
+
+| Version | Date | Modification |
+| --- | --- | --- |
+| 1.0 | 11 novembre 2026 | Contrat, défaut reproduit puis règle CSS et vérifications locales. |
+| 1.1 | 11 novembre 2026 | Preuves de publication, sauvegardes, recette DEV et limites observées. |
