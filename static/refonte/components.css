@@ -6,6 +6,9 @@
 @media(max-width:360px){.final-public .final-brand{font-size:28px;gap:8px}.final-public .final-brand img{width:40px;height:40px}.final-public .profile-heading h1{font-size:24px}}
 @media(max-width:680px){.final-public .final-carousel-track:not([data-ready]){display:grid;height:auto;gap:16px;padding:12px 16px}.final-public .final-carousel-track:not([data-ready])>.creator-card{position:static;transform:none;opacity:1;width:100%;max-width:400px;margin:auto}.final-public .final-carousel-track:not([data-ready])+.carousel-controls{display:none}}
 
-.final-public .profile-share-trigger{display:inline-flex;align-items:center;justify-content:center;min-height:44px;margin:12px 0 0;padding:0 2px;border:0;border-radius:6px;background:transparent;color:#087548;font-size:13px;font-weight:400;text-decoration:underline;text-underline-offset:3px}
+.final-public .profile-share-trigger{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;margin:12px 0 0;padding:0 2px;border:0;border-radius:6px;background:transparent;color:#087548;font-size:13px;font-weight:400;text-decoration:underline;text-underline-offset:3px;white-space:nowrap}
+.final-public .profile-official .official-links{align-items:center}
+.final-public .official-links .profile-share-trigger{margin:0}
+.final-public .profile-share-trigger svg{flex:none}
 .profile-share-dialog{max-width:min(90vw,520px);border:1px solid #c9d8c5;border-radius:20px;padding:24px;background:#f6f6ef;color:#203c30}.profile-share-dialog::backdrop{background:#102a2055}.profile-share-dialog input{display:block;width:100%;margin:8px 0 18px}.profile-share-dialog form{margin:0}.profile-share-dialog h2{margin-top:0}
 .desktop-only{display:none}
