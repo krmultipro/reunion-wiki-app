@@ -3,11 +3,16 @@
 {% block seo_title %}Gestion des sites - Réunion Wiki{% endblock %}
 {% block seo_description %}Liste complète des sites avec actions de publication et suppression.{% endblock %}
 
+{% block head %}
+{{ super() }}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin-sites.css') }}?v={{ asset_v('css/admin-sites.css') }}">
+{% endblock %}
+
 {% block content %}
-<section class="admin-dashboard">
+<section class="admin-dashboard admin-sites">
   <header class="admin-dashboard__header">
     <div class="admin-dashboard__intro">
-      <h1>Gestion des sites</h1>
+      <h1 id="admin-sites-title">Gestion des sites</h1>
       <p>Bonjour {{ admin_username or "admin" }}.</p>
     </div>
     <div class="admin-dashboard__actions">
@@ -70,7 +75,8 @@
   <p class="admin-filters__meta">{{ total_sites }} site{{ '' if total_sites == 1 else 's' }} trouvé{{ '' if total_sites == 1 else 's' }}.</p>
 
   {% if sites %}
-  <div class="admin-table-wrapper">
+  <p id="admin-sites-scroll-hint" class="admin-sites__scroll-hint">Si nécessaire, fais défiler le tableau horizontalement pour voir toutes les colonnes.</p>
+  <div class="admin-table-wrapper" role="region" aria-labelledby="admin-sites-title" aria-describedby="admin-sites-scroll-hint" tabindex="0">
     <table class="admin-table admin-table--sites">
       <thead>
         <tr>
