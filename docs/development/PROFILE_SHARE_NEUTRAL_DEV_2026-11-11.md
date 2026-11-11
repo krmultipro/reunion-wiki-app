@@ -58,5 +58,32 @@ n'est pas présentée comme un snapshot frais identique de tous les compteurs.
 
 ### Publication
 
-À compléter après déploiement et vérification du conteneur DEV réellement actif.
+[PR #56](https://github.com/krmultipro/reunion-wiki-app/pull/56) fusionnée dans dev.
+Arbre publié identique à l'arbre testé : a4a43b6a868474182d4638f80dc9faa0c0e21a50.
+Commit applicatif livré : 569451f1fe960abf486f1d30a71ace4bfa1dea27.
+Release : 20261111T121630Z-569451f1fe96. Labels relus dans web_dev.
+
+- deploy-dev.sh exécuté depuis le dev officiel propre ; suites applicatives
+  locales et image candidate réussies (141 réussis, un manuel ignoré), migration
+  sur copie sans changement, snapshot final, smoke HTTP et reload Nginx réussis.
+- CSS GET/HEAD 200, URL versionnée components.css?v=1794399376 et SHA-256
+  9a1c8b3304dfe886d8c3155c17678c393353dd94ec9fa13c169c6ea2a6196b6a.
+- Navigateur sur une vraie fiche du conteneur servi, via tunnel SSH temporaire
+  loopback : palette neutre, texte non souligné et bouton 44/52 px confirmés ;
+  quatre actions alignées PC, repli mobile 320/390 px sans débordement.
+  Entrée/Échap et restitution du focus visible 3 px vérifiés après livraison.
+  Capture du rendu réel conservée dans les livrables visuels locaux.
+- Empreinte logique SQLite identique au snapshot final, 34 uploads inchangés,
+  zéro violation de clé étrangère. Manifest final relu en montage Docker privé
+  lecture seule sans élargir ses permissions ni sortir le contenu des données.
+- DEV et CSS HTTP 401 anonymement, noindex conservé, aucun port applicatif
+  public. Production HTTP 200, même image et même date de démarrage qu'avant.
+  main n'a pas été modifié. Rollback code/image/DB/uploads conservé en release.
+
+Limites : aucun téléphone physique ni session HTTPS Basic authentifiée ; le
+navigateur a inspecté le conteneur livré via SSH. Aucun réseau social ouvert,
+presse-papiers utilisé ou message envoyé. Le survol est défini dans le CSS ;
+sa couleur n'a pas fait l'objet d'une interaction pointeur automatisée dédiée.
+La preuve documentaire suivante ne change pas les sources applicatives et ne
+nécessite pas de reconstruire l'image.
 Journaux privés : /tmp/reunion-share-neutral-qa-20261111/, hors Git.
