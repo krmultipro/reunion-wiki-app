@@ -7,6 +7,7 @@ from flask import Flask
 from reunion_wiki.config import config
 from reunion_wiki.slug_utils import slugify
 from reunion_wiki.social_guides import SOCIAL_GUIDES
+from reunion_wiki.repositories.site_refusal_repository import ensure_table as ensure_site_refusal_history
 
 # Charge la config Flask
 app = Flask(__name__)
@@ -61,6 +62,186 @@ def ensure_column(cur, table_name: str, column_name: str, definition: str) -> No
     if not column_exists(cur, table_name, column_name):
         print(f"➕ Ajout colonne {table_name}.{column_name}")
         cur.execute(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {definition}")
+
+
+def migrate_click_privacy(cur) -> None:
+    """Convertit les clics historiques en agrégats puis retire les IP brutes."""
+    cur.execute(
+        """CREATE TABLE IF NOT EXISTS click_deduplication (
+            site_id INTEGER NOT NULL,
+            visitor_token TEXT NOT NULL,
+            expires_at DATETIME NOT NULL,
+            PRIMARY KEY (site_id, visitor_token)
+        )"""
+    )
+    cur.execute(
+        """CREATE TABLE IF NOT EXISTS site_geo_daily_stats (
+            site_id INTEGER NOT NULL,
+            stat_date TEXT NOT NULL,
+            zone TEXT NOT NULL CHECK(zone IN ('Nord','Sud','Est','Ouest','Hors Réunion','Inconnu')),
+            click_count INTEGER NOT NULL DEFAULT 0,
+            visitor_count INTEGER NOT NULL DEFAULT 0,
+            UNIQUE(site_id, stat_date, zone)
+        )"""
+    )
+    cur.execute(
+        """CREATE TABLE IF NOT EXISTS site_stats_audit (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            site_id INTEGER NOT NULL,
+            stat_date TEXT NOT NULL,
+            zone TEXT NOT NULL,
+            old_count INTEGER NOT NULL,
+            new_count INTEGER NOT NULL,
+            admin_username TEXT NOT NULL,
+            reason TEXT NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )"""
+    )
+
+    if table_exists(cur, "site_clicks") and column_exists(cur, "site_clicks", "ip_address"):
+        cur.execute(
+            """INSERT INTO site_geo_daily_stats
+               (site_id, stat_date, zone, click_count, visitor_count)
+               SELECT site_id, COALESCE(DATE(clicked_at, '+4 hours'), DATE('now', '+4 hours')),
+                      'Inconnu', COUNT(*), COUNT(DISTINCT ip_address)
+               FROM site_clicks
+               GROUP BY site_id, COALESCE(DATE(clicked_at, '+4 hours'), DATE('now', '+4 hours'))
+               ON CONFLICT(site_id, stat_date, zone) DO UPDATE SET
+                 click_count = click_count + excluded.click_count,
+                 visitor_count = visitor_count + excluded.visitor_count"""
+        )
+
+        # Le compteur historique du site reste la référence si certains clics
+        # n'avaient plus d'événement détaillé associé.
+        cur.execute(
+            """INSERT INTO site_geo_daily_stats
+               (site_id, stat_date, zone, click_count, visitor_count)
+               SELECT s.id, DATE('now', '+4 hours'), 'Inconnu',
+                      s.click_count - COALESCE(x.total, 0), 0
+               FROM sites s
+               LEFT JOIN (
+                   SELECT site_id, SUM(click_count) total
+                   FROM site_geo_daily_stats GROUP BY site_id
+               ) x ON x.site_id=s.id
+               WHERE s.click_count > COALESCE(x.total, 0)
+               ON CONFLICT(site_id, stat_date, zone) DO UPDATE SET
+                 click_count = click_count + excluded.click_count"""
+        )
+        cur.execute("DROP TABLE site_clicks")
+
+    # Si les événements détaillés étaient plus nombreux que le compteur mis en
+    # cache, on conserve toutes les visites et on répare le total affiché.
+    cur.execute(
+        """UPDATE sites
+           SET click_count = MAX(
+               click_count,
+               COALESCE((SELECT SUM(gs.click_count)
+                         FROM site_geo_daily_stats gs
+                         WHERE gs.site_id = sites.id), 0)
+           )"""
+    )
+
+
+def ensure_site_url_history(cur) -> None:
+    """Crée l'historique privé des changements de destination d'un site."""
+    cur.execute(
+        """CREATE TABLE IF NOT EXISTS site_url_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            site_id INTEGER NOT NULL,
+            proposed_url TEXT NOT NULL,
+            final_url TEXT NOT NULL,
+            admin_username TEXT NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )"""
+    )
+
+
+def ensure_site_http_checks(cur) -> None:
+    """Crée l'audit des contrôles HTTP et des validations humaines."""
+    cur.execute(
+        """CREATE TABLE IF NOT EXISTS site_http_checks (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            site_id INTEGER NOT NULL,
+            requested_url TEXT NOT NULL,
+            final_url TEXT NOT NULL,
+            status_code INTEGER,
+            decision TEXT NOT NULL,
+            reason TEXT NOT NULL,
+            redirect_count INTEGER NOT NULL DEFAULT 0,
+            checked_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            checked_by TEXT NOT NULL,
+            manually_approved_at DATETIME,
+            manually_approved_by TEXT,
+            manual_note TEXT
+        )"""
+    )
+    cur.execute(
+        """CREATE INDEX IF NOT EXISTS idx_site_http_checks_site_id
+           ON site_http_checks(site_id, checked_at DESC)"""
+    )
+    ensure_column(cur, "site_http_checks", "new_publication", "INTEGER NOT NULL DEFAULT 0")
+
+
+def ensure_site_editorial_reviews(cur) -> None:
+    """Crée le journal privé des décisions d'admissibilité."""
+    cur.execute(
+        """CREATE TABLE IF NOT EXISTS site_editorial_reviews (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            site_id INTEGER NOT NULL,
+            reviewed_url TEXT NOT NULL,
+            criterion TEXT NOT NULL,
+            note TEXT,
+            evidence_url TEXT,
+            reviewed_by TEXT NOT NULL,
+            reviewed_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )"""
+    )
+    cur.execute(
+        """CREATE INDEX IF NOT EXISTS idx_site_editorial_reviews_site
+           ON site_editorial_reviews(site_id, id DESC)"""
+    )
+
+
+def ensure_site_publication_dates(cur) -> None:
+    """Ajoute les dates sans inventer la première publication historique."""
+    had_published_at = column_exists(cur, "sites", "published_at")
+    for name in ("submitted_at", "first_published_at", "published_at", "updated_at"):
+        ensure_column(cur, "sites", name, "DATETIME")
+    cur.execute(
+        """CREATE TABLE IF NOT EXISTS site_publication_date_inference (
+            site_id INTEGER PRIMARY KEY,
+            inferred_published_at DATETIME NOT NULL,
+            source_column TEXT NOT NULL,
+            inferred_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )"""
+    )
+    if not had_published_at:
+        # date_ajout a parfois été remise à zéro lors des publications anciennes :
+        # approximation utile au tri, mais pas preuve d'une première publication.
+        cur.execute(
+            """INSERT OR IGNORE INTO site_publication_date_inference
+               (site_id, inferred_published_at, source_column)
+               SELECT id, date_ajout, 'date_ajout' FROM sites
+               WHERE status IN ('valide', 'archived') AND date_ajout IS NOT NULL"""
+        )
+        cur.execute(
+            """UPDATE sites SET published_at = date_ajout
+               WHERE status IN ('valide', 'archived') AND date_ajout IS NOT NULL"""
+        )
+    cur.execute(
+        """CREATE TABLE IF NOT EXISTS site_publication_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            site_id INTEGER NOT NULL,
+            action TEXT NOT NULL,
+            published_at DATETIME NOT NULL,
+            admin_username TEXT NOT NULL,
+            created_at DATETIME NOT NULL
+        )"""
+    )
+    cur.execute(
+        """CREATE INDEX IF NOT EXISTS idx_site_publication_history_site
+           ON site_publication_history(site_id, created_at DESC)"""
+    )
 
 
 def _next_upload_collision_path(path: str) -> str:
@@ -261,14 +442,15 @@ def _drop_sites_categorie_column(cur) -> bool:
             date_ajout DATETIME,
             en_vedette INTEGER DEFAULT 0,
             click_count INTEGER DEFAULT 0,
-            ville_id INTEGER REFERENCES villes(id)
+            ville_id INTEGER REFERENCES villes(id),
+            location_scope TEXT
         )
         """
     )
     cur.execute(
         """
         INSERT INTO sites_new (
-            id, nom, ville, lien, description, category_id, status, date_ajout, en_vedette, click_count, ville_id
+            id, nom, ville, lien, description, category_id, status, date_ajout, en_vedette, click_count, ville_id, location_scope
         )
         SELECT
             id,
@@ -281,7 +463,8 @@ def _drop_sites_categorie_column(cur) -> bool:
             date_ajout,
             COALESCE(en_vedette, 0),
             COALESCE(click_count, 0),
-            ville_id
+            ville_id,
+            location_scope
         FROM sites
         """
     )
@@ -307,14 +490,15 @@ def _drop_sites_ville_column(cur) -> bool:
             date_ajout DATETIME,
             en_vedette INTEGER DEFAULT 0,
             click_count INTEGER DEFAULT 0,
-            ville_id INTEGER REFERENCES villes(id)
+            ville_id INTEGER REFERENCES villes(id),
+            location_scope TEXT
         )
         """
     )
     cur.execute(
         """
         INSERT INTO sites_new (
-            id, nom, lien, description, category_id, status, date_ajout, en_vedette, click_count, ville_id
+            id, nom, lien, description, category_id, status, date_ajout, en_vedette, click_count, ville_id, location_scope
         )
         SELECT
             id,
@@ -326,7 +510,8 @@ def _drop_sites_ville_column(cur) -> bool:
             date_ajout,
             COALESCE(en_vedette, 0),
             COALESCE(click_count, 0),
-            ville_id
+            ville_id,
+            location_scope
         FROM sites
         """
     )
@@ -663,6 +848,10 @@ def _create_final_talents_table(cur, table_name="talents") -> None:
             status TEXT NOT NULL DEFAULT 'draft',
             display_order INTEGER DEFAULT 0,
             published_at TEXT,
+            reunion_attachment TEXT NOT NULL DEFAULT '',
+            private_source_reference TEXT NOT NULL DEFAULT '',
+            private_source_url TEXT NOT NULL DEFAULT '',
+            private_source_note TEXT NOT NULL DEFAULT '',
             FOREIGN KEY(category_id) REFERENCES talent_categories(id),
             FOREIGN KEY(city_id) REFERENCES villes(id)
         )
@@ -749,7 +938,8 @@ def _copy_talents_to_final_table(cur) -> None:
             website_url,
             status,
             display_order,
-            published_at
+            published_at,
+            reunion_attachment, private_source_reference, private_source_url, private_source_note
         )
         SELECT
             id,
@@ -768,7 +958,8 @@ def _copy_talents_to_final_table(cur) -> None:
             website_url,
             status,
             display_order,
-            published_at
+            published_at,
+            reunion_attachment, private_source_reference, private_source_url, private_source_note
         FROM talents
         """
     )
@@ -815,6 +1006,18 @@ def _ensure_talents_table(cur) -> None:
     print(f"🔁 Normalisation talents.status effectuée sur {statuses_updated} talent(s)")
     ensure_column(cur, "talents", "entity_type", "TEXT NOT NULL DEFAULT 'person'")
     _validate_talent_foreign_keys(cur)
+    for field in ("reunion_attachment", "private_source_reference", "private_source_url", "private_source_note"):
+        ensure_column(cur, "talents", field, "TEXT NOT NULL DEFAULT ''")
+
+    # Une table déjà normalisée doit rester en place : les propositions peuvent
+    # désormais y faire référence. Préserver aussi les colonnes additives.
+    fields = {row[1] for row in cur.execute("PRAGMA table_info(talents)")}
+    required = {"id", "name", "slug", "entity_type", "category_id", "city_id", "description",
+                "bio", "image", "instagram_url", "youtube_url", "tiktok_url", "facebook_url",
+                "website_url", "status", "display_order", "published_at"}
+    if required.issubset(fields) and not {"category", "city"}.intersection(fields):
+        _recreate_talent_indexes(cur)
+        return
 
     cur.execute("DROP TABLE IF EXISTS talents_new")
     _create_final_talents_table(cur, "talents_new")
@@ -874,19 +1077,13 @@ def main():
         ensure_column(cur, "sites", "en_vedette", "INTEGER DEFAULT 0")
         ensure_column(cur, "sites", "click_count", "INTEGER DEFAULT 0")
         ensure_column(cur, "sites", "category_id", "INTEGER")
+        ensure_column(cur, "sites", "location_scope", "TEXT")
 
-        # Table site_clicks
-        cur.execute(
-            """
-            CREATE TABLE IF NOT EXISTS site_clicks (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                site_id INTEGER NOT NULL,
-                ip_address TEXT NOT NULL,
-                user_agent TEXT,
-                clicked_at DATETIME DEFAULT CURRENT_TIMESTAMP
-            )
-            """
-        )
+        migrate_click_privacy(cur)
+        ensure_site_url_history(cur)
+        ensure_site_http_checks(cur)
+        ensure_site_editorial_reviews(cur)
+        ensure_site_refusal_history(conn)
 
         # Table categories
         cur.execute(
@@ -1028,6 +1225,7 @@ def main():
 
         # Supprime définitivement la colonne legacy sites.ville.
         _drop_sites_ville_column(cur)
+        ensure_site_publication_dates(cur)
 
         # Réactive l'intégrité référentielle
         cur.execute("PRAGMA foreign_keys = ON")
@@ -1039,8 +1237,8 @@ def main():
         cur.execute("CREATE INDEX IF NOT EXISTS idx_sites_category_id ON sites(category_id)")
         cur.execute("CREATE INDEX IF NOT EXISTS idx_sites_click_count ON sites(click_count)")
         cur.execute("CREATE INDEX IF NOT EXISTS idx_sites_ville_id ON sites(ville_id)")
-        cur.execute("CREATE INDEX IF NOT EXISTS idx_site_clicks_site_id ON site_clicks(site_id)")
-        cur.execute("CREATE INDEX IF NOT EXISTS idx_site_clicks_clicked_at ON site_clicks(clicked_at)")
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_geo_stats_site_date ON site_geo_daily_stats(site_id, stat_date)")
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_dedup_expiry ON click_deduplication(expires_at)")
         cur.execute("CREATE INDEX IF NOT EXISTS idx_villes_slug ON villes(slug)")
 
         # Plateforme de contenu SEO (table plate réutilisable).
@@ -1050,6 +1248,8 @@ def main():
 
         # Talents locaux: évolution du prototype Instagram vers un modèle wiki.
         _ensure_talents_table(cur)
+        from reunion_wiki.refonte_schema import ensure_schema
+        ensure_schema(conn)
 
         conn.commit()
         print("✅ Migration terminée avec succès")

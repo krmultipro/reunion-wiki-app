@@ -1,0 +1,53 @@
+{% extends "admin/base.html" %}
+
+{% block seo_title %}Vérification manuelle - Réunion Wiki{% endblock %}
+{% block seo_description %}Vérification manuelle de l'accessibilité d'un site.{% endblock %}
+
+{% block content %}
+<section class="admin-card">
+  <header class="admin-card__header">
+    <div>
+      <h1>Vérification manuelle requise</h1>
+      <p>
+        Le contrôle automatique a reçu une réponse HTTP
+        <strong>{{ review['status_code'] }}</strong> pour
+        <strong>{{ review['site_name'] }}</strong>.
+      </p>
+    </div>
+    <a class="btn btn-secondary" href="{{ url_for('admin_dashboard') }}">
+      Annuler et laisser en attente
+    </a>
+  </header>
+
+  <div class="admin-form">
+    <p>
+      Ouvrez le site dans une fenêtre de navigation privée et vérifiez que son
+      contenu est accessible au public. N'utilisez aucun identifiant privé pour
+      contourner une protection.
+    </p>
+    <p>
+      <a href="{{ review['current_url'] }}" target="_blank" rel="noopener noreferrer">
+        Ouvrir le site à vérifier ↗
+      </a>
+    </p>
+
+    <form method="post" class="admin-form" novalidate>
+      {{ form.hidden_tag() }}
+
+      <div class="admin-form__field">
+        {{ form.note.label(class_="admin-form__label") }}
+        {{ form.note(class_="admin-form__textarea", rows="5", placeholder="Décrivez ce qui a été vérifié et pourquoi le site peut être publié.") }}
+        {% for error in form.note.errors %}
+        <span class="admin-form__error">{{ error }}</span>
+        {% endfor %}
+      </div>
+
+      <div class="admin-form__actions">
+        <button type="submit" class="btn btn-primary">
+          J'ai vérifié ce site et je confirme sa publication
+        </button>
+      </div>
+    </form>
+  </div>
+</section>
+{% endblock %}

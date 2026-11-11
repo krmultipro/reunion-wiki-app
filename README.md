@@ -65,7 +65,7 @@ Objectif:
 - Redirections de retour contrôlées (`next` / `return_to`).
 - Logout admin en POST.
 - Tracking clics avec anti-spam basique:
-  - pas de double comptage même IP sur le même site pendant 30 min,
+  - pas de double comptage d'une même empreinte HMAC sur le même site pendant 30 min,
   - filtrage simple des user-agents bots.
 
 ---
@@ -97,7 +97,12 @@ App dispo sur `http://127.0.0.1:5000`
 ```bash
 FLASK_ENV=development
 SECRET_KEY=change-me
+CLICK_HMAC_SECRET=change-me-too
 DATABASE_PATH=data/base.db
+# Chemin local vers une base GeoIP City au format MMDB ; aucune API externe.
+GEOIP_DATABASE_PATH=/chemin/vers/GeoLite2-City.mmdb
+SITE_HTTP_TIMEOUT_SECONDS=5
+SITE_HTTP_MAX_REDIRECTS=5
 
 ADMIN_USERNAME=admin
 ADMIN_PASSWORD_HASH=...
@@ -140,6 +145,17 @@ Le conteneur web lance automatiquement:
 - puis `gunicorn`
 
 Donc les migrations sont appliquées au démarrage.
+
+En développement, le code est monté dans le conteneur et Flask le recharge à
+chaud, mais ce rechargement ne relance pas `migrate.py`. Après une modification
+du schéma sur un conteneur déjà démarré, appliquer la migration à la base
+montée avant d'utiliser les nouvelles pages :
+
+```bash
+docker compose exec -T web python migrate.py
+```
+
+Le script crée une sauvegarde dans `backups/` avant de modifier la base.
 
 ---
 

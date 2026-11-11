@@ -195,25 +195,25 @@ def get_trending_categories():
     return _fetchall(
         """
         WITH c7 AS (
-            SELECT c.nom AS categorie, COUNT(sc.id) AS clicks_7d
+            SELECT c.nom AS categorie, COALESCE(SUM(gs.click_count), 0) AS clicks_7d
             FROM sites s
             LEFT JOIN categories c ON c.id = s.category_id
-            LEFT JOIN site_clicks sc
-              ON sc.site_id = s.id
-             AND sc.clicked_at >= datetime('now', '-7 days')
+            LEFT JOIN site_geo_daily_stats gs
+              ON gs.site_id = s.id
+             AND gs.stat_date >= DATE('now', '-7 days')
             WHERE s.status = 'valide'
               AND c.nom IS NOT NULL
               AND TRIM(c.nom) != ''
             GROUP BY c.nom
         ),
         cp AS (
-            SELECT c.nom AS categorie, COUNT(sc.id) AS clicks_prev_7d
+            SELECT c.nom AS categorie, COALESCE(SUM(gs.click_count), 0) AS clicks_prev_7d
             FROM sites s
             LEFT JOIN categories c ON c.id = s.category_id
-            LEFT JOIN site_clicks sc
-              ON sc.site_id = s.id
-             AND sc.clicked_at >= datetime('now', '-14 days')
-             AND sc.clicked_at < datetime('now', '-7 days')
+            LEFT JOIN site_geo_daily_stats gs
+              ON gs.site_id = s.id
+             AND gs.stat_date >= DATE('now', '-14 days')
+             AND gs.stat_date < DATE('now', '-7 days')
             WHERE s.status = 'valide'
               AND c.nom IS NOT NULL
               AND TRIM(c.nom) != ''

@@ -1,0 +1,5 @@
+{% extends "admin/base.html" %}
+{% block content %}<section class="admin-card"><h1>Propositions</h1><p>File privée des sites et personnalités. La publication nécessite une action distincte.</p>
+<form method="get"><label for="statut">État de la demande</label><select id="statut" name="statut"><option value="">Tous les états</option>{% for key,label in statuses.items() %}<option value="{{ key }}" {% if status==key %}selected{% endif %}>{{ label }}</option>{% endfor %}</select><button class="btn btn-secondary">Filtrer</button></form>
+{% for item in items %}<article class="admin-card"><h2><a href="{{ url_for('refonte_submission.admin_detail',proposal_id=item.id,retour=request.full_path.rstrip('?')) }}">{{ item.name }}</a></h2><p>{{ 'Site' if item.kind=='site' else 'Personnalité' }} · {{ statuses[item.status] }} · {{ item.created_at }}</p></article>{% else %}<p>Aucune proposition ne correspond à cet état.</p>{% endfor %}
+<p><a href="{{ url_for('admin_sites') }}">Gérer les sites existants</a> · <a href="{{ url_for('admin_talents.list_talents') }}">Gérer les personnalités existantes</a></p></section>{% endblock %}

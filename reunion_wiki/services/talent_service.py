@@ -52,7 +52,12 @@ MAX_LENGTHS = {
     "tiktok_url": 255,
     "facebook_url": 255,
     "website_url": 255,
+    "reunion_attachment": 2000,
+    "private_source_reference": 500,
+    "private_source_url": 1000,
+    "private_source_note": 4000,
 }
+EDITORIAL_FIELDS = ("reunion_attachment", "private_source_reference", "private_source_url", "private_source_note")
 URL_FIELDS = ("instagram_url", "youtube_url", "tiktok_url", "facebook_url", "website_url")
 
 
@@ -149,8 +154,14 @@ def _is_valid_http_url(value):
 
     if not value:
         return True
-    parsed = urlparse(value)
-    return parsed.scheme in {"http", "https"} and bool(parsed.netloc)
+    try:
+        parsed = urlparse(value)
+        parsed.port
+        return (parsed.scheme in {"http", "https"} and bool(parsed.hostname)
+                and not parsed.username and not parsed.password
+                and not any(character.isspace() or ord(character) < 32 for character in value))
+    except ValueError:
+        return False
 
 
 def _remove_uploaded_image(relative_path):
@@ -338,6 +349,26 @@ def validate_talent_data(data, require_category=True):
     return errors
 
 
+def validate_editorial_verification(data):
+    """Exige un rattachement et une source privée avant toute publication.
+
+    Args:
+        data: Dictionnaire ou ligne de talent avec les champs éditoriaux privés.
+
+    Returns:
+        list[str]: Erreurs empêchant la publication, sans recopier la preuve.
+    """
+    errors = []
+    for field, label in (("reunion_attachment", "Le rattachement à La Réunion"),
+                         ("private_source_reference", "La référence de la source privée"),
+                         ("private_source_url", "Le lien de la source privée")):
+        if not (data[field] or "").strip():
+            errors.append(f"{label} est obligatoire avant publication.")
+    if not _is_valid_http_url(data["private_source_url"]):
+        errors.append("Le lien de la source privée doit être une URL HTTP ou HTTPS valide.")
+    return errors
+
+
 def normalize_talent_data(data, existing=None, talent_id=None):
     """Prépare les données d'un talent avant écriture.
 
@@ -352,7 +383,8 @@ def normalize_talent_data(data, existing=None, talent_id=None):
     """
 
     name = _clean_text(data.get("name"), 160)
-    status = _clean_text(data.get("status") or "draft", 40)
+    # La sauvegarde ne publie jamais : seule l’action publish peut changer ce statut.
+    status = existing["status"] if existing else "draft"
     entity_type = _clean_text(data.get("entity_type") or "person", 40)
     published_at = existing["published_at"] if existing else None
     if status == "published" and not published_at:
@@ -375,6 +407,8 @@ def normalize_talent_data(data, existing=None, talent_id=None):
         "status": status,
         "display_order": _clean_display_order(data.get("display_order")),
         "published_at": published_at,
+        **{field: _clean_text(data.get(field, existing[field] if existing else ""))
+           for field in EDITORIAL_FIELDS},
     }
 
 
@@ -399,6 +433,8 @@ def save_talent(data, image_file=None, talent_id=None):
     cleaned["image"] = existing["image"] if existing else cleaned["image"]
     errors = validate_talent_data(cleaned, require_category=False)
     errors.extend(_resolve_taxonomy_references(cleaned))
+    if cleaned["status"] == "published":
+        errors.extend(validate_editorial_verification(cleaned))
     if errors:
         return None, errors
 
@@ -430,6 +466,7 @@ def save_talent(data, image_file=None, talent_id=None):
                 cleaned["status"],
                 cleaned["display_order"],
                 cleaned["published_at"],
+                **{field: cleaned[field] for field in EDITORIAL_FIELDS},
             )
             return talent_id, []
 
@@ -450,6 +487,7 @@ def save_talent(data, image_file=None, talent_id=None):
             cleaned["status"],
             cleaned["display_order"],
             cleaned["published_at"],
+            **{field: cleaned[field] for field in EDITORIAL_FIELDS},
         )
         return new_id, []
     except Exception:
@@ -473,6 +511,7 @@ def publish(talent_id):
         return False, ["Talent introuvable."]
 
     errors = _validate_existing_taxonomy_references(row)
+    errors.extend(validate_editorial_verification(row))
     errors.extend(validate_talent_data(
         {
             "name": row["name"],

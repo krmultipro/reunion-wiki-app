@@ -2,10 +2,11 @@
 
 from dataclasses import dataclass
 
-from flask import current_app
+from flask import current_app, session
 
 from ..repositories import click_repository, site_repository
 from ..utils import get_client_ip
+from .click_privacy_service import build_visitor_token, resolve_zone, reunion_day
 
 
 KNOWN_BOT_PATTERNS = [
@@ -68,38 +69,6 @@ def is_bot(user_agent: str) -> bool:
     return is_known_bot(user_agent)
 
 
-def should_count_click(site_id: int, ip_address: str):
-    """
-    Indique si un clic doit être comptabilisé pour un site et une IP.
-
-    Args:
-        site_id (int): identifiant du site visité.
-        ip_address (str): adresse IP du visiteur.
-
-    Returns:
-        bool: True si aucun clic récent n'existe pour ce couple site/IP.
-    """
-
-    # Évite de compter plusieurs clics récents de la même IP pour le même site.
-    return not click_repository.get_click_by_ip_and_site(site_id, ip_address)
-
-
-def register_click(site_id: int, ip_address: str, user_agent: str):
-    """
-    Enregistre un clic valide et incrémente le compteur du site.
-
-    Args:
-        site_id (int): identifiant du site cliqué.
-        ip_address (str): adresse IP du visiteur.
-        user_agent (str): User-Agent tronqué du visiteur.
-
-    Returns:
-        Any: valeur retournée par le repository de clics.
-    """
-
-    return click_repository.insert_click_and_increment_count(site_id, ip_address, user_agent)
-
-
 def handle_click(site_id: int, headers) -> ClickResult:
     """
     Orchestre la gestion métier d'un clic sortant.
@@ -114,7 +83,7 @@ def handle_click(site_id: int, headers) -> ClickResult:
     Règles métier:
         - un site inexistant ou non valide ne produit aucun clic;
         - les robots ne sont pas comptabilisés;
-        - une même IP ne doit pas être recomptée si un clic récent existe déjà.
+        - une même empreinte ne doit pas être recomptée si un clic récent existe déjà.
     """
 
     current_app.logger.info(f"[GO] Tentative de redirection pour site_id={site_id}")
@@ -128,6 +97,10 @@ def handle_click(site_id: int, headers) -> ClickResult:
         f"[GO] Site trouvé id={site_id} | ancien compteur={row['click_count']} | url={row['lien']}"
     )
 
+    if session.get("admin_authenticated"):
+        current_app.logger.info(f"[GO] Administrateur détecté, clic ignoré id={site_id}")
+        return ClickResult(url=row["lien"], found=True)
+
     ip = get_client_ip()
     user_agent = (headers.get("User-Agent", "") or "")[:400]
 
@@ -136,10 +109,11 @@ def handle_click(site_id: int, headers) -> ClickResult:
         current_app.logger.info(f"[GO] Bot détecté, clic ignoré id={site_id} ua={user_agent}")
         return ClickResult(url=row["lien"], found=True)
 
-    if should_count_click(site_id, ip):
-        register_click(site_id, ip, user_agent)
-        current_app.logger.info(f"[GO] Clic validé id={site_id} ip={ip}")
+    visitor_token = build_visitor_token(ip, user_agent, site_id)
+    zone = resolve_zone(ip)
+    if click_repository.register_aggregated_click(site_id, visitor_token, zone, reunion_day()):
+        current_app.logger.info(f"[GO] Clic validé id={site_id} zone={zone}")
     else:
-        current_app.logger.info(f"[GO] Clic ignoré (trop récent) id={site_id} ip={ip}")
+        current_app.logger.info(f"[GO] Clic ignoré (trop récent) id={site_id}")
 
     return ClickResult(url=row["lien"], found=True)

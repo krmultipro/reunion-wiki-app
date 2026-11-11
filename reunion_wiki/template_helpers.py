@@ -5,7 +5,7 @@
 import os
 from datetime import datetime
 
-from flask import current_app, session
+from flask import current_app, g, session
 
 from .forms.auth_forms import AdminLogoutForm
 from .services import category_service
@@ -63,6 +63,8 @@ def inject_admin_logout_form():
 
 def inject_categories():
     """Expose les variables de navigation utilisées par les templates publics."""
+    if g.get("skip_navigation_queries"):
+        return {"categories": [], "categories_slug": {}, "ICON_MAP": ICON_MAP}
     return {
         "categories": category_service.get_category_names(),
         "categories_slug": category_service.get_category_slug_map(),

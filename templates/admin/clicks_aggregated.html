@@ -1,0 +1,26 @@
+{% extends "admin/base.html" %}
+{% block seo_title %}Statistiques agrégées - Réunion Wiki{% endblock %}
+{% block content %}
+<section class="admin-dashboard">
+  <h1>Statistiques géographiques agrégées</h1>
+  <p>Aucune adresse IP ni visite individuelle n'est affichée. Les zones sous 10 visiteurs sont regroupées.</p>
+  <form method="get"><label>Période
+    <select name="days" onchange="this.form.submit()">
+      {% for days in (1, 7, 30, 90, 365) %}<option value="{{ days }}" {% if days_filter == days %}selected{% endif %}>{{ days }} jours</option>{% endfor %}
+    </select></label>
+  </form>
+  <table class="admin-table"><thead><tr><th>Site</th><th>Zone</th><th>Clics</th><th>Visiteurs</th></tr></thead><tbody>
+  {% for row in geo_stats %}<tr><td>{{ row['site_nom'] }}</td><td>{{ row['zone_display'] }}</td><td>{{ row['click_count'] }}</td><td>{{ row['visitor_count'] }}</td></tr>{% else %}<tr><td colspan="4">Aucune statistique.</td></tr>{% endfor %}
+  </tbody></table>
+  <h2>Corrections agrégées</h2>
+  {% for row in aggregate_rows %}{% set key = (row['site_id'], row['stat_date'], row['zone']) %}
+  <form method="post" action="{{ url_for('admin.admin_correct_click_aggregate') }}" class="admin-inline-form">
+    {{ correction_forms[key].hidden_tag() }}
+    <span>{{ row['stat_date'] }} · {{ row['site_nom'] }} · {{ row['zone'] }} · {{ row['click_count'] }}</span>
+    {{ correction_forms[key].new_count(min=0, value=row['click_count']) }}
+    {{ correction_forms[key].reason(placeholder='Motif obligatoire') }}
+    <button type="submit" class="btn btn-secondary">Corriger</button>
+  </form>
+  {% endfor %}
+</section>
+{% endblock %}

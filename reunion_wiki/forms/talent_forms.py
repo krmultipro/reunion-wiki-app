@@ -66,6 +66,23 @@ class TalentForm(FlaskForm):
         [Optional()],
         filters=[_sanitize_multiline],
     )
+    reunion_attachment = TextAreaField(
+        "Rattachement à La Réunion (privé)",
+        [Optional(), Length(max=2000)], filters=[_sanitize_multiline],
+    )
+    private_source_reference = StringField(
+        "Référence de la source (privée)",
+        [Optional(), Length(max=500)], filters=[_sanitize_basic],
+    )
+    private_source_url = StringField(
+        "Lien de la source (privé)",
+        [Optional(), Length(max=1000), URL(message="Lien de source invalide.")],
+        filters=[_normalize_url],
+    )
+    private_source_note = TextAreaField(
+        "Note de vérification (privée)",
+        [Optional(), Length(max=4000)], filters=[_sanitize_multiline],
+    )
     image = FileField(
         "Image",
         validators=[
@@ -101,7 +118,7 @@ class TalentForm(FlaskForm):
     )
     status = SelectField(
         "Statut",
-        choices=STATUSES,
+        choices=[("draft", "Brouillon")],
         default="draft",
         validators=[DataRequired()],
         filters=[_strip_filter],

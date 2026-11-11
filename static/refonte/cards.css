@@ -1,0 +1,31 @@
+/* Reprise isolée de creator-card.css, portée réduite pour éviter la priorité de #rw-proposal. */
+/* Carte commune : accueil et liste créateurs, selon UX-CREA-005. */
+@font-face{font-family:Inter;src:url('../fonts/inter-v18-latin-regular.woff2')}@font-face{font-family:Inter;src:url('../fonts/inter-v18-latin-700.woff2');font-weight:700}
+.final-public .creator-card{display:grid;grid-template-columns:120px minmax(0,1fr);gap:16px;align-items:center;box-sizing:border-box;padding:10px;border:1px solid #dfe4d7;border-radius:20px;background:white;color:#203c30;text-decoration:none;font:14px/1.6 Inter,Arial,sans-serif;overflow:hidden;min-width:0}
+.final-public .creator-card__portrait{width:120px;height:120px;margin:0;position:relative;border-radius:14px;overflow:hidden;background:#ced6bd}
+.final-public .creator-card__portrait img{display:block;width:100%;height:100%;object-fit:cover;object-position:center}
+.final-public .creator-card__portrait:after{display:none}
+.final-public .creator-card__badge{display:none}
+.final-public .creator-card__body{display:flex;flex-direction:column;padding:0;min-width:0}
+.final-public .creator-card__title-row{display:contents}
+.final-public .creator-card__title{margin:0;order:0;font:700 20px/1.2 Inter,Arial,sans-serif;letter-spacing:-1px;overflow-wrap:anywhere}
+.final-public .creator-card__category{display:block;order:1;font-size:13px;line-height:1.5;color:#65705f;margin:4px 0}
+.final-public .creator-card__description{order:2;margin:5px 0 0;font-size:13px;line-height:1.6;color:#65705f}
+.final-public .creator-card__link{order:3;display:inline-flex;align-items:center;min-height:44px;padding:10px 0 0;font-size:13px;font-weight:700;color:#087548;white-space:nowrap}
+.final-public .creator-card:focus-visible{outline:3px solid #087548;outline-offset:4px}
+.final-public .creator-card:hover{transform:none;box-shadow:none;border-color:#bdcbbd}
+@media(max-width:760px){
+.final-public .creator-card{display:grid;grid-template-columns:96px minmax(0,1fr);gap:12px;padding:10px;border-radius:14px;align-items:center}
+.final-public .creator-card__portrait{width:96px;height:96px;margin:0;aspect-ratio:1;border-radius:9px}
+.final-public .creator-card__portrait:after,.final-public .creator-card__badge{display:none}
+.final-public .creator-card__body{display:flex;flex-direction:column;padding:0}
+.final-public .creator-card__title-row{display:contents}
+.final-public .creator-card__title{order:0;font-size:18px;letter-spacing:-.4px}
+.final-public .creator-card__category{display:block;order:1;font-size:12px;line-height:1.5;color:#65705f;margin:4px 0}
+.final-public .creator-card__description{order:2;margin:5px 0 0}
+.final-public .creator-card__link{order:3;padding:10px 0 0}
+.final-public .creators .grid{grid-template-columns:1fr;gap:10px}
+}
+
+.final-public .creator-card-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+@media(max-width:999px){.final-public .creator-card-grid{grid-template-columns:1fr;gap:10px}}

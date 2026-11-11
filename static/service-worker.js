@@ -1,68 +1,19 @@
-const CACHE_NAME = "reunionwiki-cache-v7";
-
-// Liste des fichiers à mettre en cache
-const urlsToCache = [
-  "/static/icons/icon-192x192.png", // corriger le nom
-  "/static/icons/icon-512x512.png", // corriger le nom
-];
-
-// Installation du service worker
-self.addEventListener("install", (event) => {
-  console.log("[SW] Installation en cours...");
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      console.log("[SW] Mise en cache initiale...");
-      return cache.addAll(urlsToCache);
-    }),
-  );
-  // Force l’activation immédiate du nouveau SW
+/* Les documents et données privées restent réseau uniquement. */
+const CACHE_NAME = 'reunionwiki-cache-v8-refonte';
+const SHELL = ['/static/icons/icon-192x192.png', '/static/icons/icon-512x512.png'];
+self.addEventListener('install', event => {
+  event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(SHELL)));
   self.skipWaiting();
 });
-
-// Activation et suppression des anciens caches
-self.addEventListener("activate", (event) => {
-  console.log("[SW] Activation en cours...");
-  event.waitUntil(
-    caches.keys().then((cacheNames) =>
-      Promise.all(
-        cacheNames
-          .filter((name) => name !== CACHE_NAME)
-          .map((name) => {
-            console.log("[SW] Suppression du cache :", name);
-            return caches.delete(name);
-          }),
-      ),
-    ),
-  );
-  // Prend immédiatement le contrôle des pages ouvertes
-  self.clients.claim();
+self.addEventListener('activate', event => {
+  event.waitUntil(caches.keys().then(keys => Promise.all(
+    keys.filter(key => key.startsWith('reunionwiki-cache-') && key !== CACHE_NAME)
+      .map(key => caches.delete(key))
+  )).then(() => self.clients.claim()));
 });
-
-// Interception des requêtes réseau
-self.addEventListener("fetch", (event) => {
-  if (event.request.mode === "navigate") {
-    event.respondWith(
-      fetch(event.request)
-        .then((response) => {
-          const responseClone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseClone);
-          });
-          return response;
-        })
-        .catch(() => caches.match(event.request)),
-    );
-    return;
-  }
-
-  event.respondWith(
-    caches.match(event.request).then((response) => {
-      return (
-        response ||
-        fetch(event.request).catch(() => {
-          // Optionnel : fallback si la requête échoue (ex : offline)
-        })
-      );
-    }),
-  );
+self.addEventListener('fetch', event => {
+  const url = new URL(event.request.url);
+  if (event.request.method !== 'GET' || url.origin !== self.location.origin ||
+      !SHELL.includes(url.pathname)) return;
+  event.respondWith(caches.match(event.request).then(cached => cached || fetch(event.request)));
 });

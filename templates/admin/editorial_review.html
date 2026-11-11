@@ -1,0 +1,42 @@
+{% extends "admin/base.html" %}
+
+{% block seo_title %}Revue éditoriale - Réunion Wiki{% endblock %}
+{% block seo_description %}Contrôle privé de l'admissibilité d'un site.{% endblock %}
+
+{% block content %}
+<section class="admin-card">
+  <header class="admin-card__header">
+    <div>
+      <h1>Vérifier le lien avec La Réunion</h1>
+      <p>{{ site['nom'] }} — cette décision est nécessaire avant la publication.</p>
+    </div>
+    <a class="btn btn-secondary" href="{{ url_for('admin_dashboard') }}">Laisser en attente</a>
+  </header>
+  <div class="admin-form">
+    <p><a href="{{ site['lien'] }}" target="_blank" rel="noopener noreferrer">Ouvrir le site à vérifier ↗</a></p>
+    <p>Vérifiez le contenu ou l'offre du site, puis choisissez le critère constaté. Si aucun ne s'applique, refusez la publication.</p>
+    <form method="post" class="admin-form" novalidate>
+      {{ form.hidden_tag() }}
+      <div class="admin-form__field">
+        {{ form.criterion.label(class_="admin-form__label") }}
+        {{ form.criterion(class_="admin-form__input") }}
+        {% for error in form.criterion.errors %}<span class="admin-form__error">{{ error }}</span>{% endfor %}
+      </div>
+      <div class="admin-form__field">
+        {{ form.note.label(class_="admin-form__label") }}
+        {{ form.note(class_="admin-form__textarea", rows="3") }}
+        {% for error in form.note.errors %}<span class="admin-form__error">{{ error }}</span>{% endfor %}
+      </div>
+      <div class="admin-form__field">
+        {{ form.evidence_url.label(class_="admin-form__label") }}
+        {{ form.evidence_url(class_="admin-form__input") }}
+        {% for error in form.evidence_url.errors %}<span class="admin-form__error">{{ error }}</span>{% endfor %}
+      </div>
+      <p>La décision, la note et l'éventuelle preuve restent privées.</p>
+      <div class="admin-form__actions">
+        <button type="submit" class="btn btn-primary">Enregistrer la décision</button>
+      </div>
+    </form>
+  </div>
+</section>
+{% endblock %}

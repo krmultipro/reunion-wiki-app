@@ -4,7 +4,7 @@ from xml.sax.saxutils import escape
 
 from flask import url_for
 
-from ..repositories import category_repository, city_repository, content_repository
+from ..repositories import category_repository, city_repository, content_repository, refonte_public_repository
 
 
 # Pages publiques stables à toujours inclure dans le sitemap.
@@ -14,7 +14,10 @@ STATIC_ENDPOINTS = [
     "most_visited_sites",
     "most_visited_categories",
     "recently_added_sites",
-    "trends",
+    "refonte_public.sites",
+    "creators_index",
+    "refonte_public.contact",
+    "legal_notices",
     "faq",
     "blog",
 ]
@@ -62,6 +65,9 @@ def build_sitemap_xml():
     for page in content_repository.get_published_for_sitemap():
         lastmod = (page["updated_at"] or "")[:10] or None
         entries.append(_url_entry(url_for("content.show", slug=page["slug"], _external=True), lastmod))
+
+    for profile in refonte_public_repository.public_profiles():
+        entries.append(_url_entry(url_for("creators.creator_detail", slug=profile["slug"], _external=True)))
 
     body = "\n".join(entries)
     return (

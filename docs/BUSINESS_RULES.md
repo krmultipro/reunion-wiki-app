@@ -2,9 +2,42 @@
 
 | Métadonnée | Valeur |
 | --- | --- |
-| Version du document | 1.4 |
+| Version du document | 1.8 |
 | Statut | Validé |
-| Dernière mise à jour | 16 septembre 2026 |
+| Dernière mise à jour | 11 novembre 2026 |
+
+## Jalon refonte DEV — 11 novembre 2026
+
+L’utilisateur valide la refonte selon la maquette avec recherche simple et
+administration essentielle, puis publication DEV via `dev`. Les compléments
+avancés sont reportés après cette étape selon [REFONTE_DEV](ux/REFONTE_DEV.md)
+et le catalogue v1.8. Les exigences et leur historique restent conservés ;
+contrôles de publication, brouillon imposé et protection du privé restent requis.
+Cette décision ne publie pas la production et ne supprime aucune donnée.
+
+Historique 1.8 — 11 novembre : jalon DEV et reports explicites consignés.
+
+## Décision applicable — créateurs de contenu, 17 octobre 2026
+
+Le [périmètre de lancement](ux/CONTENT_CREATORS_SCOPE.md) remplace l’ouverture générale aux
+Talents péi du 16 octobre : **créateurs de contenu**, rubrique **Créateurs** et
+**Proposer un créateur**. Les autres talents restent une piste reportée.
+Les compléments du 16 octobre ci-dessous sont historiques sur le nom et
+l’élargissement ; ils ne doivent pas guider une adaptation artiste/artisan.
+RM-TAL-012 v2.0 et UX-CONT-001 à 006 font référence.
+
+Nom et lien officiel restent obligatoires à la proposition (UX-PROP-002), sans
+compte au lancement ; aucune proposition sans lien ajoutée. Contact/email pour
+les corrections et retraits, tableau de bord différé. Les choix de présentation
+et de navigation existants sont conservés. Documentation seule : aucun code,
+maquette ni test fonctionnel modifié ou exécuté.
+
+## Complément du 16 octobre 2026
+
+La règle RM-TAL-012 précise le périmètre Talents péi. Elle complète les règles
+existantes sans lever les questions de proposition sans lien officiel ni
+requalifier les structures déjà enregistrées. Référence :
+[conception Talents péi](ux/TALENTS_PEI_SCOPE.md). Documentation seule.
 
 ## Convention
 
@@ -72,10 +105,38 @@ systèmes d'identifiants est conservée à la fin du catalogue.
 - **Critère d'acceptation :** aucun seuil d'abonnés, d'audience, de récompense
   ou de fréquence de publication ne conditionne l'admissibilité.
 
+### RM-TAL-003 — Source du lien réunionnais, version 2.0
+
+- **Statut :** Active, décision utilisateur 2A (dernier questionnaire lancement),
+  7 octobre 2026. Remplace la version 1.0 et son amendement 1.1 ci-dessous.
+- **Lancement/MVP :** l'administrateur vérifie le lien réel à La Réunion avec
+  une source simple et pertinente, conservée en privé dans l'administration.
+  Aucune rubrique Sources ni justification publique obligatoire sur la fiche.
+- **Source simple :** bio officielle, déclaration publique explicite du créateur,
+  profil/site officiel, interview ou autre source déjà acceptée. Un article de
+  presse ou une recherche approfondie systématique n'est pas exigé. La source
+  doit réellement confirmer le rattachement ; la seule existence d'un compte
+  social ou d'un nom réunionnais ne suffit pas.
+- **Conservation :** référence identifiable et lien de la source, avec une courte
+  note utile à la vérification, sans dossier éditorial lourd imposé au lancement.
+  Les données détaillées/historiques déjà disponibles restent conservées.
+- **Publication :** conserver l'exigence d'au moins un rattachement et d'une source
+  vérifiable enregistrée ; un brouillon peut rester incomplet. Une source non
+  trouvée ne devient pas une validation implicite du lien.
+- **Visibilité :** la référence de vérification reste privée. Les liens officiels
+  destinés à découvrir le créateur restent affichables selon RM-TAL-008, sans
+  être présentés automatiquement comme preuve du rattachement.
+- **Critères d'acceptation :** un contrôle admin s'appuie sur une source enregistrée
+  avant publication ; la fiche publique n'exige pas de bloc source. Les preuves
+  privées ne sont pas divulguées. Aucune vérification ou migration de stockage
+  n'est déclarée réalisée par cette décision documentaire.
+
+#### Historique conservé — version 1.0 et amendement 1.1 remplacés
+
 ### RM-TAL-003 — Source du lien réunionnais
 
 - **Version :** 1.0
-- **Statut :** Active
+- **Statut :** Remplacée par la version 2.0 du 7 octobre 2026
 - **Règle :** au moins une source publique doit permettre de vérifier le lien
   du talent avec La Réunion.
 - **Sources acceptées :** profil officiel sur un réseau social, vidéo,
@@ -87,7 +148,7 @@ systèmes d'identifiants est conservée à la fin du catalogue.
 
 #### Amendement 1.1 — Données et visibilité des sources
 
-- **Statut :** Actif
+- **Statut :** Remplacé par la version 2.0 du 7 octobre 2026
 - **Quantité :** une source est obligatoire pour publier et plusieurs sources
   peuvent être associées à la fiche.
 - **Données minimales :** chaque source conserve son type, un titre ou une
@@ -132,6 +193,13 @@ systèmes d'identifiants est conservée à la fin du catalogue.
   aucun droit n'est vérifié manuellement, l'image générique est utilisée.
 - **Limite :** ce report fonctionnel ne crée pas d'autorisation juridique pour
   publier une image tierce non justifiée.
+
+#### Précision visuelle — 8 octobre 2026
+
+Le choix validé UX-FICHE-008 précise l’image générique : silhouette de profil
+neutre pour les créateurs, en remplacement du palmier dans les maquettes.
+Les conditions de publication et de droits ci-dessus restent inchangées ;
+le backend utilise encore son image de remplacement existante avant intégration.
 
 ### RM-TAL-005 — Neutralité de la présentation
 
@@ -244,10 +312,52 @@ systèmes d'identifiants est conservée à la fin du catalogue.
 - **Retour :** les remarques du talent sont conservées dans des notes et servent
   à améliorer le formulaire et les règles métier.
 
+### RM-TAL-012 — Créateurs de contenu au lancement, version 2.0
+
+- **Version :** 2.0
+- **Statut :** Active, conception validée le 17 octobre 2026 ; aucune réalisation vérifiée par ce lot.
+- **Remplace :** v1.0 du 16 octobre, conservée ci-dessous.
+- **Règle :** la rubrique Créateurs présente des personnes ou collectifs pour
+  leur activité de création de contenu en lien réel avec La Réunion. Un métier
+  artistique ou artisanal seul ne vaut pas admission ; l’ouverture générale
+  aux autres talents est reportée.
+- **Critère d’acceptation :** la présentation et les liens permettent de
+  comprendre l’activité de contenu du créateur. Les contrôles RM-TAL-001 à 010
+  restent applicables, sans seuil de notoriété. Nom et lien officiel exigés à la
+  proposition selon UX-PROP-002 ; aucun compte social particulier obligatoire.
+  Aucun contrôle supplémentaire de plateforme à la publication ne remplace RM-TAL-008.
+- **Exclusions :** fiches d’entreprises et fonctions de prestataires hors de
+  cette rubrique ; annuaire des sites inchangé. Aucun type historique supprimé.
+- **Référence :** UX-CONT-001 à 006 dans
+  [CONTENT_CREATORS_SCOPE.md](ux/CONTENT_CREATORS_SCOPE.md).
+
+### RM-TAL-012 — Version 1.0 remplacée : périmètre éditorial Talents péi
+
+- **Version :** 1.0
+- **Statut :** Remplacée par RM-TAL-012 v2.0 du 17 octobre 2026 ; ouverture large reportée.
+- **Règle :** la rubrique présente des personnes et des collectifs dont
+  l’activité, les créations ou le savoir-faire peuvent être décrits concrètement.
+  Créateurs de contenu, artistes et artisans sont notamment admissibles sous
+  réserve des contrôles RM-TAL-001 à 010. Aucun seuil de notoriété n’est ajouté.
+- **Exclusions au lancement :** fiches d’entreprises dans cette rubrique et
+  fonctions de devis, disponibilités, avis ou classement de prestataires.
+  Cette exclusion ne modifie pas l’annuaire des sites.
+- **Critère d’acceptation :** une fiche décrit la personne ou le collectif et
+  son travail de manière neutre ; le lien réunionnais et sa source sont vérifiés,
+  le passage en brouillon et la publication distincte restent requis. Une
+  demande centrée sur une entreprise n’est pas publiée comme fiche talent.
+- **Limites :** collectifs/structures existantes et entreprises doivent être
+  distingués avant toute requalification ; aucune suppression automatique.
+  Voir UX-TAL-001 à 006 et les questions ouvertes de TALENTS_PEI_SCOPE.md.
+
+
 ## Historique
 
 | Version | Date | Modification |
 | --- | --- | --- |
+| 1.7 | 17 octobre 2026 | Retour aux créateurs de contenu pour le lancement ; ouverture Talents péi reportée, lien officiel conservé, documentation seule. |
+| 1.6 | 16 octobre 2026 | Ajout RM-TAL-012 : périmètre Talents péi et exclusions au lancement, sans changement des contrôles ni réalisation. |
+| 1.5 | 7 octobre 2026 | RM-TAL-003 v2.0 validée : vérification légère et source privée au lancement ; affichage public obligatoire remplacé, anciennes versions conservées. Aucun backend modifié. |
 | 1.4 | 16 septembre 2026 | Ajout des décisions de cas limites pour les sites : transitions de statut, accessibilité HTTP, redirections et normalisation, recherche, identification des clics répétés et nouvelle publication explicite. |
 | 1.3 | 16 septembre 2026 | Validation des décisions relatives aux sites : admissibilité, données minimales, normalisation et doublons, catégorie unique, portée géographique, statuts, recherche, clics, dates, modération, contrôles de publication et parcours pilote. |
 | 1.2 | 15 septembre 2026 | Validation des décisions talents : rattachements multiples, sources publiques, Twitch, recherche et filtres, demandes de correction, brouillon obligatoire, contrôles de publication et fiche pilote. Report de la gestion structurée des droits d'image. |

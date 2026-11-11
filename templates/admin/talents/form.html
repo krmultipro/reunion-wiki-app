@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "admin/base.html" %}
 
 {% block seo_title %}{{ page_title }} - Réunion Wiki{% endblock %}
 {% block seo_description %}Édition d'un talent Réunion Wiki.{% endblock %}
@@ -115,6 +115,18 @@
       {{ form.website_url(class_="admin-form__input") }}
       {% for error in form.website_url.errors %}<span class="admin-form__error">{{ error }}</span>{% endfor %}
     </div>
+
+    <fieldset class="admin-form__field">
+      <legend>Vérification éditoriale privée</legend>
+      <p>Ces informations restent privées. Complète le rattachement et la source avant de publier.</p>
+      {% for field in [form.reunion_attachment, form.private_source_reference, form.private_source_url, form.private_source_note] %}
+      <div class="admin-form__field">
+        {{ field.label(class_="admin-form__label") }}
+        {{ field(class_="admin-form__input") }}
+        {% for error in field.errors %}<span class="admin-form__error">{{ error }}</span>{% endfor %}
+      </div>
+      {% endfor %}
+    </fieldset>
 
     <div class="admin-form__actions">
       <button type="submit" class="btn btn-primary">{{ submit_label }}</button>

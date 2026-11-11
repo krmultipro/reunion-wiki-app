@@ -1,0 +1,64 @@
+{% extends 'refonte/base.html' %}
+{% block content %}
+{% set personality = form.kind.data == 'personality' %}
+{% set optional_fields = ([form.category_id, form.description] if personality else []) + [form.location, form.reunion_attachment, form.supplied_evidence_url, form.email] %}
+{% set optional_errors = optional_fields | selectattr('errors') | list %}
+{% macro field_control(field, label, required=false, placeholder='', hint='', inputmode='', autocomplete='off') -%}
+<div class="field">
+  <label for="{{ field.id }}">{{ label }}{% if required %} *{% endif %}</label>
+  {{ field(required=required, placeholder=placeholder, inputmode=inputmode, autocomplete=autocomplete, aria_describedby=field.id+'-hint '+field.id+'-errors' if hint else field.id+'-errors', aria_invalid='true' if field.errors else 'false') }}
+  {% if hint %}<p class="hint" id="{{ field.id }}-hint">{{ hint }}</p>{% endif %}
+  <div class="error" id="{{ field.id }}-errors">{% for error in field.errors %}<p>{{ error }}</p>{% endfor %}</div>
+</div>
+{%- endmacro %}
+<section class="rw-submission">
+<a class="back" href="{{ url_for('accueil') }}">← Retour</a>
+<h1>Faire une proposition</h1>
+<p class="form-intro">Un site utile ou une personnalité réunionnaise à faire découvrir ? Propose-le pour vérification avant publication.</p>
+{% for category,message in get_flashed_messages(with_categories=true) %}<p class="notice" role="alert">{{ message }}</p>{% endfor %}
+<form id="proposal" class="panel proposal-form" method="post" novalidate>
+  {{ form.hidden_tag() }}
+  <input type="hidden" name="previous_kind" value="{{ form.kind.data }}">
+  {% for kind,value in type_categories.items() %}<input type="hidden" name="{{ kind }}_category_id" value="{{ value }}">{% endfor %}
+  <fieldset>
+    <legend>Que souhaites-tu proposer ?</legend>
+    <div class="type-options">
+      <label for="kind-site"><input id="kind-site" type="radio" name="kind" value="site" {% if not personality %}checked{% endif %}>Un site</label>
+      <label for="kind-personality"><input id="kind-personality" type="radio" name="kind" value="personality" {% if personality %}checked{% endif %}>Une personnalité</label>
+    </div>
+    {% for error in form.kind.errors %}<p class="error" role="alert">{{ error }}</p>{% endfor %}
+    <button id="change-type" type="submit" name="change_type" value="yes" formnovalidate hidden>Afficher ce formulaire</button>
+    <noscript><button class="button button-secondary" type="submit" name="change_type" value="yes" formnovalidate>Afficher ce formulaire</button></noscript>
+  </fieldset>
+  <div hidden>{{ form.honeypot.label }}{{ form.honeypot(tabindex='-1',autocomplete='off') }}</div>
+  {% if form.errors %}<div class="notice" role="alert" tabindex="-1"><strong>Vérifie les informations indiquées.</strong><ul>{% for field in form if field.errors %}{% for error in field.errors %}<li><a href="#{{ field.id }}">{{ error }}</a></li>{% endfor %}{% endfor %}</ul></div>{% endif %}
+  {% if duplicate_href %}<div class="notice" role="status"><a href="{{ duplicate_href }}">Consulter le contenu déjà référencé →</a></div>{% endif %}
+  {{ field_control(form.name, 'Nom ou pseudonyme' if personality else 'Nom du site', true, 'Ex. Nom de la personnalité' if personality else 'Ex. Météo France Réunion') }}
+  {{ field_control(form.url, 'Lien officiel' if personality else 'Lien du site', true, 'https://exemple.re', inputmode='url', autocomplete='url') }}
+  {% if not personality %}
+    {{ field_control(form.category_id, 'Catégorie', true) }}
+    {{ field_control(form.description, 'Description', true, 'À quoi sert ce site ?', '10 à 500 caractères.') }}
+  {% endif %}
+  <details id="optional-details" {% if optional_errors %}open{% endif %}>
+    <summary>Informations facultatives{% if optional_errors %} — à vérifier{% endif %}</summary>
+    <div class="optional-fields">
+      {% if personality %}
+        {{ field_control(form.category_id, 'Catégorie') }}
+        {{ field_control(form.description, 'Présentation', placeholder='Quelques mots sur cette personnalité.') }}
+      {% endif %}
+      {{ field_control(form.location, 'Localisation') }}
+      {{ field_control(form.reunion_attachment, 'Lien avec La Réunion', placeholder='Ex. Une activité basée à Saint-Pierre.') }}
+      {{ field_control(form.supplied_evidence_url, 'Lien de preuve', placeholder='https://exemple.re/a-propos', inputmode='url') }}
+      {{ field_control(form.email, 'Ton email', placeholder='toi@exemple.fr', hint='Facultatif, pour une réponse au sujet de ta proposition. Jamais affiché publiquement.', inputmode='email', autocomplete='email') }}
+    </div>
+  </details>
+  <div><button class="button" type="submit">Envoyer ma proposition →</button><p class="hint">Vérification avant publication. * Champs obligatoires.</p></div>
+  <p class="abandon-hint">Tes saisies sont conservées si tu changes de type ici. Si tu quittes cette page, elles seront perdues.</p>
+</form>
+<p class="notice">La proposition est enregistrée en privé. Aucun compte ni portrait n’est nécessaire ; aucune publication ou notification n’est automatique.</p>
+</section>
+<style>
+.proposal-form{display:grid;gap:20px}.proposal-form fieldset{border:0;padding:0;margin:0;min-width:0}.proposal-form legend{font-weight:700;margin-bottom:10px}.type-options{display:flex;gap:10px;flex-wrap:wrap}.type-options label{display:flex;align-items:center;gap:8px;padding:12px 14px;border:1px solid var(--line,#d9e2da);border-radius:14px;cursor:pointer;background:var(--paper,#fff)}.type-options label:has(:checked){border-color:var(--green,#176248);background:#edf5ef}.proposal-form details{border-top:1px solid var(--line,#d9e2da);padding-top:16px}.proposal-form summary{font-weight:700;cursor:pointer;padding:4px 0 10px}.optional-fields{display:grid;gap:18px;padding-top:12px}.proposal-form textarea{min-height:110px;resize:vertical}.proposal-form .hint{font-size:.82rem;margin:6px 0 0;color:#52615b}.proposal-form .error:empty{display:none}.proposal-form [aria-invalid=true]{border-color:#ad3535}.proposal-form .error{color:#9a2424;margin:6px 0 0;font-size:.88rem}.proposal-form .error p{margin:0}.proposal-form .button{width:100%}.proposal-form [hidden]{display:none!important}.form-intro{margin-bottom:24px}.abandon-hint{font-size:.86rem;color:#52615b}
+</style>
+<script>(()=>{const form=document.querySelector('#proposal');if(!form)return;let dirty=false;form.addEventListener('input',()=>{dirty=true});form.addEventListener('submit',()=>{dirty=false});form.querySelectorAll('input[name="kind"]').forEach(radio=>radio.addEventListener('change',()=>{form.requestSubmit(document.querySelector('#change-type'))}));window.addEventListener('beforeunload',event=>{if(dirty){event.preventDefault();event.returnValue=''}})})();</script>
+{% endblock %}

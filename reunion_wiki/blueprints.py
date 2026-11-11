@@ -10,6 +10,8 @@ from .routes.content import content_bp
 from .routes.creators import creators_bp
 from .routes.public import public_bp
 from .routes.seo import seo_bp
+from .routes.refonte_public import refonte_public_bp
+from .routes.refonte_submission import refonte_submission_bp
 
 
 LEGACY_ENDPOINTS = {
@@ -25,6 +27,7 @@ LEGACY_ENDPOINTS = {
         "admin_edit_category",
         "admin_delete_category",
         "admin_update_site",
+        "admin_http_review",
         "admin_edit_site",
         "admin_create_site",
     ),
@@ -82,6 +85,8 @@ def register_blueprints(app):
     app.register_blueprint(creators_bp)
     app.register_blueprint(public_bp)
     app.register_blueprint(seo_bp)
+    app.register_blueprint(refonte_public_bp)
+    app.register_blueprint(refonte_submission_bp)
 
     # content_bp expose la route de repli /<slug> : elle reste enregistrée en
     # dernier afin d'être moins prioritaire que les routes publiques explicites.

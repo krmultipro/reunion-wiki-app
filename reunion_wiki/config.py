@@ -16,6 +16,8 @@ class Config:
     print("Chargement de la configuration...")
     """Configuration de base"""
     SECRET_KEY = os.getenv('SECRET_KEY', 'dev-key-change-in-production')
+    CLICK_HMAC_SECRET = os.getenv('CLICK_HMAC_SECRET', SECRET_KEY)
+    GEOIP_DATABASE_PATH = os.getenv('GEOIP_DATABASE_PATH')
     DATABASE_PATH = os.getenv('DATABASE_PATH')
     
     print("DATABASE_PATH initial:", DATABASE_PATH)
@@ -52,6 +54,10 @@ class Config:
     ADMIN_USERNAME = os.getenv('ADMIN_USERNAME', '')
     ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD', '')
     ADMIN_PASSWORD_HASH = os.getenv('ADMIN_PASSWORD_HASH', '')
+
+    # CONTRÔLE HTTP : limites courtes appliquées avant publication d'un site
+    SITE_HTTP_TIMEOUT_SECONDS = float(os.getenv('SITE_HTTP_TIMEOUT_SECONDS', 5))
+    SITE_HTTP_MAX_REDIRECTS = int(os.getenv('SITE_HTTP_MAX_REDIRECTS', 5))
     
     # PERFORMANCE : Configuration du cache
     SEND_FILE_MAX_AGE_DEFAULT = 31536000  # 1 an pour les fichiers statiques

@@ -7,11 +7,18 @@ from ..auth import admin_required, verify_admin_credentials
 from ..extensions import limiter
 from ..forms.auth_forms import AdminLoginForm, AdminLogoutForm
 from ..forms.category_forms import CategoryForm, DeleteCategoryForm
-from ..forms.click_forms import DeleteClickForm
-from ..forms.site_forms import AdminSiteForm, ModerationActionForm
-from ..repositories import category_repository, city_repository, click_repository, site_repository
-from ..services import category_service, city_service
-from ..utils import is_safe_next_url, mask_ip, parse_positive_int
+from ..forms.click_forms import CorrectAggregateForm
+from ..forms.site_forms import AdminSiteForm, EditorialReviewForm, ManualHttpReviewForm, ModerationActionForm
+from ..repositories import category_repository, city_repository, click_repository, site_refusal_repository, site_repository
+from ..services import (
+    category_service,
+    city_service,
+    site_lifecycle_service,
+    site_location_service,
+    site_publication_service,
+    site_url_service,
+)
+from ..utils import is_safe_next_url, parse_positive_int
 
 
 admin_bp = Blueprint("admin", __name__)
@@ -23,7 +30,7 @@ def admin_login():
     form = AdminLoginForm()
     next_url = request.args.get("next")
     if not is_safe_next_url(next_url):
-        next_url = url_for("admin_dashboard")
+        next_url = url_for("refonte_submission.admin_index")
 
     if form.validate_on_submit():
         if verify_admin_credentials(form.username.data, form.password.data):
@@ -77,6 +84,7 @@ def admin_dashboard():
         pending_sites=pending_sites,
         stats=stats,
         action_forms=action_forms,
+        refusal_history=site_refusal_repository.get_latest_refusals(site["id"] for site in pending_sites),
         admin_username=session.get("admin_username"),
     )
 
@@ -91,7 +99,7 @@ def admin_sites():
     page = parse_positive_int(request.args.get("page"), default=1)
     per_page = 50
 
-    allowed_status = {"all", "valide", "en_attente", "refuse"}
+    allowed_status = {"all", "draft", "valide", "en_attente", "refuse", "archived"}
     allowed_sorts = {
         "date_desc": "s.date_ajout DESC, s.id DESC",
         "date_asc": "s.date_ajout ASC, s.id ASC",
@@ -173,6 +181,7 @@ def admin_sites():
         "admin/sites.html",
         sites=all_sites,
         action_forms=action_forms,
+        refusal_history=site_refusal_repository.get_latest_refusals(site["id"] for site in all_sites),
         cities=cities,
         status_filter=status_filter,
         city_filter=city_filter,
@@ -188,123 +197,50 @@ def admin_sites():
 @admin_bp.route("/admin/clicks", methods=["GET"])
 @admin_required
 def admin_clicks():
-    query_text = (request.args.get("q") or "").strip()
-    sort_filter = (request.args.get("sort") or "newest").strip()
     days_filter = parse_positive_int(request.args.get("days"), default=30)
-    page = parse_positive_int(request.args.get("page"), default=1)
-    per_page = 100
-
-    if len(query_text) > 120:
-        query_text = query_text[:120]
-    if sort_filter not in {"newest", "oldest"}:
-        sort_filter = "newest"
     if days_filter not in {1, 7, 30, 90, 365}:
         days_filter = 30
-
     try:
-        where_clauses = [
-            "sc.clicked_at >= datetime('now', ?)"
-        ]
-        params = [f"-{days_filter} days"]
-
-        if query_text:
-            like = f"%{query_text}%"
-            where_clauses.append(
-                """
-                (
-                    s.nom LIKE ?
-                    OR COALESCE(c.nom, '') LIKE ?
-                    OR COALESCE(v.nom, '') LIKE ?
-                    OR s.lien LIKE ?
-                    OR sc.user_agent LIKE ?
-                )
-                """
-            )
-            params.extend([like, like, like, like, like])
-
-        where_sql = " AND ".join(where_clauses)
-        sort_sql = "sc.clicked_at DESC, sc.id DESC" if sort_filter == "newest" else "sc.clicked_at ASC, sc.id ASC"
-
-        total_clicks = click_repository.count_clicks(where_sql, params)["total"]
-        total_pages = max((total_clicks + per_page - 1) // per_page, 1)
-        if page > total_pages:
-            page = total_pages
-        offset = (page - 1) * per_page
-
-        rows = click_repository.get_clicks(where_sql, sort_sql, params, per_page, offset)
-
-        click_events = []
-        delete_forms = {}
-        current_path = request.full_path.rstrip("?")
-        for row in rows:
-            row_dict = dict(row)
-            row_dict["ip_masked"] = mask_ip(row["ip_address"])
-            click_events.append(row_dict)
-            delete_forms[row["id"]] = DeleteClickForm(click_id=str(row["id"]))
-
+        geo_stats = click_repository.get_admin_geo_stats(days_filter, privacy_threshold=10)
+        aggregate_rows = click_repository.get_geo_aggregate_rows(days_filter)
     except sqlite3.Error as e:
-        current_app.logger.error(f"Erreur lors du chargement des clics admin: {e}")
-        flash("Erreur lors du chargement des clics.", "error")
-        click_events = []
-        delete_forms = {}
-        current_path = url_for("admin_clicks")
-        total_clicks = 0
-        total_pages = 1
-        page = 1
-
+        current_app.logger.error(f"Erreur lors du chargement des agrégats: {e}")
+        geo_stats, aggregate_rows = [], []
+    correction_forms = {}
+    for row in aggregate_rows:
+        key = (row["site_id"], row["stat_date"], row["zone"])
+        correction_forms[key] = CorrectAggregateForm(
+            site_id=str(row["site_id"]), stat_date=row["stat_date"], zone=row["zone"]
+        )
     return render_template(
-        "admin/clicks.html",
-        click_events=click_events,
-        delete_forms=delete_forms,
-        query_text=query_text,
-        sort_filter=sort_filter,
-        days_filter=days_filter,
-        page=page,
-        total_pages=total_pages,
-        total_clicks=total_clicks,
-        return_to=current_path,
-        admin_username=session.get("admin_username"),
+        "admin/clicks_aggregated.html", geo_stats=geo_stats,
+        aggregate_rows=aggregate_rows, correction_forms=correction_forms,
+        days_filter=days_filter, admin_username=session.get("admin_username"),
     )
 
 
-@admin_bp.route("/admin/clicks/<int:click_id>/delete", methods=["POST"])
+@admin_bp.route("/admin/clicks/aggregate-correction", methods=["POST"])
 @admin_required
-def admin_delete_click(click_id):
-    form = DeleteClickForm()
+def admin_correct_click_aggregate():
+    """Corrige un compteur agrégé et conserve une trace administrative."""
+    form = CorrectAggregateForm()
     if not form.validate_on_submit():
-        flash("Formulaire invalide.", "error")
+        flash("Correction invalide.", "error")
         return redirect(url_for("admin_clicks"))
+    corrected = click_repository.correct_geo_aggregate(
+        int(form.site_id.data), form.stat_date.data, form.zone.data,
+        form.new_count.data, session.get("admin_username") or "admin", form.reason.data,
+    )
+    flash("Compteur agrégé corrigé." if corrected else "Agrégat introuvable.",
+          "success" if corrected else "error")
+    return redirect(url_for("admin_clicks"))
 
-    try:
-        form_click_id = int(form.click_id.data)
-    except (TypeError, ValueError):
-        abort(400)
 
-    if form_click_id != click_id:
-        abort(400)
-
-    return_to = request.form.get("return_to", "")
-    if not is_safe_next_url(return_to):
-        return_to = url_for("admin_clicks")
-
-    try:
-        click_row = click_repository.get_click_by_id(click_id)
-        if not click_row:
-            flash("Clic introuvable.", "error")
-            return redirect(return_to)
-
-        site_id = click_row["site_id"]
-        deleted = click_repository.delete_click_and_decrement_site(click_id, site_id)
-        if deleted == 0:
-            flash("Clic introuvable.", "error")
-            return redirect(return_to)
-
-        flash("Événement de clic supprimé.", "success")
-    except sqlite3.Error as e:
-        current_app.logger.error(f"Erreur lors de la suppression du clic {click_id}: {e}")
-        flash("Erreur lors de la suppression du clic.", "error")
-
-    return redirect(return_to)
+@admin_bp.route("/admin/clicks/legacy", methods=["GET"])
+@admin_required
+def admin_clicks_legacy_disabled():
+    """Empêche l'affichage des anciens événements individuels."""
+    abort(404)
 
 
 @admin_bp.route("/admin/categories", methods=["GET"])
@@ -442,7 +378,7 @@ def admin_update_site(site_id):
     return_to = form.return_to.data if is_safe_next_url(form.return_to.data or "") else url_for("admin_dashboard")
     if not form.validate_on_submit():
         current_app.logger.warning(f"Modération formulaire invalide: {form.errors}")
-        flash("Formulaire invalide.", "error")
+        flash("Choisissez un motif de refus valide." if form.refusal_reason.errors else "Formulaire invalide.", "error")
         return redirect(return_to)
 
     try:
@@ -454,26 +390,37 @@ def admin_update_site(site_id):
         abort(400)
 
     action = request.form.get("action")
-    if action not in {"approve", "reject", "delete", "pending"}:
+    if action not in {"approve", "reject", "delete", "pending", "archive"}:
         flash("Action inconnue.", "error")
         return redirect(return_to)
 
     message = ""
     try:
         if action == "approve":
-            rowcount = site_repository.update_site_status(site_id, "valide", refresh_date=True)
-            message = "Proposition validée et publiée."
+            existing = site_repository.get_site_by_id(site_id)
+            if not existing:
+                flash("Proposition introuvable.", "error")
+                return redirect(return_to)
+            if not site_lifecycle_service.can_transition(existing["status"], "valide"):
+                flash("Transition de statut non autorisée.", "error")
+                return redirect(return_to)
+            return redirect(url_for("admin.admin_editorial_review", site_id=site_id))
         elif action == "reject":
-            rowcount = site_repository.update_site_status(site_id, "refuse")
-            message = "Proposition refusée."
+            decision = site_lifecycle_service.transition_status(
+                site_id, "refuse", refusal_reason=form.refusal_reason.data,
+                admin_username=session.get("admin_username") or "admin",
+            )
         elif action == "pending":
-            rowcount = site_repository.update_site_status(site_id, "en_attente")
-            message = "Statut remis en attente."
+            decision = site_lifecycle_service.transition_status(site_id, "en_attente")
+        elif action == "archive":
+            decision = site_lifecycle_service.transition_status(site_id, "archived")
         else:
             rowcount = site_repository.delete_site(site_id)
             message = "Proposition supprimée."
 
-        if rowcount == 0:
+        if action in {"reject", "pending", "archive"}:
+            flash(decision.message, decision.category)
+        elif rowcount == 0:
             flash("Proposition introuvable.", "error")
         else:
             flash(message, "success")
@@ -482,6 +429,83 @@ def admin_update_site(site_id):
         flash("Erreur lors de la mise à jour de la proposition.", "error")
 
     return redirect(return_to)
+
+
+@admin_bp.route(
+    "/admin/propositions/<int:site_id>/editorial-review",
+    methods=["GET", "POST"],
+)
+@admin_required
+def admin_editorial_review(site_id):
+    """Record a human eligibility decision before any publication attempt."""
+    site = site_repository.get_site_by_id(site_id)
+    if not site or not site_lifecycle_service.can_transition(site["status"], "valide"):
+        flash("Ce site n'est pas en attente de publication.", "error")
+        return redirect(url_for("admin_dashboard"))
+
+    form = EditorialReviewForm()
+    if request.method == "GET":
+        form.reviewed_url.data = site["lien"]
+    elif form.validate_on_submit():
+        attempt = site_publication_service.review_and_attempt_publication(
+            site_id, form.reviewed_url.data, form.criterion.data,
+            form.note.data, form.evidence_url.data,
+            session.get("admin_username") or "admin",
+            new_publication=site["status"] == "archived" and request.args.get("new_publication") == "1",
+        )
+        flash(attempt.message, attempt.category)
+        if attempt.manual_check_id:
+            return redirect(url_for("admin_http_review", site_id=site_id, check_id=attempt.manual_check_id))
+        return redirect(url_for("admin_dashboard"))
+
+    return render_template(
+        "admin/editorial_review.html", form=form, site=site,
+        admin_username=session.get("admin_username"),
+    )
+
+
+@admin_bp.route(
+    "/admin/propositions/<int:site_id>/http-review/<int:check_id>",
+    methods=["GET", "POST"],
+)
+@admin_required
+def admin_http_review(site_id, check_id):
+    """Confirme manuellement un site ayant répondu 401 ou 403."""
+    review = site_publication_service.get_manual_review(check_id, site_id)
+    if not review:
+        flash("Cette vérification manuelle n'est plus valable.", "error")
+        return redirect(url_for("admin_dashboard"))
+
+    form = ManualHttpReviewForm()
+    if request.method == "GET":
+        form.site_id.data = str(site_id)
+        form.check_id.data = str(check_id)
+    elif form.validate_on_submit():
+        try:
+            submitted_site_id = int(form.site_id.data)
+            submitted_check_id = int(form.check_id.data)
+        except (TypeError, ValueError):
+            abort(400)
+        if submitted_site_id != site_id or submitted_check_id != check_id:
+            abort(400)
+
+        if site_publication_service.confirm_manual_publication(
+            site_id,
+            check_id,
+            session.get("admin_username") or "admin",
+            form.note.data,
+        ):
+            flash("Vérification manuelle enregistrée et site publié.", "success")
+            return redirect(url_for("admin_dashboard"))
+        flash("La confirmation n'est plus valable. Vérifiez à nouveau le site.", "error")
+        return redirect(url_for("admin_dashboard"))
+
+    return render_template(
+        "admin/http_review.html",
+        form=form,
+        review=review,
+        admin_username=session.get("admin_username"),
+    )
 
 
 @admin_bp.route("/admin/propositions/<int:site_id>/edit", methods=["GET", "POST"])
@@ -500,6 +524,14 @@ def admin_edit_site(site_id):
 
     form = AdminSiteForm()
     form.honeypot.data = ""
+    allowed_edit_statuses = {site["status"], *site_lifecycle_service.allowed_targets(site["status"])}
+    form.status.choices = [
+        (key, label) for key, label in site_lifecycle_service.STATUS_LABELS.items()
+        if key in allowed_edit_statuses
+    ]
+    if request.method == "POST" and request.form.get("status") not in allowed_edit_statuses:
+        flash("Transition de statut non autorisée.", "error")
+        return redirect(url_for("admin_edit_site", site_id=site_id))
     categories_list = category_service.get_category_names()
     form.categorie.choices = [(cat, cat) for cat in categories_list]
     form.categorie.choices.insert(0, ("", "Sélectionnez une catégorie"))
@@ -518,6 +550,7 @@ def admin_edit_site(site_id):
         form.ville.data = site["ville"] or ""
         form.lien.data = site["lien"]
         form.description.data = site["description"]
+        form.portee.data = site["location_scope"] or ""
         form.status.data = site["status"]
         form.en_vedette.data = bool(site["en_vedette"])
         current_category = site["categorie"] or ""
@@ -540,21 +573,60 @@ def admin_edit_site(site_id):
                 flash("Ville non valide.", "error")
                 return redirect(url_for("admin_dashboard"))
             resolved_city_id = resolved_city[0] if resolved_city else None
+            location_scope = site_location_service.validate_location(
+                resolved_city_id, form.portee.data
+            )
+            url_decision = site_url_service.prepare_site_url(
+                form.lien.data, exclude_site_id=site_id
+            )
+            requested_status = form.status.data
+            if form.new_publication.data and not (
+                site["status"] == "archived" and requested_status == "valide"
+            ):
+                flash("La nouvelle publication exige un site archivé.", "error")
+                return redirect(url_for("admin_edit_site", site_id=site_id))
+            stored_status, needs_review, status_error = site_lifecycle_service.edit_status(
+                site["status"], requested_status,
+                url_changed=url_decision.normalized_url != site["lien"],
+            )
+            if status_error:
+                flash(status_error, "error")
+                return redirect(url_for("admin_edit_site", site_id=site_id))
             rowcount = site_repository.update_site(
                 site_id,
                 form.nom.data,
                 resolved_city_id,
-                form.lien.data,
+                url_decision.normalized_url,
                 form.description.data,
                 resolved_category_id,
-                form.status.data,
+                stored_status,
                 1 if form.en_vedette.data else 0,
+                expected_status=site["status"],
+                location_scope=location_scope,
+                refusal_reason=form.refusal_reason.data,
+                admin_username=session.get("admin_username") or "admin",
             )
             if rowcount == 0:
-                flash("La mise à jour a échoué : proposition introuvable.", "error")
+                flash("La proposition a changé ou est introuvable. Actualisez la page.", "error")
             else:
                 flash("Proposition mise à jour avec succès.", "success")
+                if url_decision.warning:
+                    flash(url_decision.warning, "warning")
+                if needs_review:
+                    return redirect(url_for(
+                        "admin.admin_editorial_review", site_id=site_id,
+                        new_publication="1" if form.new_publication.data else "0",
+                    ))
             return redirect(url_for("admin_dashboard"))
+        except site_url_service.DuplicateSiteUrlError as e:
+            form.lien.errors.append(str(e))
+            flash(str(e), "error")
+        except site_refusal_repository.InvalidRefusalReason as e:
+            form.refusal_reason.errors.append(str(e))
+            flash(str(e), "error")
+        except ValueError as e:
+            form.portee.errors.append(str(e))
+            flash(str(e), "error")
         except sqlite3.Error as e:
             current_app.logger.error(f"Erreur lors de la mise à jour du site {site_id}: {e}")
             flash("Erreur lors de la mise à jour.", "error")
@@ -571,6 +643,7 @@ def admin_edit_site(site_id):
         submit_label="Enregistrer les modifications",
         page_title=f"Modifier la proposition #{site_id}",
         subtitle=f"Statut actuel : <strong>{site['status']}</strong>",
+        last_refusal=site_refusal_repository.get_latest_refusal(site_id),
     )
 
 
@@ -579,6 +652,10 @@ def admin_edit_site(site_id):
 def admin_create_site():
     form = AdminSiteForm()
     form.honeypot.data = ""
+    form.status.choices = [("draft", "Brouillon"), ("valide", "Publié")]
+    if request.method == "POST" and request.form.get("status") not in {"draft", "valide"}:
+        flash("Un nouveau site administratif doit commencer en brouillon ou passer par la publication.", "error")
+        return redirect(url_for("admin_create_site"))
     categories_list = category_service.get_category_names()
     form.categorie.choices = [(cat, cat) for cat in categories_list]
     form.categorie.choices.insert(0, ("", "Sélectionnez une catégorie"))
@@ -605,17 +682,34 @@ def admin_create_site():
                 flash("Ville non valide.", "error")
                 return redirect(url_for("admin_create_site"))
             resolved_city_id = resolved_city[0] if resolved_city else None
-            site_repository.create_site(
+            location_scope = site_location_service.validate_location(
+                resolved_city_id, form.portee.data
+            )
+            url_decision = site_url_service.prepare_site_url(form.lien.data)
+            requested_status = form.status.data
+            stored_status = "draft"
+            site_id = site_repository.create_site(
                 form.nom.data,
                 resolved_city_id,
-                form.lien.data,
+                url_decision.normalized_url,
                 form.description.data,
                 resolved_category_id,
-                status=form.status.data or "valide",
+                status=stored_status,
                 en_vedette=1 if form.en_vedette.data else 0,
+                location_scope=location_scope,
             )
-            flash(f"Nouveau site ajouté (statut : {form.status.data}).", "success")
+            flash(f"Nouveau site ajouté (statut : {stored_status}).", "success")
+            if url_decision.warning:
+                flash(url_decision.warning, "warning")
+            if requested_status == "valide":
+                return redirect(url_for("admin.admin_editorial_review", site_id=site_id))
             return redirect(url_for("admin_dashboard"))
+        except site_url_service.DuplicateSiteUrlError as e:
+            form.lien.errors.append(str(e))
+            flash(str(e), "error")
+        except ValueError as e:
+            form.portee.errors.append(str(e))
+            flash(str(e), "error")
         except sqlite3.Error as e:
             current_app.logger.error(f"Erreur lors de la création d'un site depuis l'admin: {e}")
             flash("Erreur lors de l'ajout du site.", "error")
@@ -626,7 +720,7 @@ def admin_create_site():
         site=None,
         admin_username=session.get("admin_username"),
         form_action=url_for("admin_create_site"),
-        submit_label="Publier le site",
+        submit_label="Enregistrer le site",
         page_title="Ajouter un nouveau site",
-        subtitle="Complète les champs pour publier le site instantanément.",
+        subtitle="Enregistre un brouillon ou lance la revue avant publication.",
     )

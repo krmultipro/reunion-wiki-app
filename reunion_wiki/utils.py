@@ -1,11 +1,23 @@
 # -*- coding: utf-8 -*-
 
+import unicodedata
 from urllib.parse import urlparse
 
 from flask import request
 
 # Réexport conservé pour les imports historiques depuis reunion_wiki.utils.
 from .slug_utils import slugify
+
+
+def normalize_search_text(value: str) -> str:
+    """Normalise un texte pour une recherche insensible à la casse et aux accents."""
+    decomposed = unicodedata.normalize("NFKD", value or "")
+    without_accents = "".join(
+        character
+        for character in decomposed
+        if not unicodedata.combining(character)
+    )
+    return " ".join(without_accents.casefold().replace("-", " ").split())
 
 
 def get_client_ip() -> str:

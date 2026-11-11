@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "admin/base.html" %}
 
 {% block seo_title %}Modération - Réunion Wiki{% endblock %}
 {% block seo_description %}Tableau de bord des propositions Réunion Wiki.{% endblock %}
@@ -14,24 +14,6 @@
       <a class="btn btn-primary" href="{{ url_for('admin_create_site') }}">
         + Ajouter un site
       </a>
-      <a class="btn btn-secondary" href="{{ url_for('admin_sites') }}">
-        Tous les sites
-      </a>
-      <a class="btn btn-secondary" href="{{ url_for('admin_clicks') }}">
-        Clics
-      </a>
-      <a class="btn btn-secondary" href="{{ url_for('admin_categories') }}">
-        Catégories de sites
-      </a>
-      <a class="btn btn-secondary" href="{{ url_for('admin_talent_categories.list_categories') }}">
-        Catégories créateurs
-      </a>
-      <a class="btn btn-secondary" href="{{ url_for('admin_content.list_content') }}">
-        Contenu SEO
-      </a>
-      <a class="btn btn-secondary" href="{{ url_for('admin_talents.list_talents') }}">
-        Créateurs
-      </a>
       <a
         class="btn btn-secondary"
         href="https://docs.google.com/forms/d/1tmiz_GY5H1FMSb2w1Ho_3XrHs864aTk_zjoADXcMDoU/edit#responses"
@@ -40,14 +22,11 @@
       >
         Contacts (Google Forms)
       </a>
-      <form method="post" action="{{ url_for('admin_logout') }}" class="admin-inline-form">
-        {{ admin_logout_form.hidden_tag() }}
-        <button type="submit" class="btn btn-secondary">Déconnexion</button>
-      </form>
     </div>
   </header>
   <ul class="admin-dashboard__stats">
     <li><strong>{{ stats.get('en_attente', 0) }}</strong> en attente</li>
+    <li><strong>{{ stats.get('draft', 0) }}</strong> brouillons</li>
     <li><strong>{{ stats.get('valide', 0) }}</strong> publiés</li>
     <li><strong>{{ stats.get('refuse', 0) }}</strong> refusés</li>
   </ul>
@@ -71,9 +50,15 @@
         <tbody>
           {% for site in pending_sites %}
           <tr>
-            <td class="admin-table__cell--title" data-label="Nom">{{ site['nom'] }}</td>
+            <td class="admin-table__cell--title" data-label="Nom">
+              {{ site['nom'] }}
+              {% set last_refusal = refusal_history.get(site['id']) %}
+              {% if last_refusal %}
+              <p class="admin-form__hint">Dernier refus : {{ last_refusal.label }} — {{ last_refusal.admin_username }}, {{ last_refusal.created_at|format_date("%d/%m/%Y %H:%M") }}. Information privée.</p>
+              {% endif %}
+            </td>
             <td data-label="Catégorie">{{ site['categorie'] }}</td>
-            <td data-label="Ville">{{ site['ville'] or "—" }}</td>
+            <td data-label="Ville">{{ site['ville'] or ('Toute La Réunion' if site['location_scope'] == 'island' else 'En ligne' if site['location_scope'] == 'online' else 'Non précisée') }}</td>
             <td data-label="Lien">
               <a href="{{ site['lien'] }}" target="_blank" rel="noopener noreferrer">
                 Ouvrir ↗
@@ -108,6 +93,9 @@
                 {{ action_forms[site['id']].site_id(value=site['id']) }}
                 {{ action_forms[site['id']].return_to(value=request.full_path.rstrip('?')) }}
                 <input type="hidden" name="action" value="reject" />
+                {% set reason_id = 'refusal-reason-' ~ site['id'] %}
+                <label class="admin-form__label" for="{{ reason_id }}">Motif de refus</label>
+                {{ action_forms[site['id']].refusal_reason(id=reason_id, class_="admin-form__input") }}
                 <button type="submit" class="btn btn-reject">Refuser</button>
               </form>
               <form

@@ -3,6 +3,8 @@
 
 import re
 
+from ..services.site_url_service import normalize_site_url
+
 
 def _strip_filter(value):
     """Retire les espaces au début et à la fin d'une chaîne.
@@ -64,6 +66,4 @@ def _normalize_url(value):
     if not value:
         return value
 
-    if not value.startswith(("http://", "https://")):
-        value = "https://" + value
-    return value
+    return normalize_site_url(value)

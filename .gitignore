@@ -158,6 +158,7 @@ certbot/
 
 # Données de l'application (Ta base de données SQLite montée en volume)
 data/
+data_dev/
 
 # Logs Docker et Nginx
 logs/
@@ -176,3 +177,15 @@ backups/
 static/uploads/
 uploads_dev/
 uploads_prod/
+
+# Contenus editoriaux prives : exclus de Git et des artefacts
+/sephora.jpeg
+/maquettes/apercu-prive/
+.refonte-runtime/
+
+# Keep production runtime and SQLite sidecars outside every commit.
+data_prod/
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3

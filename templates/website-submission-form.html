@@ -84,6 +84,19 @@ Votre suggestion sera vérifiée avant publication.{% endblock %} {% block conte
         {% endif %}
       </div>
 
+      <div class="form-field">
+        {{ form.portee.label(class="form-label") }} {{
+        form.portee(class="form-select") }}
+        <p class="form-note">Choisis une commune ou une portée. Si tu ne sais pas, laisse « Non précisée ».</p>
+        {% if form.portee.errors %}
+        <div class="form-errors" id="{{ form.portee.id }}-errors">
+          {% for error in form.portee.errors %}
+          <span class="error-item">{{ error }}</span>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+
       <div class="form-field form-field--wide">
         {{ form.description.label(class="form-label") }} {{
         form.description(class="form-textarea", rows="5", placeholder="Décris le site, ses fonctionnalités clés et pourquoi il est utile pour La Réunion.") }} {% if form.description.errors %}

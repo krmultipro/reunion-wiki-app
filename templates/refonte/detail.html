@@ -1,0 +1,15 @@
+{% extends 'refonte/base.html' %}{% from 'refonte/_cards.html' import profile_card %}{% block content %}<a class="public-back" href="{{ back_url }}">← Retour {{ back_label }}</a>
+<section aria-labelledby="profile-title"><div class="profile-heading"><img data-portrait src="{{ profile.portrait }}" alt="Portrait de {{ profile.name }}" width="140" height="140"><div><h1 id="profile-title">{{ profile.name }}</h1><p>{{ profile.category }}</p></div></div>
+<section aria-label="Présentation">{% for paragraph in paragraphs %}{% if paragraph.strip() %}<p class="profile-description">{{ paragraph }}</p>{% endif %}{% else %}<p>La présentation de cette personnalité n’est pas encore renseignée.</p>{% endfor %}</section>
+{% if profile.links %}<h2>Liens officiels</h2><p class="result-count">Ces liens s’ouvrent dans un nouvel onglet.</p><div class="official-links">{% for label,href in profile.links %}<a href="{{ href }}" target="_blank" rel="noopener noreferrer" aria-label="{{ label }} de {{ profile.name }} (nouvel onglet)">{{ label }} ↗</a>{% endfor %}</div>{% endif %}
+<button class="profile-share-trigger" type="button" data-share-open>Partager cette fiche</button>
+<dialog class="profile-share-dialog" id="profile-share" aria-labelledby="profile-share-title">
+  <h2 id="profile-share-title">Partager cette fiche</h2>
+  <p>{{ profile.name }} — Réunion Wiki</p>
+  <label for="profile-share-url">Lien de la fiche</label>
+  <input id="profile-share-url" type="url" readonly value="{{ url_for('creators.creator_detail',slug=profile.slug,_external=True) }}">
+  <div class="actions"><button class="button" type="button" data-share-copy>Copier le lien</button><form method="dialog"><button class="button button-secondary">Fermer</button></form></div>
+  <p role="status" aria-live="polite" data-share-status></p>
+</dialog>
+<p class="profile-correction">Une information à corriger ? <a href="{{ url_for('refonte_public.contact',retour=current_url) }}">Demander une correction ou un retrait</a></p></section>
+{% if similar %}<section class="public-section"><h2>À découvrir aussi</h2><div class="creator-card-grid">{% for item in similar %}{{ profile_card(item,current_url) }}{% endfor %}</div></section>{% endif %}{% endblock %}
