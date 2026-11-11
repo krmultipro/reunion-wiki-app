@@ -1,6 +1,6 @@
 # Refonte DEV — périmètre validé le 11 novembre 2026
 
-Version 1.1 — décisions utilisateur validées, implémentation et recette locale réalisées.
+Version 1.2 — décisions utilisateur validées, implémentation et recette locale réalisées.
 Publication DEV attestée séparément par le journal de release et les labels d’image.
 
 ## Sources et choix applicables
@@ -60,3 +60,22 @@ Réalisation et preuves seront ajoutées après les contrôles ; aucun test n’
   Aucun partage natif, notification ou succès simulé.
 
 Preuves locales du 11 novembre : voir [recette et limites](../testing/REFONTE_DEV_2026-11-11.md).
+
+## Complément utilisateur — ajout d’un contenu préparé sur DEV
+
+Le 11 novembre, après la livraison initiale, l’utilisateur demande explicitement
+d’ajouter la fiche préparée dans l’aperçu privé et sa photo à la base DEV, avec
+le fonctionnement branche dédiée depuis `dev` → contrôles/commit → fusion `dev`
+→ publication DEV. Cette demande remplace l’exclusion d’import ci-dessus pour
+cette seule fiche ; elle n’autorise aucune publication en production ni aucun
+ajout du portrait ou du catalogue privé dans GitHub.
+
+Il s’agit d’une saisie de contenu par les services existants : brouillon puis
+publication distincte dans la base DEV protégée par Basic. Le texte et les liens
+déjà préparés sont repris ; aucune commune ni information biographique n’est
+inventée. Une catégorie existante doit être choisie explicitement, conformément
+à RM-30/36 et à la contrainte actuelle du modèle. La mise en page commune DEV
+reste utilisée ; la variante grand portrait/gras de l’aperçu privé n’est pas une
+nouvelle modification d’interface dans cette demande d’ajout en base.
+
+Procédure et critères : [ajout de contenu DEV](../development/DEV_PROFILE_CONTENT_2026-11-11.md).
